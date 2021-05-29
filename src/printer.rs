@@ -8,6 +8,26 @@ use swc::{config::Options, Compiler};
 use swc_bundler::{Bundler, Load, Resolve, TransformedModule};
 use swc_common::FileName;
 
+const TREE_BAR: &str = "│";
+const TREE_BRANCH: &str = "├──";
+const TREE_CORNER: &str = "└──";
+
+#[derive(Debug)]
+struct TreeIteratorState {
+    last: bool,
+}
+
+#[derive(Debug)]
+struct PrintState {
+    pub open: Vec<TreeIteratorState>,
+}
+
+impl PrintState {
+    fn last_mut(&mut self) -> Option<&mut TreeIteratorState> {
+        self.open.last_mut()
+    }
+}
+
 pub struct Printer {
     compiler: Arc<Compiler>,
     resolver: Box<dyn Resolve>,
@@ -27,7 +47,6 @@ impl Printer {
 
     /// List module imports for an entry point.
     pub fn print<P: AsRef<Path>>(&self, file: P) -> Result<()> {
-        println!("{}", file.as_ref().display());
         let file_name = FileName::Real(file.as_ref().to_path_buf());
         let bundler = crate::bundler::get_bundler(
             Arc::clone(&self.compiler),
@@ -36,10 +55,15 @@ impl Printer {
             &self.resolver,
         );
 
+        log::info!("Transform {}", file.as_ref().display());
+
         let res = bundler
             .load_transformed(&file_name)
             .context("load_transformed failed")?;
-        self.print_imports(res, &bundler, 0)?;
+
+        println!("{}", file.as_ref().display());
+        let mut state = PrintState {open: Vec::new()};
+        self.print_imports(res, &bundler, &mut state)?;
         Ok(())
     }
 
@@ -47,11 +71,14 @@ impl Printer {
         &self,
         module: Option<TransformedModule>,
         bundler: &Bundler<'a, &'a Box<dyn Load>, &'a Box<dyn Resolve>>,
-        mut depth: usize,
+        state: &mut PrintState,
     ) -> Result<()> {
+
         if let Some(ref transformed) = module {
+            state.open.push(TreeIteratorState {last: false});
             for (i, import) in transformed.imports.specifiers.iter().enumerate() {
                 let last = i == (transformed.imports.specifiers.len() - 1);
+                state.last_mut().unwrap().last = last;
                 let source = &import.0;
                 let module_id = source.module_id;
                 let module = bundler
@@ -60,36 +87,28 @@ impl Printer {
                     .ok_or_else(|| anyhow!("Failed to lookup module for {}", module_id))
                     .unwrap();
 
-                //eprintln!("Index {}, last: {}", i, last);
+                let mark = if last { TREE_CORNER } else { TREE_BRANCH };
 
-                let indent = " ".repeat(depth * 4);
-
-                //if depth > 0 && !last {
-                    //print!("│  ");
-                //}
-
-                print!("{}", indent);
-
-                if !last {
-                    print!("├── ");
-                } else {
-                    print!("└── ");
+                for (j, iter_state) in state.open.iter().enumerate() {
+                    let end = j == (state.open.len() - 1);
+                    if !end {
+                        if !iter_state.last {
+                            print!("{}   ", TREE_BAR);
+                        } else {
+                            print!("    ");
+                        }
+                    } else {
+                        print!("{} ", mark);
+                    }
                 }
 
-                //println!("{} -> {}", source.src.value, module.fm.name);
                 println!("{}", source.src.value);
 
                 if !module.imports.specifiers.is_empty() {
-                    //println!("Entering with {}", module.imports.specifiers.len());
-                    //println!("{:#?}", module.imports.specifiers);
-                    depth += 1;
-                    self.print_imports(Some(module), bundler, depth)?;
-                    depth -= 1;
+                    self.print_imports(Some(module), bundler, state)?;
                 }
-
-                //println!("Got import...{:#?}", source);
-                //println!("Got module...{:#?}", module);
             }
+            state.open.pop();
         }
         Ok(())
     }
