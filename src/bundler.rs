@@ -8,15 +8,13 @@ use swc_atoms::js_word;
 use swc_atoms::JsWord;
 use swc_bundler::{BundleKind, Bundler, Load, ModuleRecord, Resolve};
 use swc_common::{
-    errors::{Handler, emitter::{ColorConfig}},
-    SourceMap, Globals, Span,
+    errors::{emitter::ColorConfig, Handler},
+    Globals, SourceMap, Span,
 };
 
 use swc_ecma_ast::{
     Bool, Expr, ExprOrSuper, Ident, KeyValueProp, Lit, MemberExpr, MetaPropExpr, PropName, Str,
 };
-
-use spack::{loaders::swc::SwcLoader, resolvers::NodeResolver};
 
 struct Hook;
 
@@ -58,7 +56,6 @@ impl swc_bundler::Hook for Hook {
 
 pub(crate) fn get_bundler<'a>(
     compiler: Arc<swc::Compiler>,
-    options: swc::config::Options,
     globals: &'a Globals,
     loader: &'a Box<dyn Load>,
     resolver: &'a Box<dyn Resolve>,
@@ -124,7 +121,6 @@ pub(crate) fn get_bundler<'a>(
 
 pub(crate) fn get_compiler() -> Compiler {
     let sm: Arc<SourceMap> = Arc::new(Default::default());
-    let handler =
-        Handler::with_tty_emitter(ColorConfig::Auto, true, false, Some(sm.clone()));
+    let handler = Handler::with_tty_emitter(ColorConfig::Auto, true, false, Some(sm.clone()));
     swc::Compiler::new(sm, Arc::new(handler))
 }
