@@ -27,7 +27,7 @@ impl Printer {
 
     /// List module imports for an entry point.
     pub fn print<P: AsRef<Path>>(&self, file: P) -> Result<()> {
-        log::info!("--- {} (entry) ---", file.as_ref().display());
+        println!("{}", file.as_ref().display());
         let file_name = FileName::Real(file.as_ref().to_path_buf());
         let bundler = crate::bundler::get_bundler(
             Arc::clone(&self.compiler),
@@ -50,7 +50,8 @@ impl Printer {
         mut depth: usize,
     ) -> Result<()> {
         if let Some(ref transformed) = module {
-            for import in transformed.imports.specifiers.iter() {
+            for (i, import) in transformed.imports.specifiers.iter().enumerate() {
+                let last = i == (transformed.imports.specifiers.len() - 1);
                 let source = &import.0;
                 let module_id = source.module_id;
                 let module = bundler
@@ -58,9 +59,29 @@ impl Printer {
                     .get_module(module_id)
                     .ok_or_else(|| anyhow!("Failed to lookup module for {}", module_id))
                     .unwrap();
-                log::info!("{} -> {}", source.src.value, module.fm.name);
+
+                //eprintln!("Index {}, last: {}", i, last);
+
+                let indent = " ".repeat(depth * 4);
+
+                //if depth > 0 && !last {
+                    //print!("│  ");
+                //}
+
+                print!("{}", indent);
+
+                if !last {
+                    print!("├── ");
+                } else {
+                    print!("└── ");
+                }
+
+                //println!("{} -> {}", source.src.value, module.fm.name);
+                println!("{}", source.src.value);
 
                 if !module.imports.specifiers.is_empty() {
+                    //println!("Entering with {}", module.imports.specifiers.len());
+                    //println!("{:#?}", module.imports.specifiers);
                     depth += 1;
                     self.print_imports(Some(module), bundler, depth)?;
                     depth -= 1;
