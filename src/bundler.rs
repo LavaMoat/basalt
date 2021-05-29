@@ -3,10 +3,10 @@ use std::sync::Arc;
 
 use anyhow::{Error, Result};
 
-use swc::{config::SourceMapsConfig, Compiler, TransformOutput};
+use swc::Compiler;
 use swc_atoms::js_word;
 use swc_atoms::JsWord;
-use swc_bundler::{BundleKind, Bundler, Load, ModuleRecord, Resolve};
+use swc_bundler::{Bundler, Load, ModuleRecord, Resolve};
 use swc_common::{
     errors::{emitter::ColorConfig, Handler},
     Globals, SourceMap, Span,

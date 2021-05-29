@@ -3,7 +3,7 @@ use std::path::PathBuf;
 use anyhow::{bail, Result};
 
 mod bundler;
-mod resolver;
+mod printer;
 
 pub fn list(entries: Vec<PathBuf>) -> Result<()> {
     for f in entries.iter() {
@@ -11,11 +11,9 @@ pub fn list(entries: Vec<PathBuf>) -> Result<()> {
             bail!("Entry point {:?} does not exist", f);
         }
     }
-
     for f in entries.iter() {
-        let resolver = resolver::Resolver::new();
-        let entry = resolver.list(f)?;
+        let printer = printer::Printer::new();
+        printer.print(f)?;
     }
-
     Ok(())
 }
