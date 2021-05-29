@@ -22,12 +22,6 @@ struct PrintState {
     pub open: Vec<TreeIteratorState>,
 }
 
-impl PrintState {
-    fn last_mut(&mut self) -> Option<&mut TreeIteratorState> {
-        self.open.last_mut()
-    }
-}
-
 pub struct Printer {
     compiler: Arc<Compiler>,
     resolver: Box<dyn Resolve>,
@@ -78,7 +72,7 @@ impl Printer {
             state.open.push(TreeIteratorState {last: false});
             for (i, import) in transformed.imports.specifiers.iter().enumerate() {
                 let last = i == (transformed.imports.specifiers.len() - 1);
-                state.last_mut().unwrap().last = last;
+                state.open.last_mut().unwrap().last = last;
                 let source = &import.0;
                 let module_id = source.module_id;
                 let module = bundler
