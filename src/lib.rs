@@ -2,6 +2,7 @@ use std::path::PathBuf;
 
 use anyhow::{bail, Result};
 
+mod bundler;
 mod resolver;
 
 pub fn list(entries: Vec<PathBuf>) -> Result<()> {
