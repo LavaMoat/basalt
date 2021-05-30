@@ -20,6 +20,7 @@
   },
   "homepage": "https://github.com/LavaMoat/basalt#readme",
   "dependencies": {
+    "core-js": "^3.13.1",
     "react": "^17.0.2"
   }
 }
