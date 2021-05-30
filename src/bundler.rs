@@ -119,8 +119,9 @@ pub(crate) fn get_bundler<'a>(
     )
 }
 
-pub(crate) fn get_compiler() -> Compiler {
+pub(crate) fn get_compiler() -> (Arc<SourceMap>, Arc<Compiler>) {
     let sm: Arc<SourceMap> = Arc::new(Default::default());
     let handler = Handler::with_tty_emitter(ColorConfig::Auto, true, false, Some(sm.clone()));
-    swc::Compiler::new(sm, Arc::new(handler))
+    let compiler = Arc::new(swc::Compiler::new(Arc::clone(&sm), Arc::new(handler)));
+    (sm, compiler)
 }

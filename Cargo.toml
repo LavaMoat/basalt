@@ -16,4 +16,5 @@ swc_bundler = { version = "0.37", path = "../swc/bundler" }
 swc_common = {version = "0.10", features = ["tty-emitter"], path = "../swc/common"}
 swc_atoms = {version = "0.2.6", path = "../swc/atoms"}
 swc_ecma_ast = {version = "0.45", path = "../swc/ecmascript/ast"}
+swc_ecma_dep_graph = {version = "0.25", path = "../swc/ecmascript/dep-graph"}
 spack = { version = "*", path = "../swc/spack" }

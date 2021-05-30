@@ -1,5 +1,5 @@
 import React from 'react';
-//require('core-js/object-assign');
+//require('core-js');
 
 import "./foo.js";
 

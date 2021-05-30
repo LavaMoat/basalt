@@ -106,6 +106,7 @@ dependencies = [
  "swc_bundler",
  "swc_common",
  "swc_ecma_ast",
+ "swc_ecma_dep_graph",
 ]
 
 [[package]]
@@ -1448,6 +1449,16 @@ dependencies = [
  "quote",
  "swc_macros_common",
  "syn",
+]
+
+[[package]]
+name = "swc_ecma_dep_graph"
+version = "0.25.0"
+dependencies = [
+ "swc_atoms",
+ "swc_common",
+ "swc_ecma_ast",
+ "swc_ecma_visit",
 ]
 
 [[package]]

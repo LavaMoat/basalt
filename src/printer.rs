@@ -6,7 +6,8 @@ use anyhow::{anyhow, Context, Result};
 use spack::{loaders::swc::SwcLoader, resolvers::NodeResolver};
 use swc::{config::Options, Compiler};
 use swc_bundler::{Bundler, Load, ModuleId, Resolve, TransformedModule};
-use swc_common::FileName;
+use swc_common::{FileName, SourceMap};
+use swc_ecma_dep_graph::analyze_dependencies;
 
 const TREE_BAR: &str = "│";
 const TREE_BRANCH: &str = "├──";
@@ -36,6 +37,7 @@ struct PrintState {
 }
 
 pub(crate) struct Printer {
+    source_map: Arc<SourceMap>,
     compiler: Arc<Compiler>,
     resolver: Box<dyn Resolve>,
     loader: Box<dyn Load>,
@@ -43,11 +45,12 @@ pub(crate) struct Printer {
 
 impl Printer {
     pub fn new() -> Self {
-        let compiler = Arc::new(crate::bundler::get_compiler());
+        let (source_map, compiler) = crate::bundler::get_compiler();
         let options: Options = Default::default();
         Printer {
             loader: Box::new(SwcLoader::new(Arc::clone(&compiler), options)),
             resolver: Box::new(NodeResolver::new()),
+            source_map,
             compiler,
         }
     }
@@ -99,6 +102,9 @@ impl Printer {
                     .get_module(module_id)
                     .ok_or_else(|| anyhow!("Failed to lookup module for {}", module_id))
                     .unwrap();
+
+                //let deps = analyze_dependencies(&module.module, &self.source_map, &Default::default());
+                //println!("{:#?}", deps);
 
                 let mark = if last { TREE_CORNER } else { TREE_BRANCH };
 
