@@ -5,24 +5,37 @@ use anyhow::{anyhow, Context, Result};
 
 use spack::{loaders::swc::SwcLoader, resolvers::NodeResolver};
 use swc::{config::Options, Compiler};
-use swc_bundler::{Bundler, Load, Resolve, TransformedModule};
+use swc_bundler::{Bundler, Load, ModuleId, Resolve, TransformedModule};
 use swc_common::FileName;
 
 const TREE_BAR: &str = "│";
 const TREE_BRANCH: &str = "├──";
 const TREE_CORNER: &str = "└──";
 
+#[derive(Debug, Default)]
+pub struct PrintOptions {
+    pub include_id: bool,
+    pub include_file: bool,
+}
+
 #[derive(Debug)]
-struct TreeIteratorState {
+struct PrintBranchState {
     last: bool,
 }
 
 #[derive(Debug)]
-struct PrintState {
-    pub open: Vec<TreeIteratorState>,
+struct PrintParent {
+    id: ModuleId,
+    //specifier: String,
 }
 
-pub struct Printer {
+#[derive(Debug)]
+struct PrintState {
+    open: Vec<PrintBranchState>,
+    parents: Vec<PrintParent>,
+}
+
+pub(crate) struct Printer {
     compiler: Arc<Compiler>,
     resolver: Box<dyn Resolve>,
     loader: Box<dyn Load>,
@@ -40,7 +53,7 @@ impl Printer {
     }
 
     /// List module imports for an entry point.
-    pub fn print<P: AsRef<Path>>(&self, file: P) -> Result<()> {
+    pub fn print<P: AsRef<Path>>(&self, file: P, options: &PrintOptions) -> Result<()> {
         let file_name = FileName::Real(file.as_ref().to_path_buf());
         let bundler = crate::bundler::get_bundler(
             Arc::clone(&self.compiler),
@@ -56,25 +69,31 @@ impl Printer {
             .context("load_transformed failed")?;
 
         println!("{}", file.as_ref().display());
-        let mut state = PrintState {open: Vec::new()};
-        self.print_imports(res, &bundler, &mut state)?;
+        let mut state = PrintState {
+            open: Vec::new(),
+            parents: Vec::new(),
+        };
+        self.print_imports(options, res, &bundler, &mut state)?;
         Ok(())
     }
 
     fn print_imports<'a>(
         &self,
+        options: &PrintOptions,
         module: Option<TransformedModule>,
         bundler: &Bundler<'a, &'a Box<dyn Load>, &'a Box<dyn Resolve>>,
         state: &mut PrintState,
     ) -> Result<()> {
-
         if let Some(ref transformed) = module {
-            state.open.push(TreeIteratorState {last: false});
+            state.open.push(PrintBranchState { last: false });
             for (i, import) in transformed.imports.specifiers.iter().enumerate() {
                 let last = i == (transformed.imports.specifiers.len() - 1);
-                state.open.last_mut().unwrap().last = last;
                 let source = &import.0;
                 let module_id = source.module_id;
+
+                let cycles = state.parents.iter().find(|p| p.id == module_id);
+                state.open.last_mut().unwrap().last = last;
+
                 let module = bundler
                     .scope
                     .get_module(module_id)
@@ -96,10 +115,33 @@ impl Printer {
                     }
                 }
 
-                println!("{}", source.src.value);
+                print!("{}", source.src.value);
+
+                if options.include_id {
+                    print!(" ({})", module_id);
+                }
+
+                if options.include_file {
+                    print!(" {}", module.fm.name);
+                }
+
+                if let Some(cycle) = cycles {
+                    print!(" (∞ -> {})", cycle.id);
+                }
+
+                print!("\n");
+
+                if cycles.is_some() {
+                    continue;
+                }
 
                 if !module.imports.specifiers.is_empty() {
-                    self.print_imports(Some(module), bundler, state)?;
+                    state.parents.push(PrintParent {
+                        id: module_id,
+                        //specifier: format!("{}", source.src.value),
+                    });
+                    self.print_imports(options, Some(module), bundler, state)?;
+                    state.parents.pop();
                 }
             }
             state.open.pop();

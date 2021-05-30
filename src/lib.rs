@@ -11,9 +11,13 @@ pub fn list(entries: Vec<PathBuf>) -> Result<()> {
             bail!("Entry point {:?} does not exist", f);
         }
     }
+    let options = printer::PrintOptions {
+        include_id: true,
+        include_file: false,
+    };
     for f in entries.iter() {
         let printer = printer::Printer::new();
-        printer.print(f)?;
+        printer.print(f, &options)?;
     }
     Ok(())
 }
