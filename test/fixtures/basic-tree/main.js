@@ -1,6 +1,6 @@
-import React from 'react';
-//require('core-js');
+//import React from 'react';
+require('core-js');
 
-import "./foo.js";
+//import "./foo.js";
 
-require('./bar.js');
+//require('./bar.js');
