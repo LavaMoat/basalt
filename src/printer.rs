@@ -68,29 +68,27 @@ impl Printer {
 
         log::info!("Transform {}", file.as_ref().display());
 
-
         let res = bundler
             .load_transformed(&file_name)
             .context("load_transformed failed")?;
 
 
-        if let Some(ref module) = res {
-            let mut graph = DiGraphMap::new();
-            let mut parents = vec![];
-            self.build_graph(&mut graph, module, &bundler, &mut parents);
-        }
+        //if let Some(ref module) = res {
+            //let mut graph = DiGraphMap::new();
+            //let mut parents = vec![];
+            //self.build_graph(&mut graph, module, &bundler, &mut parents);
+        //}
 
-        /*
         println!("{}", file.as_ref().display());
         let mut state = PrintState {
             open: Vec::new(),
             parents: Vec::new(),
         };
         self.print_imports(options, res, &bundler, &mut state)?;
-        */
         Ok(())
     }
 
+    /*
     fn build_graph<'a>(
         &self,
         graph: &mut DiGraphMap<ModuleId, ()>,
@@ -125,6 +123,7 @@ impl Printer {
             }
         }
     }
+    */
 
     fn print_imports<'a>(
         &self,
