@@ -5,7 +5,14 @@ use anyhow::{anyhow, Context, Result};
 
 use spack::{loaders::swc::SwcLoader, resolvers::NodeResolver};
 use swc::{config::Options, Compiler};
-use swc_bundler::{Bundler, Load, ModuleId, Resolve, TransformedModule};
+use swc_bundler::{
+    Bundler,
+    Load,
+    ModuleId,
+    Resolve,
+    TransformedModule,
+    bundler::load::{Source, Specifier},
+};
 use swc_common::{FileName/*, SourceMap */};
 
 //use petgraph::graphmap::DiGraphMap;
@@ -36,6 +43,22 @@ struct PrintParent {
 struct PrintState {
     open: Vec<PrintBranchState>,
     parents: Vec<PrintParent>,
+}
+
+// Hack to de-duplicate the import specifiers.
+//
+// SEE: https://github.com/swc-project/swc/discussions/1768
+fn dedupe_import_specifiers(input: &mut Vec<(Source, Vec<Specifier>)>) {
+    let mut already_seen = vec![];
+    input.retain(|(source, _)| {
+        match already_seen.contains(&source.src.value) {
+            true => false,
+            _ => {
+                already_seen.push(source.src.value.clone());
+                true
+            }
+        }
+    })
 }
 
 pub(crate) struct Printer {
@@ -95,9 +118,11 @@ impl Printer {
     ) -> Result<()> {
         if let Some(ref transformed) = module {
             state.open.push(PrintBranchState { last: false });
-            for (i, import) in transformed.imports.specifiers.iter().enumerate()
+            let mut specifiers = transformed.imports.specifiers.clone();
+            dedupe_import_specifiers(&mut specifiers);
+            for (i, import) in specifiers.iter().enumerate()
             {
-                let last = i == (transformed.imports.specifiers.len() - 1);
+                let last = i == (specifiers.len() - 1);
                 let source = &import.0;
                 let module_id = source.module_id;
 
@@ -105,7 +130,7 @@ impl Printer {
 
                 state.open.last_mut().unwrap().last = last;
 
-                let module = bundler
+                let dep = bundler
                     .scope
                     .get_module(module_id)
                     .ok_or_else(|| {
@@ -117,7 +142,7 @@ impl Printer {
                     log::debug!(
                         "Module {} {} (depth: {}) {}",
                         module_id,
-                        module.fm.name,
+                        dep.fm.name,
                         state.parents.len(),
                         cycles.is_some()
                     );
@@ -145,7 +170,7 @@ impl Printer {
                     }
 
                     if options.include_file {
-                        print!(" {}", module.fm.name);
+                        print!(" {}", dep.fm.name);
                     }
 
                     if let Some(cycle) = cycles {
@@ -159,7 +184,10 @@ impl Printer {
                     continue;
                 }
 
-                if !module.imports.specifiers.is_empty() {
+                let mut dep_specifiers = dep.imports.specifiers.clone();
+                dedupe_import_specifiers(&mut dep_specifiers);
+
+                if !dep_specifiers.is_empty() {
                     state.parents.push(PrintParent { id: module_id });
                     if options.print_logs {
                         log::debug!(
@@ -173,7 +201,7 @@ impl Printer {
                             println!("{:?}", p.id);
                         }
                     }
-                    self.print_imports(options, Some(module), bundler, state)?;
+                    self.print_imports(options, Some(dep), bundler, state)?;
                     state.parents.pop();
                     if options.print_logs {
                         log::debug!(
