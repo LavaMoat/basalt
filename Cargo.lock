@@ -1427,7 +1427,7 @@ dependencies = [
 
 [[package]]
 name = "swc_ecma_codegen"
-version = "0.55.3"
+version = "0.55.4"
 dependencies = [
  "bitflags",
  "num-bigint",
@@ -1465,7 +1465,7 @@ dependencies = [
 
 [[package]]
 name = "swc_ecma_parser"
-version = "0.57.2"
+version = "0.57.3"
 dependencies = [
  "either",
  "enum_kind",
@@ -1525,7 +1525,7 @@ dependencies = [
 
 [[package]]
 name = "swc_ecma_transforms_base"
-version = "0.15.4"
+version = "0.15.5"
 dependencies = [
  "fxhash",
  "once_cell",
@@ -1541,8 +1541,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "swc_ecma_transforms_classes"
+version = "0.1.0"
+dependencies = [
+ "swc_atoms",
+ "swc_common",
+ "swc_ecma_ast",
+ "swc_ecma_transforms_base",
+ "swc_ecma_utils",
+ "swc_ecma_visit",
+]
+
+[[package]]
 name = "swc_ecma_transforms_compat"
-version = "0.17.7"
+version = "0.17.8"
 dependencies = [
  "arrayvec",
  "fxhash",
@@ -1556,6 +1568,7 @@ dependencies = [
  "swc_common",
  "swc_ecma_ast",
  "swc_ecma_transforms_base",
+ "swc_ecma_transforms_classes",
  "swc_ecma_transforms_macros",
  "swc_ecma_utils",
  "swc_ecma_visit",
@@ -1591,7 +1604,7 @@ dependencies = [
 
 [[package]]
 name = "swc_ecma_transforms_optimization"
-version = "0.20.1"
+version = "0.20.2"
 dependencies = [
  "dashmap",
  "fxhash",
@@ -1622,6 +1635,7 @@ dependencies = [
  "swc_ecma_ast",
  "swc_ecma_parser",
  "swc_ecma_transforms_base",
+ "swc_ecma_transforms_classes",
  "swc_ecma_utils",
  "swc_ecma_visit",
 ]

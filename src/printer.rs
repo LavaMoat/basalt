@@ -15,8 +15,6 @@ use swc_bundler::{
 };
 use swc_common::{FileName/*, SourceMap */};
 
-//use petgraph::graphmap::DiGraphMap;
-
 const TREE_BAR: &str = "│";
 const TREE_BRANCH: &str = "├──";
 const TREE_CORNER: &str = "└──";
@@ -24,7 +22,6 @@ const TREE_CORNER: &str = "└──";
 #[derive(Debug, Default)]
 pub struct PrintOptions {
     pub print_tree: bool,
-    pub print_logs: bool,
     pub include_id: bool,
     pub include_file: bool,
 }
@@ -138,16 +135,6 @@ impl Printer {
                     })
                     .unwrap();
 
-                if options.print_logs {
-                    log::debug!(
-                        "Module {} {} (depth: {}) {}",
-                        module_id,
-                        dep.fm.name,
-                        state.parents.len(),
-                        cycles.is_some()
-                    );
-                }
-
                 if options.print_tree {
                     let mark = if last { TREE_CORNER } else { TREE_BRANCH };
                     for (j, iter_state) in state.open.iter().enumerate() {
@@ -189,27 +176,8 @@ impl Printer {
 
                 if !dep_specifiers.is_empty() {
                     state.parents.push(PrintParent { id: module_id });
-                    if options.print_logs {
-                        log::debug!(
-                            "Entering child imports {} (depth: {})",
-                            module_id,
-                            state.parents.len()
-                        );
-
-                        for (i, p) in state.parents.iter().enumerate() {
-                            print!("{}", " ".repeat(i));
-                            println!("{:?}", p.id);
-                        }
-                    }
                     self.print_imports(options, Some(dep), bundler, state)?;
                     state.parents.pop();
-                    if options.print_logs {
-                        log::debug!(
-                            "Exiting child imports {} (depth: {})",
-                            module_id,
-                            state.parents.len()
-                        );
-                    }
                 }
             }
             state.open.pop();
