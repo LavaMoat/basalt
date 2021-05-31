@@ -13,7 +13,8 @@ use swc_common::{
 };
 
 use swc_ecma_ast::{
-    Bool, Expr, ExprOrSuper, Ident, KeyValueProp, Lit, MemberExpr, MetaPropExpr, PropName, Str,
+    Bool, Expr, ExprOrSuper, Ident, KeyValueProp, Lit, MemberExpr,
+    MetaPropExpr, PropName, Str,
 };
 
 struct Hook;
@@ -39,11 +40,16 @@ impl swc_bundler::Hook for Hook {
                 value: Box::new(if module_record.is_entry {
                     Expr::Member(MemberExpr {
                         span,
-                        obj: ExprOrSuper::Expr(Box::new(Expr::MetaProp(MetaPropExpr {
-                            meta: Ident::new(js_word!("import"), span),
-                            prop: Ident::new(js_word!("meta"), span),
-                        }))),
-                        prop: Box::new(Expr::Ident(Ident::new(js_word!("main"), span))),
+                        obj: ExprOrSuper::Expr(Box::new(Expr::MetaProp(
+                            MetaPropExpr {
+                                meta: Ident::new(js_word!("import"), span),
+                                prop: Ident::new(js_word!("meta"), span),
+                            },
+                        ))),
+                        prop: Box::new(Expr::Ident(Ident::new(
+                            js_word!("main"),
+                            span,
+                        ))),
                         computed: false,
                     })
                 } else {
@@ -121,7 +127,13 @@ pub(crate) fn get_bundler<'a>(
 
 pub(crate) fn get_compiler() -> (Arc<SourceMap>, Arc<Compiler>) {
     let sm: Arc<SourceMap> = Arc::new(Default::default());
-    let handler = Handler::with_tty_emitter(ColorConfig::Auto, true, false, Some(sm.clone()));
-    let compiler = Arc::new(swc::Compiler::new(Arc::clone(&sm), Arc::new(handler)));
+    let handler = Handler::with_tty_emitter(
+        ColorConfig::Auto,
+        true,
+        false,
+        Some(sm.clone()),
+    );
+    let compiler =
+        Arc::new(swc::Compiler::new(Arc::clone(&sm), Arc::new(handler)));
     (sm, compiler)
 }

@@ -12,6 +12,10 @@ pub fn list(entries: Vec<PathBuf>) -> Result<()> {
         }
     }
     let options = printer::PrintOptions {
+        print_tree: true,
+        print_logs: false,
+        //print_tree: false,
+        //print_logs: true,
         include_id: true,
         include_file: false,
     };
