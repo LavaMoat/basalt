@@ -8,8 +8,13 @@ use basalt::list;
 #[derive(StructOpt)]
 #[structopt(about = "Lavamoat analyzer and bundler")]
 enum BasaltCommands {
-    /// List imports for entry points
+    /// Print the module graph for entry point(s)
     Ls {
+        /// Include the file name for each module
+        #[structopt(short, long)]
+        include_file: bool,
+
+        /// Entry points
         #[structopt(parse(from_os_str))]
         entries: Vec<PathBuf>,
     },
@@ -23,11 +28,11 @@ fn main() -> Result<()> {
 
     let args = BasaltCommands::from_args();
     match args {
-        BasaltCommands::Ls { entries } => {
+        BasaltCommands::Ls { entries, include_file } => {
             if entries.is_empty() {
                 bail!("List command requires entry points.");
             }
-            list(entries)?;
+            list(entries, include_file)?;
         }
     }
     Ok(())
