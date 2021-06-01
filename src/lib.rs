@@ -5,7 +5,11 @@ use anyhow::{bail, Result};
 mod bundler;
 mod printer;
 
-pub fn list(entries: Vec<PathBuf>, include_file: bool) -> Result<()> {
+pub fn list(
+    entries: Vec<PathBuf>,
+    include_file: bool,
+    include_exports: bool,
+) -> Result<()> {
     for f in entries.iter() {
         if !f.is_file() {
             bail!("Entry point {:?} does not exist", f);
@@ -15,6 +19,7 @@ pub fn list(entries: Vec<PathBuf>, include_file: bool) -> Result<()> {
         print_tree: true,
         include_id: true,
         include_file,
+        include_exports,
     };
     for f in entries.iter() {
         let printer = printer::Printer::new();

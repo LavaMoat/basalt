@@ -24,6 +24,7 @@ pub struct PrintOptions {
     pub print_tree: bool,
     pub include_id: bool,
     pub include_file: bool,
+    pub include_exports: bool,
 }
 
 #[derive(Debug)]
@@ -102,6 +103,9 @@ impl Printer {
             open: Vec::new(),
             parents: Vec::new(),
         };
+
+        //println!("{:#?}", res.unwrap().exports);
+
         self.print_imports(options, res, &bundler, &mut state)?;
         Ok(())
     }
@@ -117,6 +121,26 @@ impl Printer {
             state.open.push(PrintBranchState { last: false });
             let mut specifiers = transformed.imports.specifiers.clone();
             dedupe_import_specifiers(&mut specifiers);
+
+            if options.include_exports {
+                for item in transformed.exports.items.iter() {
+                    print!("{} > ", TREE_BRANCH);
+                    match item {
+                        Specifier::Specific {local, alias} => {
+                            if let Some(alias) = alias {
+                                print!("{:?} as ", alias);
+                            }
+                            print!("{:?}", local);
+                            print!("\n");
+                        }
+                        _ => {}
+                    }
+                }
+                //for item in transformed.exports.reexports.iter() {
+                    //println!("{:?}", item);
+                //}
+            }
+
             for (i, import) in specifiers.iter().enumerate()
             {
                 let last = i == (specifiers.len() - 1);
