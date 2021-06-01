@@ -84,8 +84,6 @@ impl Printer {
             parents: Vec::new(),
         };
 
-        //println!("{:#?}", res.unwrap().exports);
-
         self.print_imports(options, res, &bundler, &mut state)?;
         Ok(())
     }
@@ -114,6 +112,7 @@ impl Printer {
             let mut specifiers = transformed.imports.specifiers.clone();
             dedupe_import_specifiers(&mut specifiers);
 
+            // TODO: ensure this is indented for nested modules
             if options.include_exports {
                 for spec in transformed.exports.items.iter() {
                     print!("{} > ", TREE_BRANCH);

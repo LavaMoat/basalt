@@ -91,12 +91,30 @@ impl Parser {
                 } else {
                     let words = collect_words(&spec.1);
                     record.imports.insert(module_path.clone(), words);
+
+                    for s in spec.1.iter() {
+                        match s {
+                            Specifier::Specific { local, alias } => {
+                                let key = format!("{}", local.sym());
+                                let alias = if let Some(alias) = alias {
+                                    format!("{}", alias.sym())
+                                } else { key.clone() };
+                                let value = (alias, false);
+                                record.live_export_map.insert(key, value);
+                            }
+                            Specifier::Namespace { local, all } => {
+                                todo!()
+                            }
+                        }
+
+                    }
+
                 }
             }
 
             let (fixed, live) = self.analyze_exports(&module);
-            record.fixed_export_map = fixed;
-            record.live_export_map = live;
+            record.fixed_export_map.extend(fixed);
+            record.live_export_map.extend(live);
         }
 
         Ok(record)
