@@ -4,6 +4,9 @@ use anyhow::{bail, Result};
 
 mod bundler;
 mod printer;
+mod static_module_record;
+
+pub use static_module_record::StaticModuleRecord;
 
 pub fn list(
     entries: Vec<PathBuf>,

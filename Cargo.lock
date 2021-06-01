@@ -99,6 +99,8 @@ dependencies = [
  "anyhow",
  "log",
  "pretty_env_logger",
+ "serde",
+ "serde_json",
  "spack",
  "structopt",
  "swc",
