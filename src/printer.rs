@@ -60,7 +60,6 @@ fn dedupe_import_specifiers(input: &mut Vec<(Source, Vec<Specifier>)>) {
 }
 
 pub(crate) struct Printer {
-    //source_map: Arc<SourceMap>,
     compiler: Arc<Compiler>,
     resolver: Box<dyn Resolve>,
     loader: Box<dyn Load>,
@@ -73,7 +72,6 @@ impl Printer {
         Printer {
             loader: Box::new(SwcLoader::new(Arc::clone(&compiler), options)),
             resolver: Box::new(NodeResolver::new()),
-            //source_map,
             compiler,
         }
     }
@@ -110,6 +108,18 @@ impl Printer {
         Ok(())
     }
 
+    fn print_specifier(&self, item: &Specifier) {
+        match item {
+            Specifier::Specific {local, alias} => {
+                if let Some(alias) = alias {
+                    print!("{:?} as ", alias);
+                }
+                print!("{:?}", local);
+            }
+            _ => {}
+        }
+    }
+
     fn print_imports<'a>(
         &self,
         options: &PrintOptions,
@@ -123,22 +133,26 @@ impl Printer {
             dedupe_import_specifiers(&mut specifiers);
 
             if options.include_exports {
-                for item in transformed.exports.items.iter() {
+                for spec in transformed.exports.items.iter() {
                     print!("{} > ", TREE_BRANCH);
-                    match item {
-                        Specifier::Specific {local, alias} => {
-                            if let Some(alias) = alias {
-                                print!("{:?} as ", alias);
-                            }
-                            print!("{:?}", local);
-                            print!("\n");
-                        }
-                        _ => {}
-                    }
+                    self.print_specifier(spec);
+                    print!("\n");
                 }
-                //for item in transformed.exports.reexports.iter() {
-                    //println!("{:?}", item);
-                //}
+                for item in transformed.exports.reexports.iter() {
+                    print!("{} <> ", TREE_BRANCH);
+                    if item.1.is_empty() {
+                        print!("* from ");
+                    } else {
+                        print!("{{");
+                        for spec in item.1.iter() {
+                            self.print_specifier(spec);
+                        }
+                        print!("}} from ");
+                    }
+                    print!("{}", item.0.src.value);
+                    //println!("{:#?}", item);
+                    print!("\n");
+                }
             }
 
             for (i, import) in specifiers.iter().enumerate()
