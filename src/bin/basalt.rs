@@ -50,9 +50,7 @@ fn main() -> Result<()> {
             list(entries, include_file, include_exports)?;
         }
 
-        BasaltCommands::Smr {
-            module,
-        } => {
+        BasaltCommands::Smr { module } => {
             smr(module)?;
         }
     }

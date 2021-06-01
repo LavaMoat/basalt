@@ -1,18 +1,36 @@
+use std::collections::HashMap;
 use std::path::Path;
 use std::sync::Arc;
-use std::collections::HashMap;
 
 use anyhow::{Context, Result};
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
 use spack::{loaders::swc::SwcLoader, resolvers::NodeResolver};
 use swc::{config::Options, Compiler};
-use swc_bundler::{
-    Load,
-    Resolve,
-    bundler::load::{Specifier},
-};
-use swc_common::{FileName/*, SourceMap */};
+use swc_bundler::{bundler::load::Specifier, Load, Resolve};
+use swc_common::FileName;
+
+fn collect_words(specs: &Vec<Specifier>) -> Vec<String> {
+    specs
+        .iter()
+        .map(|s| match s {
+            Specifier::Specific { local, alias } => {
+                if let Some(alias) = alias {
+                    format!("{}", alias.sym())
+                } else {
+                    format!("{}", local.sym())
+                }
+            }
+            Specifier::Namespace { local, all } => {
+                if *all {
+                    String::from("*")
+                } else {
+                    format!("{}", local.sym())
+                }
+            }
+        })
+        .collect::<Vec<_>>()
+}
 
 pub type LiveExport = (String, bool);
 
@@ -42,10 +60,7 @@ impl Parser {
         }
     }
 
-    pub fn load<P: AsRef<Path>>(
-        &self,
-        file: P,
-    ) -> Result<StaticModuleRecord> {
+    pub fn load<P: AsRef<Path>>(&self, file: P) -> Result<StaticModuleRecord> {
         let mut record: StaticModuleRecord = Default::default();
 
         let file_name = FileName::Real(file.as_ref().to_path_buf());
@@ -56,41 +71,28 @@ impl Parser {
             &self.resolver,
         );
 
-        //log::info!("Transform {}", file.as_ref().display());
-
         if let Some(module) = bundler
             .load_transformed(&file_name, true)
-            .context("load_transformed failed")? {
-            //println!("Module {:#?}", module);
-
+            .context("load_transformed failed")?
+        {
             for spec in module.imports.specifiers.iter() {
                 let module_path = format!("{}", spec.0.src.value);
-                let words =
-                    spec.1.iter()
-                    .map(|s| {
-                        match s {
-                            Specifier::Specific {local, alias} => {
-                                if let Some(alias) = alias {
-                                    format!("{}", alias.sym())
-                                } else {
-                                    format!("{}", local.sym())
-                                }
-                            }
-                            Specifier::Namespace {local, all} => {
-                                if *all {
-                                    String::from("*")
-                                } else {
-                                    format!("{}", local.sym())
-                                }
-                            }
-                        }
-                    })
-                    .collect::<Vec<_>>();
+                let words = collect_words(&spec.1);
                 record.imports.insert(module_path, words);
+            }
+
+            for spec in module.exports.reexports.iter() {
+                let module_path = format!("{}", spec.0.src.value);
+                if spec.1.is_empty() {
+                    record.imports.insert(module_path.clone(), vec![]);
+                    record.export_alls.push(module_path);
+                } else {
+                    let words = collect_words(&spec.1);
+                    record.imports.insert(module_path.clone(), words);
+                }
             }
         }
 
         Ok(record)
     }
 }
-

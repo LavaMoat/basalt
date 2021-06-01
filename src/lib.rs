@@ -7,7 +7,7 @@ mod printer;
 mod static_module_record;
 mod utils;
 
-pub use static_module_record::{StaticModuleRecord, Parser};
+pub use static_module_record::{Parser, StaticModuleRecord};
 
 pub fn list(
     entries: Vec<PathBuf>,
@@ -16,7 +16,10 @@ pub fn list(
 ) -> Result<()> {
     for f in entries.iter() {
         if !f.is_file() {
-            bail!("Entry point {} does not exist or is not a file", f.display());
+            bail!(
+                "Entry point {} does not exist or is not a file",
+                f.display()
+            );
         }
     }
     let options = printer::PrintOptions {
@@ -32,11 +35,12 @@ pub fn list(
     Ok(())
 }
 
-pub fn smr(
-    module: PathBuf,
-) -> Result<()> {
+pub fn smr(module: PathBuf) -> Result<()> {
     if !module.is_file() {
-        bail!("Module {} does not exist or is not a file", module.display());
+        bail!(
+            "Module {} does not exist or is not a file",
+            module.display()
+        );
     }
     let parser = Parser::new();
     let smr = parser.load(module)?;

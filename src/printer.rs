@@ -6,14 +6,10 @@ use anyhow::{anyhow, Context, Result};
 use spack::{loaders::swc::SwcLoader, resolvers::NodeResolver};
 use swc::{config::Options, Compiler};
 use swc_bundler::{
-    Bundler,
-    Load,
-    ModuleId,
-    Resolve,
+    bundler::load::Specifier, Bundler, Load, ModuleId, Resolve,
     TransformedModule,
-    bundler::load::Specifier,
 };
-use swc_common::{FileName/*, SourceMap */};
+use swc_common::FileName;
 
 use crate::utils::dedupe_import_specifiers;
 
@@ -96,7 +92,7 @@ impl Printer {
 
     fn print_specifier(&self, item: &Specifier) {
         match item {
-            Specifier::Specific {local, alias} => {
+            Specifier::Specific { local, alias } => {
                 if let Some(alias) = alias {
                     print!("{:?} as ", alias);
                 }
@@ -141,8 +137,7 @@ impl Printer {
                 }
             }
 
-            for (i, import) in specifiers.iter().enumerate()
-            {
+            for (i, import) in specifiers.iter().enumerate() {
                 let last = i == (specifiers.len() - 1);
                 let source = &import.0;
                 let module_id = source.module_id;
