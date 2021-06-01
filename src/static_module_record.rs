@@ -7,7 +7,9 @@ use serde::{Deserialize, Serialize};
 
 use spack::{loaders::swc::SwcLoader, resolvers::NodeResolver};
 use swc::{config::Options, Compiler};
-use swc_bundler::{bundler::load::Specifier, Load, Resolve};
+use swc_bundler::{
+    TransformedModule,
+    bundler::load::Specifier, Load, Resolve};
 use swc_common::FileName;
 
 fn collect_words(specs: &Vec<Specifier>) -> Vec<String> {
@@ -91,8 +93,22 @@ impl Parser {
                     record.imports.insert(module_path.clone(), words);
                 }
             }
+
+            let (fixed, live) = self.analyze_exports(&module);
+            record.fixed_export_map = fixed;
+            record.live_export_map = live;
         }
 
         Ok(record)
+    }
+
+    fn analyze_exports(
+        &self,
+        module: &TransformedModule,
+    ) -> (HashMap<String, Vec<String>>, HashMap<String, LiveExport>) {
+        let fixed = HashMap::new();
+        let live = HashMap::new();
+
+        (fixed, live)
     }
 }
