@@ -93,7 +93,7 @@ impl Printer {
         log::info!("Transform {}", file.as_ref().display());
 
         let res = bundler
-            .load_transformed(&file_name)
+            .load_transformed(&file_name, true)
             .context("load_transformed failed")?;
 
         println!("{}", file.as_ref().display());
