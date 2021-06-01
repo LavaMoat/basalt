@@ -2,6 +2,7 @@ import foo from './import-default-export-from-me.js';
 import * as bar from './import-all-from-me.js';
 import { fizz, buzz } from './import-named-exports-from-me.js';
 import { color as colour } from './import-named-export-and-rename.js';
+import 'core-js';
 
 export let quuux = null;
 

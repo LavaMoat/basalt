@@ -3,7 +3,7 @@ use std::path::PathBuf;
 use anyhow::{bail, Result};
 use structopt::StructOpt;
 
-use basalt::list;
+use basalt::{list, smr};
 
 #[derive(StructOpt)]
 #[structopt(about = "Lavamoat analyzer and bundler")]
@@ -21,6 +21,13 @@ enum BasaltCommands {
         /// Entry points
         #[structopt(parse(from_os_str))]
         entries: Vec<PathBuf>,
+    },
+
+    /// Generate a static module record for a module
+    Smr {
+        /// Module path
+        #[structopt(parse(from_os_str))]
+        module: PathBuf,
     },
 }
 
@@ -41,6 +48,12 @@ fn main() -> Result<()> {
                 bail!("List command requires entry points.");
             }
             list(entries, include_file, include_exports)?;
+        }
+
+        BasaltCommands::Smr {
+            module,
+        } => {
+            smr(module)?;
         }
     }
     Ok(())

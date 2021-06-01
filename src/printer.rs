@@ -11,9 +11,11 @@ use swc_bundler::{
     ModuleId,
     Resolve,
     TransformedModule,
-    bundler::load::{Source, Specifier},
+    bundler::load::Specifier,
 };
 use swc_common::{FileName/*, SourceMap */};
+
+use crate::utils::dedupe_import_specifiers;
 
 const TREE_BAR: &str = "│";
 const TREE_BRANCH: &str = "├──";
@@ -41,22 +43,6 @@ struct PrintParent {
 struct PrintState {
     open: Vec<PrintBranchState>,
     parents: Vec<PrintParent>,
-}
-
-// Hack to de-duplicate the import specifiers.
-//
-// SEE: https://github.com/swc-project/swc/discussions/1768
-fn dedupe_import_specifiers(input: &mut Vec<(Source, Vec<Specifier>)>) {
-    let mut already_seen = vec![];
-    input.retain(|(source, _)| {
-        match already_seen.contains(&source.src.value) {
-            true => false,
-            _ => {
-                already_seen.push(source.src.value.clone());
-                true
-            }
-        }
-    })
 }
 
 pub(crate) struct Printer {
