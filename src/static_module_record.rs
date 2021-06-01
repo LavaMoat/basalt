@@ -7,9 +7,7 @@ use serde::{Deserialize, Serialize};
 
 use spack::{loaders::swc::SwcLoader, resolvers::NodeResolver};
 use swc::{config::Options, Compiler};
-use swc_bundler::{
-    TransformedModule,
-    bundler::load::Specifier, Load, Resolve};
+use swc_bundler::{bundler::load::Specifier, Load, Resolve, TransformedModule};
 use swc_common::FileName;
 
 fn collect_words(specs: &Vec<Specifier>) -> Vec<String> {
@@ -92,13 +90,17 @@ impl Parser {
                     let words = collect_words(&spec.1);
                     record.imports.insert(module_path.clone(), words);
 
+                    // Question: is this the correct way to represent multiple specifiers in the
+                    // live export map, add a new entry for each specifier?
                     for s in spec.1.iter() {
                         match s {
                             Specifier::Specific { local, alias } => {
                                 let key = format!("{}", local.sym());
                                 let alias = if let Some(alias) = alias {
                                     format!("{}", alias.sym())
-                                } else { key.clone() };
+                                } else {
+                                    key.clone()
+                                };
                                 let value = (alias, false);
                                 record.live_export_map.insert(key, value);
                             }
@@ -106,9 +108,7 @@ impl Parser {
                                 todo!()
                             }
                         }
-
                     }
-
                 }
             }
 
@@ -116,7 +116,6 @@ impl Parser {
             record.fixed_export_map.extend(fixed);
             record.live_export_map.extend(live);
         }
-
         Ok(record)
     }
 
