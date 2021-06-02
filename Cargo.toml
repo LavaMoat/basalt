@@ -19,4 +19,5 @@ swc_common = {version = "0.10", features = ["tty-emitter"], path = "../swc/commo
 swc_atoms = {version = "0.2.6", path = "../swc/atoms"}
 swc_ecma_ast = {version = "0.45", path = "../swc/ecmascript/ast"}
 swc_ecma_loader = {version = "0.6", path = "../swc/ecmascript/loader"}
+swc_ecma_visit = {version = "0.31", path = "../swc/ecmascript/visit"}
 spack = { version = "*", path = "../swc/spack" }

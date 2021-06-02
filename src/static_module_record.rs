@@ -8,7 +8,9 @@ use serde::{Deserialize, Serialize};
 use spack::{loaders::swc::SwcLoader, resolvers::NodeResolver};
 use swc::{config::Options, Compiler};
 use swc_bundler::{bundler::load::Specifier, Load, Resolve, TransformedModule};
-use swc_common::FileName;
+use swc_common::{FileName, DUMMY_SP};
+use swc_ecma_ast::*;
+use swc_ecma_visit::{Node, Visit, VisitWith};
 
 fn collect_words(specs: &Vec<Specifier>) -> Vec<String> {
     specs
@@ -104,7 +106,7 @@ impl Parser {
                                 let value = (alias, false);
                                 record.live_export_map.insert(key, value);
                             }
-                            Specifier::Namespace { local, all } => {
+                            Specifier::Namespace { .. } => {
                                 todo!()
                             }
                         }
@@ -121,11 +123,36 @@ impl Parser {
 
     fn analyze_exports(
         &self,
-        module: &TransformedModule,
+        transformed: &TransformedModule,
     ) -> (HashMap<String, Vec<String>>, HashMap<String, LiveExport>) {
-        let fixed = HashMap::new();
-        let live = HashMap::new();
+        let mut v = ExportDetector {
+            fixed: HashMap::new(),
+            live: HashMap::new(),
+        };
+        transformed
+            .module
+            .visit_with(&Invalid { span: DUMMY_SP } as _, &mut v);
+        (v.fixed, v.live)
+    }
+}
 
-        (fixed, live)
+struct ExportDetector {
+    fixed: HashMap<String, Vec<String>>,
+    live: HashMap<String, LiveExport>,
+}
+
+impl Visit for ExportDetector {
+    fn visit_export_default_expr(
+        &mut self,
+        n: &ExportDefaultExpr,
+        _: &dyn Node,
+    ) {
+        //println!("Export default expr {:#?}", n);
+        self.fixed
+            .insert(String::from("default"), vec![String::from("default")]);
+    }
+
+    fn visit_export_decl(&mut self, n: &ExportDecl, _: &dyn Node) {
+        //println!("Export decl {:#?}", n);
     }
 }
