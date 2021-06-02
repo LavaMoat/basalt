@@ -144,15 +144,14 @@ struct ExportDetector {
 impl Visit for ExportDetector {
     fn visit_export_default_expr(
         &mut self,
-        n: &ExportDefaultExpr,
+        _n: &ExportDefaultExpr,
         _: &dyn Node,
     ) {
-        //println!("Export default expr {:#?}", n);
         self.fixed
             .insert(String::from("default"), vec![String::from("default")]);
     }
 
     fn visit_export_decl(&mut self, n: &ExportDecl, _: &dyn Node) {
-        //println!("Export decl {:#?}", n);
+        println!("Export decl {:#?}", n);
     }
 }
