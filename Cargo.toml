@@ -16,6 +16,7 @@ serde_json = "1"
 swc = { version = "0.20", path = "../swc" }
 swc_bundler = { version = "0.37", path = "../swc/bundler" }
 swc_common = {version = "0.10", features = ["tty-emitter"], path = "../swc/common"}
+swc_ecma_parser = {version = "0.57", path = "../swc/ecmascript/parser"}
 swc_atoms = {version = "0.2.6", path = "../swc/atoms"}
 swc_ecma_ast = {version = "0.45", path = "../swc/ecmascript/ast"}
 swc_ecma_loader = {version = "0.6", path = "../swc/ecmascript/loader"}

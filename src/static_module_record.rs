@@ -73,6 +73,7 @@ impl Parser {
             &self.resolver,
         );
 
+        /*
         if let Some(module) = bundler
             .load_transformed(&file_name, true)
             .context("load_transformed failed")?
@@ -118,6 +119,8 @@ impl Parser {
             record.fixed_export_map.extend(fixed);
             record.live_export_map.extend(live);
         }
+        */
+
         Ok(record)
     }
 
