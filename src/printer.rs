@@ -25,7 +25,6 @@ pub struct PrintOptions {
     pub print_tree: bool,
     pub include_id: bool,
     pub include_file: bool,
-    pub include_exports: bool,
 }
 
 #[derive(Debug)]
@@ -126,30 +125,6 @@ impl Printer {
             state.open.push(PrintBranchState { last: false });
             let mut specifiers = transformed.imports.specifiers.clone();
             dedupe_import_specifiers(&mut specifiers);
-
-            // TODO: ensure this is indented for nested modules
-            if options.include_exports {
-                for spec in transformed.exports.items.iter() {
-                    print!("{} > ", TREE_BRANCH);
-                    self.print_specifier(spec);
-                    print!("\n");
-                }
-                for item in transformed.exports.reexports.iter() {
-                    print!("{} <> ", TREE_BRANCH);
-                    if item.1.is_empty() {
-                        print!("* from ");
-                    } else {
-                        print!("{{");
-                        for spec in item.1.iter() {
-                            self.print_specifier(spec);
-                        }
-                        print!("}} from ");
-                    }
-                    print!("{}", item.0.src.value);
-                    //println!("{:#?}", item);
-                    print!("\n");
-                }
-            }
 
             for (i, import) in specifiers.iter().enumerate() {
                 let last = i == (specifiers.len() - 1);

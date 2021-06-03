@@ -14,10 +14,6 @@ enum BasaltCommands {
         #[structopt(short, long)]
         include_file: bool,
 
-        /// Print the exports for each module
-        #[structopt(short = "e", long)]
-        include_exports: bool,
-
         /// Entry points
         #[structopt(parse(from_os_str))]
         entries: Vec<PathBuf>,
@@ -42,12 +38,11 @@ fn main() -> Result<()> {
         BasaltCommands::Ls {
             entries,
             include_file,
-            include_exports,
         } => {
             if entries.is_empty() {
                 bail!("List command requires entry points.");
             }
-            list(entries, include_file, include_exports)?;
+            list(entries, include_file)?;
         }
 
         BasaltCommands::Smr { module } => {

@@ -12,7 +12,6 @@ pub use static_module_record::{Parser, StaticModuleRecord};
 pub fn list(
     entries: Vec<PathBuf>,
     include_file: bool,
-    include_exports: bool,
 ) -> Result<()> {
     for f in entries.iter() {
         if !f.is_file() {
@@ -26,7 +25,6 @@ pub fn list(
         print_tree: true,
         include_id: true,
         include_file,
-        include_exports,
     };
     for f in entries.iter() {
         let printer = printer::Printer::new();
