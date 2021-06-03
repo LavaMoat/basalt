@@ -6,10 +6,13 @@ use anyhow::{anyhow, Context, Result};
 use spack::{loaders::swc::SwcLoader, resolvers::NodeResolver};
 use swc::{config::Options, Compiler};
 use swc_bundler::{
-    bundler::load::Specifier, Bundler, Load, ModuleId, Resolve,
+    Bundler, Load, ModuleId, Resolve,
     TransformedModule,
 };
 use swc_common::FileName;
+use swc_bundler_analysis::specifier::Specifier;
+use swc_ecma_dep_graph::{analyze_dependencies, DependencyDescriptor};
+use swc_ecma_ast::Module;
 
 use crate::utils::dedupe_import_specifiers;
 
@@ -47,6 +50,11 @@ pub(crate) struct Printer {
     loader: Box<dyn Load>,
 }
 
+struct ModuleNode {
+    module: Module,
+    dependencies: Option<DependencyDescriptor>,
+}
+
 impl Printer {
     pub fn new() -> Self {
         let (_source_map, compiler) = crate::bundler::get_compiler();
@@ -64,6 +72,10 @@ impl Printer {
         file: P,
         options: &PrintOptions,
     ) -> Result<()> {
+
+        let module = crate::bundler::load_file(file)?;
+
+        /*
         let file_name = FileName::Real(file.as_ref().to_path_buf());
         let bundler = crate::bundler::get_bundler(
             Arc::clone(&self.compiler),
@@ -85,6 +97,9 @@ impl Printer {
         };
 
         self.print_imports(options, res, &bundler, &mut state)?;
+
+        */
+
         Ok(())
     }
 

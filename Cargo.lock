@@ -106,8 +106,10 @@ dependencies = [
  "swc",
  "swc_atoms",
  "swc_bundler",
+ "swc_bundler_analysis",
  "swc_common",
  "swc_ecma_ast",
+ "swc_ecma_dep_graph",
  "swc_ecma_loader",
  "swc_ecma_parser",
  "swc_ecma_visit",
@@ -1369,7 +1371,7 @@ dependencies = [
 
 [[package]]
 name = "swc_bundler"
-version = "0.37.2"
+version = "0.37.3"
 dependencies = [
  "ahash 0.7.4",
  "anyhow",
@@ -1384,11 +1386,29 @@ dependencies = [
  "relative-path",
  "retain_mut",
  "swc_atoms",
+ "swc_bundler_analysis",
  "swc_common",
  "swc_ecma_ast",
  "swc_ecma_codegen",
  "swc_ecma_parser",
  "swc_ecma_transforms",
+ "swc_ecma_utils",
+ "swc_ecma_visit",
+]
+
+[[package]]
+name = "swc_bundler_analysis"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "fxhash",
+ "indexmap",
+ "is-macro",
+ "retain_mut",
+ "swc_atoms",
+ "swc_common",
+ "swc_ecma_ast",
+ "swc_ecma_transforms_base",
  "swc_ecma_utils",
  "swc_ecma_visit",
 ]
@@ -1453,6 +1473,16 @@ dependencies = [
  "quote",
  "swc_macros_common",
  "syn",
+]
+
+[[package]]
+name = "swc_ecma_dep_graph"
+version = "0.25.0"
+dependencies = [
+ "swc_atoms",
+ "swc_common",
+ "swc_ecma_ast",
+ "swc_ecma_visit",
 ]
 
 [[package]]

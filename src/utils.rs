@@ -1,4 +1,4 @@
-use swc_bundler::bundler::load::{Source, Specifier};
+use swc_bundler_analysis::specifier::{Source, Specifier};
 
 // Hack to de-duplicate the import specifiers.
 //
