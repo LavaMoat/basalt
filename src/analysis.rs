@@ -21,14 +21,18 @@ impl ImportRecord {
     pub fn word(&self) -> String {
         match self {
             ImportRecord::StarAs { .. } => String::from("*"),
-            ImportRecord::Default { local } => String::from("default"),
+            ImportRecord::Default { .. } => String::from("default"),
             ImportRecord::Named { local, alias } => alias.clone().unwrap_or(local.clone()),
         }
     }
 }
 
 #[derive(Debug)]
-pub enum ExportRecord {}
+pub enum ExportRecord {
+    All {
+        module_path: String
+    },
+}
 
 #[derive(Default, Debug)]
 pub struct ImportAnalysis {
@@ -41,15 +45,13 @@ impl ImportAnalysis {
             imports: Default::default(),
         }
     }
-
-    pub fn analyze(&mut self, module: Module) {}
 }
 
 impl Visit for ImportAnalysis {
-    fn visit_import_decl(&mut self, n: &ImportDecl, _parent: &dyn Node) {
+    fn visit_import_decl(&mut self, n: &ImportDecl, _: &dyn Node) {
         let module_path = format!("{}", n.src.value);
         for spec in n.specifiers.iter() {
-            let mut list = self
+            let list = self
                 .imports
                 .entry(module_path.clone())
                 .or_insert(Vec::new());
@@ -89,10 +91,24 @@ impl ExportAnalysis {
             exports: Default::default(),
         }
     }
-
-    pub fn analyze(&mut self, module: Module) {}
 }
 
 impl Visit for ExportAnalysis {
-    // TODO
+    fn visit_export_all(
+        &mut self,
+        n: &ExportAll,
+        _: &dyn Node
+    ) {
+        println!("Got export all {:#?}", n);
+        let module_path = format!("{}", n.src.value);
+        self.exports.push(ExportRecord::All { module_path });
+    }
+
+    fn visit_export_decl(
+        &mut self,
+        n: &ExportDecl,
+        _: &dyn Node
+    ) {
+        //println!("Export DECL {:#?}", n);
+    }
 }

@@ -4,38 +4,10 @@ use std::path::Path;
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
 
-use spack::resolvers::NodeResolver;
-use swc_bundler::{Resolve, TransformedModule};
-use swc_bundler_analysis::specifier::Specifier;
-use swc_common::{Mark, DUMMY_SP};
 use swc_ecma_ast::*;
 use swc_ecma_visit::{Node, Visit, VisitWith};
 
-use crate::analysis::{ExportAnalysis, ImportAnalysis};
-
-/*
-fn collect_words(specs: &Vec<Specifier>) -> Vec<String> {
-    specs
-        .iter()
-        .map(|s| match s {
-            Specifier::Specific { local, alias } => {
-                if let Some(alias) = alias {
-                    format!("{}", alias.sym())
-                } else {
-                    format!("{}", local.sym())
-                }
-            }
-            Specifier::Namespace { local, all } => {
-                if *all {
-                    String::from("*")
-                } else {
-                    format!("{}", local.sym())
-                }
-            }
-        })
-        .collect::<Vec<_>>()
-}
-*/
+use crate::analysis::{ExportAnalysis, ImportAnalysis, ExportRecord};
 
 pub type LiveExport = (String, bool);
 
@@ -48,21 +20,16 @@ pub struct StaticModuleRecord {
     pub fixed_export_map: HashMap<String, Vec<String>>,
 }
 
-pub struct Parser {
-    resolver: Box<dyn Resolve>,
-}
+pub struct Parser {}
 
 impl Parser {
     pub fn new() -> Self {
-        Parser {
-            resolver: Box::new(NodeResolver::new()),
-        }
+        Parser {}
     }
 
     pub fn load<P: AsRef<Path>>(&self, file: P) -> Result<StaticModuleRecord> {
         let mut record: StaticModuleRecord = Default::default();
-        let (_, compiler) = crate::swc_utils::get_compiler();
-        let (file_name, _, mut module) = crate::swc_utils::load_file(file)?;
+        let (_, _, module) = crate::swc_utils::load_file(file)?;
 
         let mut importer = ImportAnalysis::new();
         module.visit_children_with(&mut importer);
@@ -83,23 +50,20 @@ impl Parser {
             record.imports.insert(key.clone(), words);
         }
 
-        //let local_mark = compiler.run(|| Mark::fresh(Mark::root()));
-        //let extractor = ImportExtractor::new(true);
-        //let raw_imports = extractor.extract_import_info(
-        //&compiler, &file_name, &mut module, local_mark);
-
-        //println!("Raw imports {:#?}", raw_imports);
+        for symbol in exports.iter() {
+            match symbol {
+                ExportRecord::All { module_path } => {
+                    record.imports.insert(module_path.clone(), vec![]);
+                    record.export_alls.push(module_path.clone());
+                }
+            }
+        }
 
         /*
         if let Some(module) = bundler
             .load_transformed(&file_name, true)
             .context("load_transformed failed")?
         {
-            for spec in module.imports.specifiers.iter() {
-                let module_path = format!("{}", spec.0.src.value);
-                let words = collect_words(&spec.1);
-                record.imports.insert(module_path, words);
-            }
 
             for spec in module.exports.reexports.iter() {
                 let module_path = format!("{}", spec.0.src.value);
@@ -131,27 +95,25 @@ impl Parser {
                     }
                 }
             }
-
-            let (fixed, live) = self.analyze_exports(&module);
-            record.fixed_export_map.extend(fixed);
-            record.live_export_map.extend(live);
         }
         */
+
+        let (fixed, live) = self.analyze_exports(&module);
+        record.fixed_export_map.extend(fixed);
+        record.live_export_map.extend(live);
 
         Ok(record)
     }
 
     fn analyze_exports(
         &self,
-        transformed: &TransformedModule,
+        module: &Module,
     ) -> (HashMap<String, Vec<String>>, HashMap<String, LiveExport>) {
         let mut v = ExportDetector {
             fixed: HashMap::new(),
             live: HashMap::new(),
         };
-        transformed
-            .module
-            .visit_with(&Invalid { span: DUMMY_SP } as _, &mut v);
+        module.visit_children_with(&mut v);
         (v.fixed, v.live)
     }
 }
