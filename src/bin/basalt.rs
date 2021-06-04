@@ -11,17 +11,17 @@ enum BasaltCommands {
     /// Print the module graph for entry point(s)
     Ls {
         /// Print the file name for each module
-        #[structopt(short, long)]
+        #[structopt(short = "f", long)]
         include_file: bool,
 
-        /// Module entry point.
+        /// Module entry point
         #[structopt(parse(from_os_str))]
-        entries: Vec<PathBuf>,
+        module: PathBuf,
     },
 
     /// Generate a static module record for a module
     Smr {
-        /// Module path
+        /// Module entry point
         #[structopt(parse(from_os_str))]
         module: PathBuf,
     },
@@ -36,13 +36,10 @@ fn main() -> Result<()> {
     let args = BasaltCommands::from_args();
     match args {
         BasaltCommands::Ls {
-            entries,
+            module,
             include_file,
         } => {
-            if entries.is_empty() {
-                bail!("List command requires entry points.");
-            }
-            list(entries, include_file)?;
+            list(module, include_file)?;
         }
 
         BasaltCommands::Smr { module } => {

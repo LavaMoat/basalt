@@ -8,23 +8,20 @@ mod swc_utils;
 
 pub use static_module_record::{Parser, StaticModuleRecord};
 
-pub fn list(entries: Vec<PathBuf>, include_file: bool) -> Result<()> {
-    for f in entries.iter() {
-        if !f.is_file() {
-            bail!(
-                "Entry point {} does not exist or is not a file",
-                f.display()
-            );
-        }
+pub fn list(module: PathBuf, include_file: bool) -> Result<()> {
+    if !module.is_file() {
+        bail!(
+            "Module {} does not exist or is not a file",
+            module.display()
+        );
     }
     let options = printer::PrintOptions {
         print_tree: true,
         include_file,
     };
-    for f in entries.iter() {
-        let printer = printer::Printer::new();
-        printer.print(f, &options)?;
-    }
+
+    let printer = printer::Printer::new();
+    printer.print(module, &options)?;
     Ok(())
 }
 
