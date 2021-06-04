@@ -9,10 +9,8 @@ use swc_common::{
     errors::{emitter::ColorConfig, Handler},
     FileName, SourceFile, SourceMap,
 };
-use swc_ecma_parser::{
-    lexer::Lexer, Parser, StringInput, Syntax,
-};
 use swc_ecma_ast::Module;
+use swc_ecma_parser::{lexer::Lexer, Parser, StringInput, Syntax};
 
 pub(crate) fn get_handler() -> (Arc<SourceMap>, Handler) {
     let sm: Arc<SourceMap> = Arc::new(Default::default());
@@ -65,9 +63,11 @@ pub(crate) fn load_file<P: AsRef<Path>>(
     ))
 }
 
+/*
 pub(crate) fn get_compiler() -> (Arc<SourceMap>, Arc<Compiler>) {
     let (sm, handler) = get_handler();
     let compiler =
         Arc::new(swc::Compiler::new(Arc::clone(&sm), Arc::new(handler)));
     (sm, compiler)
 }
+*/

@@ -5,6 +5,7 @@ use anyhow::{bail, Result};
 mod printer;
 mod static_module_record;
 mod swc_utils;
+mod types;
 
 pub use static_module_record::{Parser, StaticModuleRecord};
 

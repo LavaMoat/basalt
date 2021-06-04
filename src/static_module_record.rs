@@ -5,7 +5,7 @@ use std::sync::Arc;
 use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
 
-use spack::{loaders::swc::SwcLoader, resolvers::NodeResolver};
+use spack::resolvers::NodeResolver;
 use swc::{config::Options, Compiler};
 use swc_bundler::{Load, Resolve, TransformedModule};
 use swc_bundler_analysis::specifier::Specifier;
@@ -47,27 +47,18 @@ pub struct StaticModuleRecord {
 }
 
 pub struct Parser {
-    compiler: Arc<Compiler>,
     resolver: Box<dyn Resolve>,
-    loader: Box<dyn Load>,
 }
 
 impl Parser {
     pub fn new() -> Self {
-        let (_source_map, compiler) = crate::swc_utils::get_compiler();
-        let options: Options = Default::default();
         Parser {
-            loader: Box::new(SwcLoader::new(Arc::clone(&compiler), options)),
             resolver: Box::new(NodeResolver::new()),
-            compiler,
         }
     }
 
     pub fn load<P: AsRef<Path>>(&self, file: P) -> Result<StaticModuleRecord> {
         let mut record: StaticModuleRecord = Default::default();
-
-        //let file_name = FileName::Real(file.as_ref().to_path_buf());
-
         let module = crate::swc_utils::load_file(file)?;
 
         /*
