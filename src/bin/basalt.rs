@@ -14,7 +14,7 @@ enum BasaltCommands {
         #[structopt(short, long)]
         include_file: bool,
 
-        /// Entry points
+        /// Module entry point.
         #[structopt(parse(from_os_str))]
         entries: Vec<PathBuf>,
     },

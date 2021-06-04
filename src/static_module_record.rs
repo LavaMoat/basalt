@@ -54,7 +54,7 @@ pub struct Parser {
 
 impl Parser {
     pub fn new() -> Self {
-        let (_source_map, compiler) = crate::bundler::get_compiler();
+        let (_source_map, compiler) = crate::swc_utils::get_compiler();
         let options: Options = Default::default();
         Parser {
             loader: Box::new(SwcLoader::new(Arc::clone(&compiler), options)),
@@ -68,14 +68,7 @@ impl Parser {
 
         //let file_name = FileName::Real(file.as_ref().to_path_buf());
 
-        let module = crate::bundler::load_file(file)?;
-
-        //let bundler = crate::bundler::get_bundler(
-        //Arc::clone(&self.compiler),
-        //self.compiler.globals(),
-        //&self.loader,
-        //&self.resolver,
-        //);
+        let module = crate::swc_utils::load_file(file)?;
 
         /*
         if let Some(module) = bundler

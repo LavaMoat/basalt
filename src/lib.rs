@@ -2,9 +2,9 @@ use std::path::PathBuf;
 
 use anyhow::{bail, Result};
 
-mod bundler;
 mod printer;
 mod static_module_record;
+mod swc_utils;
 
 pub use static_module_record::{Parser, StaticModuleRecord};
 

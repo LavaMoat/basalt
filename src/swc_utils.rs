@@ -2,24 +2,17 @@
 use std::path::Path;
 use std::sync::Arc;
 
-use anyhow::{anyhow, Error, Result};
+use anyhow::Result;
 
 use swc::Compiler;
-use swc_atoms::js_word;
-use swc_atoms::JsWord;
-use swc_bundler::{Bundler, Load, ModuleRecord, Resolve};
 use swc_common::{
     errors::{emitter::ColorConfig, Handler},
-    FileName, Globals, SourceFile, SourceMap, Span,
+    FileName, SourceFile, SourceMap,
 };
 use swc_ecma_parser::{
-    input::TokensInput, lexer::Lexer, Parser, StringInput, Syntax,
+    lexer::Lexer, Parser, StringInput, Syntax,
 };
-
-use swc_ecma_ast::{
-    Bool, Expr, ExprOrSuper, Ident, KeyValueProp, Lit, MemberExpr,
-    MetaPropExpr, Module, PropName, Str,
-};
+use swc_ecma_ast::Module;
 
 pub(crate) fn get_handler() -> (Arc<SourceMap>, Handler) {
     let sm: Arc<SourceMap> = Arc::new(Default::default());
@@ -30,13 +23,6 @@ pub(crate) fn get_handler() -> (Arc<SourceMap>, Handler) {
         Some(sm.clone()),
     );
     (sm, handler)
-}
-
-pub(crate) fn get_compiler() -> (Arc<SourceMap>, Arc<Compiler>) {
-    let (sm, handler) = get_handler();
-    let compiler =
-        Arc::new(swc::Compiler::new(Arc::clone(&sm), Arc::new(handler)));
-    (sm, compiler)
 }
 
 pub(crate) fn get_parser<'a>(
@@ -77,4 +63,11 @@ pub(crate) fn load_file<P: AsRef<Path>>(
             })
             .expect("Failed to parse module"),
     ))
+}
+
+pub(crate) fn get_compiler() -> (Arc<SourceMap>, Arc<Compiler>) {
+    let (sm, handler) = get_handler();
+    let compiler =
+        Arc::new(swc::Compiler::new(Arc::clone(&sm), Arc::new(handler)));
+    (sm, compiler)
 }

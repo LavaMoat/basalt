@@ -108,7 +108,7 @@ impl Printer {
         &self,
         file: P,
     ) -> Result<(FileName, Arc<SourceMap>, ModuleNode)> {
-        let (file_name, source_map, module) = crate::bundler::load_file(file)?;
+        let (file_name, source_map, module) = crate::swc_utils::load_file(file)?;
         let comments: SingleThreadedComments = Default::default();
         let mut node = ModuleNode::from(module);
         node.analyze(&source_map, &comments);
