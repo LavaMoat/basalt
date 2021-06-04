@@ -11,7 +11,7 @@ use swc_common::{Mark, DUMMY_SP};
 use swc_ecma_ast::*;
 use swc_ecma_visit::{Node, Visit, VisitWith};
 
-use crate::imports::ImportExtractor;
+use crate::analysis::{ExportAnalysis, ImportAnalysis};
 
 fn collect_words(specs: &Vec<Specifier>) -> Vec<String> {
     specs
@@ -62,10 +62,22 @@ impl Parser {
         let (_, compiler) = crate::swc_utils::get_compiler();
         let (file_name, _, mut module) = crate::swc_utils::load_file(file)?;
 
+        let mut importer = ImportAnalysis::new();
+        module.visit_children_with(&mut importer);
+
+        let mut exporter = ExportAnalysis::new();
+        module.visit_children_with(&mut exporter);
+
+        let imports = importer.imports;
+        let exports = exporter.exports;
+
+        println!("Imports {:#?}", imports);
+        println!("Exports {:#?}", exports);
+
         //let local_mark = compiler.run(|| Mark::fresh(Mark::root()));
         //let extractor = ImportExtractor::new(true);
         //let raw_imports = extractor.extract_import_info(
-            //&compiler, &file_name, &mut module, local_mark);
+        //&compiler, &file_name, &mut module, local_mark);
 
         //println!("Raw imports {:#?}", raw_imports);
 
