@@ -32,6 +32,16 @@ pub enum ExportRecord {
     All {
         module_path: String
     },
+    Decl {
+        decl: Decl
+    },
+    DefaultExpr {
+        expr: Box<Expr>
+    },
+    NamedSpecifier {
+        orig: Ident,
+        exported: Option<Ident>,
+    },
 }
 
 #[derive(Default, Debug)]
@@ -99,7 +109,6 @@ impl Visit for ExportAnalysis {
         n: &ExportAll,
         _: &dyn Node
     ) {
-        println!("Got export all {:#?}", n);
         let module_path = format!("{}", n.src.value);
         self.exports.push(ExportRecord::All { module_path });
     }
@@ -109,6 +118,52 @@ impl Visit for ExportAnalysis {
         n: &ExportDecl,
         _: &dyn Node
     ) {
-        //println!("Export DECL {:#?}", n);
+        self.exports.push(ExportRecord::Decl { decl: n.decl.clone() });
+    }
+
+    /*
+    fn visit_export_default_decl(
+        &mut self,
+        n: &ExportDefaultDecl,
+        _: &dyn Node
+    ) {
+        println!("Got export default decl {:?}", n);
+    }
+    */
+
+    // export default 42;
+    fn visit_export_default_expr(
+        &mut self,
+        n: &ExportDefaultExpr,
+        _: &dyn Node
+    ) {
+        self.exports.push(ExportRecord::DefaultExpr { expr: n.expr.clone() });
+    }
+
+    fn visit_export_named_specifier(
+        &mut self,
+        n: &ExportNamedSpecifier,
+        _: &dyn Node
+    ) {
+        self.exports.push(ExportRecord::NamedSpecifier {
+            orig: n.orig.clone(),
+            exported: n.exported.clone(),
+        });
+    }
+
+    fn visit_export_namespace_specifier(
+        &mut self,
+        n: &ExportNamespaceSpecifier,
+        _: &dyn Node
+    ) {
+        //println!("Namespace specifier {:#?}", n);
+    }
+
+    fn visit_export_specifiers(
+        &mut self,
+        n: &[ExportSpecifier],
+        _: &dyn Node
+    ) {
+        //println!("Export specifier {:#?}", n);
     }
 }

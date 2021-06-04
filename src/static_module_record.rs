@@ -40,8 +40,8 @@ impl Parser {
         let imports = importer.imports;
         let exports = exporter.exports;
 
-        println!("Imports {:#?}", imports);
-        println!("Exports {:#?}", exports);
+        //println!("Imports {:#?}", imports);
+        //println!("Exports {:#?}", exports);
 
         for (key, symbols) in imports.iter() {
             let words = symbols.iter()
@@ -55,6 +55,15 @@ impl Parser {
                 ExportRecord::All { module_path } => {
                     record.imports.insert(module_path.clone(), vec![]);
                     record.export_alls.push(module_path.clone());
+                }
+                ExportRecord::Decl { decl: _ } => {
+                    // TODO: handle export declarations
+                }
+                ExportRecord::DefaultExpr { expr: _ } => {
+                    // TODO: handle export expression declarations
+                }
+                ExportRecord::NamedSpecifier { orig: _, exported: _ } => {
+                    // TODO: handle named specifiers
                 }
             }
         }
@@ -134,6 +143,6 @@ impl Visit for ExportDetector {
     }
 
     fn visit_export_decl(&mut self, n: &ExportDecl, _: &dyn Node) {
-        println!("Export decl {:#?}", n);
+        //println!("Export decl {:#?}", n);
     }
 }
