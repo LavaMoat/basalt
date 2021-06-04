@@ -22,7 +22,9 @@ impl ImportRecord {
         match self {
             ImportRecord::StarAs { .. } => String::from("*"),
             ImportRecord::Default { .. } => String::from("default"),
-            ImportRecord::Named { local, alias } => alias.clone().unwrap_or(local.clone()),
+            ImportRecord::Named { local, alias } => {
+                alias.clone().unwrap_or(local.clone())
+            }
         }
     }
 }
@@ -30,17 +32,28 @@ impl ImportRecord {
 #[derive(Debug)]
 pub enum ExportRecord {
     All {
-        module_path: String
+        module_path: String,
     },
     Decl {
-        decl: Decl
+        decl: Decl,
     },
     DefaultExpr {
-        expr: Box<Expr>
+        expr: Box<Expr>,
     },
     NamedSpecifier {
         orig: Ident,
         exported: Option<Ident>,
+    },
+}
+
+#[derive(Debug)]
+pub enum ReexportRecord {
+    All {
+        module_path: String,
+    },
+    Named {
+        module_path: String,
+        specifiers: Vec<ExportSpecifier>,
     },
 }
 
@@ -93,33 +106,27 @@ impl Visit for ImportAnalysis {
 #[derive(Default, Debug)]
 pub struct ExportAnalysis {
     pub exports: Vec<ExportRecord>,
+    pub reexports: Vec<ReexportRecord>,
 }
 
 impl ExportAnalysis {
     pub fn new() -> Self {
         Self {
             exports: Default::default(),
+            reexports: Default::default(),
         }
     }
 }
 
 impl Visit for ExportAnalysis {
-    fn visit_export_all(
-        &mut self,
-        n: &ExportAll,
-        _: &dyn Node
-    ) {
-        let module_path = format!("{}", n.src.value);
-        self.exports.push(ExportRecord::All { module_path });
-    }
 
-    fn visit_export_decl(
-        &mut self,
-        n: &ExportDecl,
-        _: &dyn Node
-    ) {
-        self.exports.push(ExportRecord::Decl { decl: n.decl.clone() });
+    /*
+    fn visit_export_decl(&mut self, n: &ExportDecl, _: &dyn Node) {
+        self.exports.push(ExportRecord::Decl {
+            decl: n.decl.clone(),
+        });
     }
+    */
 
     /*
     fn visit_export_default_decl(
@@ -132,38 +139,68 @@ impl Visit for ExportAnalysis {
     */
 
     // export default 42;
+    /*
     fn visit_export_default_expr(
         &mut self,
         n: &ExportDefaultExpr,
-        _: &dyn Node
+        _: &dyn Node,
     ) {
-        self.exports.push(ExportRecord::DefaultExpr { expr: n.expr.clone() });
+        self.exports.push(ExportRecord::DefaultExpr {
+            expr: n.expr.clone(),
+        });
     }
 
     fn visit_export_named_specifier(
         &mut self,
         n: &ExportNamedSpecifier,
-        _: &dyn Node
+        _: &dyn Node,
     ) {
         self.exports.push(ExportRecord::NamedSpecifier {
             orig: n.orig.clone(),
             exported: n.exported.clone(),
         });
     }
+    */
 
+    /*
     fn visit_export_namespace_specifier(
         &mut self,
         n: &ExportNamespaceSpecifier,
-        _: &dyn Node
+        _: &dyn Node,
     ) {
-        //println!("Namespace specifier {:#?}", n);
+        println!("Namespace specifier {:#?}", n);
     }
 
-    fn visit_export_specifiers(
-        &mut self,
-        n: &[ExportSpecifier],
-        _: &dyn Node
-    ) {
-        //println!("Export specifier {:#?}", n);
+    fn visit_export_specifiers(&mut self, n: &[ExportSpecifier], _: &dyn Node) {
+        println!("Export specifier {:#?}", n);
+    }
+    */
+
+    fn visit_module_item(&mut self, n: &ModuleItem, _: &dyn Node) {
+        println!("{:#?}", n);
+        match n {
+            ModuleItem::ModuleDecl(decl) => match decl {
+                ModuleDecl::ExportAll(export) => {
+                    let module_path = format!("{}", export.src.value);
+                    self.exports.push(ExportRecord::All { module_path });
+                }
+                ModuleDecl::ExportNamed(export) => {
+                    if let Some(ref src) = export.src {
+                        let module_path = format!("{}", src.value);
+                        let specifiers = export.specifiers.clone();
+                        self.reexports.push(ReexportRecord::Named {
+                            module_path,
+                            specifiers,
+                        });
+                    }
+                }
+                ModuleDecl::ExportAll(export) => {
+                    let module_path = format!("{}", export.src.value);
+                    self.reexports.push(ReexportRecord::All { module_path });
+                }
+                _ => {}
+            },
+            _ => {}
+        }
     }
 }
