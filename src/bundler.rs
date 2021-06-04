@@ -1,22 +1,24 @@
 //! Helpers to get a handler, parser, compiler or bundler.
-use std::sync::Arc;
 use std::path::Path;
+use std::sync::Arc;
 
 use anyhow::{anyhow, Error, Result};
 
 use swc::Compiler;
 use swc_atoms::js_word;
-use swc_ecma_parser::{lexer::Lexer, Parser, StringInput, Syntax, input::TokensInput};
 use swc_atoms::JsWord;
 use swc_bundler::{Bundler, Load, ModuleRecord, Resolve};
 use swc_common::{
     errors::{emitter::ColorConfig, Handler},
-    Globals, SourceMap, Span, FileName, SourceFile,
+    FileName, Globals, SourceFile, SourceMap, Span,
+};
+use swc_ecma_parser::{
+    input::TokensInput, lexer::Lexer, Parser, StringInput, Syntax,
 };
 
 use swc_ecma_ast::{
     Bool, Expr, ExprOrSuper, Ident, KeyValueProp, Lit, MemberExpr,
-    MetaPropExpr, PropName, Str, Module,
+    MetaPropExpr, Module, PropName, Str,
 };
 
 pub(crate) fn get_handler() -> (Arc<SourceMap>, Handler) {
@@ -37,7 +39,9 @@ pub(crate) fn get_compiler() -> (Arc<SourceMap>, Arc<Compiler>) {
     (sm, compiler)
 }
 
-pub(crate) fn get_parser<'a>(fm: &'a SourceFile) -> Parser<Lexer<'a, StringInput<'a>>> {
+pub(crate) fn get_parser<'a>(
+    fm: &'a SourceFile,
+) -> Parser<Lexer<'a, StringInput<'a>>> {
     let lexer = Lexer::new(
         // We want to parse ecmascript
         Syntax::Es(Default::default()),
@@ -49,47 +53,33 @@ pub(crate) fn get_parser<'a>(fm: &'a SourceFile) -> Parser<Lexer<'a, StringInput
     Parser::new_from(lexer)
 }
 
-// Parse string code, useful for quick debugging.
-pub(crate) fn parse(code: &str, file_name: &str) -> Result<Module> {
-    let (sm, handler) = get_handler();
-
-    let fm = sm.new_source_file(
-        FileName::Custom(file_name.into()),
-        code.into(),
-    );
-
-    let mut parser = get_parser(&*fm);
-    for e in parser.take_errors() {
-        e.into_diagnostic(&handler).emit();
-    }
-
-    Ok(parser.parse_module()
-        .map_err(|e| {
-            // Unrecoverable fatal error occurred
-            e.into_diagnostic(&handler).emit()
-        })
-        .expect("Failed to parse module"))
-}
-
 // Parse a module from a file.
-pub(crate) fn load_file<P: AsRef<Path>>(file: P) -> Result<Module> {
+pub(crate) fn load_file<P: AsRef<Path>>(
+    file: P,
+) -> Result<(FileName, Arc<SourceMap>, Module)> {
     let (sm, handler) = get_handler();
     let fm = sm.load_file(file.as_ref())?;
+    let file_name = fm.name.clone();
 
     let mut parser = get_parser(&*fm);
     for e in parser.take_errors() {
         e.into_diagnostic(&handler).emit();
     }
 
-    Ok(parser
-        .parse_module()
-        .map_err(|e| {
-            // Unrecoverable fatal error occurred
-            e.into_diagnostic(&handler).emit()
-        })
-        .expect("Failed to parse module"))
+    Ok((
+        file_name,
+        sm,
+        parser
+            .parse_module()
+            .map_err(|e| {
+                // Unrecoverable fatal error occurred
+                e.into_diagnostic(&handler).emit()
+            })
+            .expect("Failed to parse module"),
+    ))
 }
 
+/*
 struct Hook;
 
 impl swc_bundler::Hook for Hook {
@@ -197,4 +187,4 @@ pub(crate) fn get_bundler<'a>(
         Box::new(Hook),
     )
 }
-
+*/

@@ -8,10 +8,10 @@ use serde::{Deserialize, Serialize};
 use spack::{loaders::swc::SwcLoader, resolvers::NodeResolver};
 use swc::{config::Options, Compiler};
 use swc_bundler::{Load, Resolve, TransformedModule};
+use swc_bundler_analysis::specifier::Specifier;
 use swc_common::{FileName, DUMMY_SP};
 use swc_ecma_ast::*;
 use swc_ecma_visit::{Node, Visit, VisitWith};
-use swc_bundler_analysis::specifier::Specifier;
 
 fn collect_words(specs: &Vec<Specifier>) -> Vec<String> {
     specs
@@ -71,10 +71,10 @@ impl Parser {
         let module = crate::bundler::load_file(file)?;
 
         //let bundler = crate::bundler::get_bundler(
-            //Arc::clone(&self.compiler),
-            //self.compiler.globals(),
-            //&self.loader,
-            //&self.resolver,
+        //Arc::clone(&self.compiler),
+        //self.compiler.globals(),
+        //&self.loader,
+        //&self.resolver,
         //);
 
         /*
