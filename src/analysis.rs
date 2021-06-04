@@ -17,6 +17,16 @@ pub enum ImportRecord {
     },
 }
 
+impl ImportRecord {
+    pub fn word(&self) -> String {
+        match self {
+            ImportRecord::StarAs { .. } => String::from("*"),
+            ImportRecord::Default { local } => String::from("default"),
+            ImportRecord::Named { local, alias } => alias.clone().unwrap_or(local.clone()),
+        }
+    }
+}
+
 #[derive(Debug)]
 pub enum ExportRecord {}
 

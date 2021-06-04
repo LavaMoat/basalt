@@ -13,6 +13,7 @@ use swc_ecma_visit::{Node, Visit, VisitWith};
 
 use crate::analysis::{ExportAnalysis, ImportAnalysis};
 
+/*
 fn collect_words(specs: &Vec<Specifier>) -> Vec<String> {
     specs
         .iter()
@@ -34,6 +35,7 @@ fn collect_words(specs: &Vec<Specifier>) -> Vec<String> {
         })
         .collect::<Vec<_>>()
 }
+*/
 
 pub type LiveExport = (String, bool);
 
@@ -73,6 +75,13 @@ impl Parser {
 
         println!("Imports {:#?}", imports);
         println!("Exports {:#?}", exports);
+
+        for (key, symbols) in imports.iter() {
+            let words = symbols.iter()
+                .map(|s| s.word())
+                .collect::<Vec<_>>();
+            record.imports.insert(key.clone(), words);
+        }
 
         //let local_mark = compiler.run(|| Mark::fresh(Mark::root()));
         //let extractor = ImportExtractor::new(true);
