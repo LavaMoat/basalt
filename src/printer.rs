@@ -1,7 +1,7 @@
 use std::path::Path;
 use std::sync::Arc;
 
-use anyhow::{anyhow, bail, Result};
+use anyhow::{anyhow, bail, Context, Result};
 
 use spack::resolvers::NodeResolver;
 use swc_bundler::Resolve;
@@ -59,7 +59,8 @@ impl ModuleNode {
         if let Some(deps) = &self.dependencies {
             for dep in deps {
                 let spec = format!("{}", dep.specifier);
-                let file_name = resolver.resolve(base, &spec)?;
+                let file_name = resolver.resolve(base, &spec)
+                    .context(format!("Failed to resolve module for {}", &spec))?;
                 self.resolved.push((spec, file_name));
             }
         }
