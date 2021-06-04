@@ -1,6 +1,6 @@
 use std::path::PathBuf;
 
-use anyhow::{bail, Result};
+use anyhow::Result;
 use structopt::StructOpt;
 
 use basalt::{list, smr};

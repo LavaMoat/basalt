@@ -1,13 +1,11 @@
 use std::path::Path;
 use std::sync::Arc;
 
-use anyhow::{anyhow, bail, Context, Result};
+use anyhow::{bail, Result};
 
 use spack::resolvers::NodeResolver;
 use swc_bundler::Resolve;
 use swc_common::{comments::SingleThreadedComments, FileName, SourceMap};
-use swc_ecma_ast::Module;
-use swc_ecma_dep_graph::{analyze_dependencies, DependencyDescriptor};
 
 use crate::types::ModuleNode;
 

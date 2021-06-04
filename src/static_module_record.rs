@@ -1,17 +1,17 @@
 use std::collections::HashMap;
 use std::path::Path;
-use std::sync::Arc;
 
-use anyhow::{Context, Result};
+use anyhow::Result;
 use serde::{Deserialize, Serialize};
 
 use spack::resolvers::NodeResolver;
-use swc::{config::Options, Compiler};
-use swc_bundler::{Load, Resolve, TransformedModule};
+use swc_bundler::{Resolve, TransformedModule};
 use swc_bundler_analysis::specifier::Specifier;
-use swc_common::{FileName, DUMMY_SP};
+use swc_common::{Mark, DUMMY_SP};
 use swc_ecma_ast::*;
 use swc_ecma_visit::{Node, Visit, VisitWith};
+
+use crate::imports::ImportExtractor;
 
 fn collect_words(specs: &Vec<Specifier>) -> Vec<String> {
     specs
@@ -59,7 +59,15 @@ impl Parser {
 
     pub fn load<P: AsRef<Path>>(&self, file: P) -> Result<StaticModuleRecord> {
         let mut record: StaticModuleRecord = Default::default();
-        let module = crate::swc_utils::load_file(file)?;
+        let (_, compiler) = crate::swc_utils::get_compiler();
+        let (file_name, _, mut module) = crate::swc_utils::load_file(file)?;
+
+        //let local_mark = compiler.run(|| Mark::fresh(Mark::root()));
+        //let extractor = ImportExtractor::new(true);
+        //let raw_imports = extractor.extract_import_info(
+            //&compiler, &file_name, &mut module, local_mark);
+
+        //println!("Raw imports {:#?}", raw_imports);
 
         /*
         if let Some(module) = bundler

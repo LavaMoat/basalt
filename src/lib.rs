@@ -2,6 +2,7 @@ use std::path::PathBuf;
 
 use anyhow::{bail, Result};
 
+mod imports;
 mod printer;
 mod static_module_record;
 mod swc_utils;
