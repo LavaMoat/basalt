@@ -108,14 +108,41 @@ impl Parser {
                 } => {
                     let words = specifiers
                         .iter()
+                        .filter(|s| {
+                            if let ExportSpecifier::Named(_) = s {
+                                true
+                            } else {
+                                false
+                            }
+                        })
                         .map(|s| match s {
                             ExportSpecifier::Named(export) => {
                                 format!("{}", export.orig.sym)
                             }
-                            _ => todo!("Handle non-named re-exports"),
+                            _ => unreachable!(),
                         })
                         .collect::<Vec<_>>();
                     record.imports.insert(module_path.clone(), words);
+
+                    for spec in specifiers {
+                        match spec {
+                            ExportSpecifier::Named(export) => {
+                                let key = format!(
+                                    "{}",
+                                    export
+                                        .exported
+                                        .as_ref()
+                                        .unwrap_or(&export.orig)
+                                        .sym
+                                );
+                                let val = format!("{}", export.orig.sym);
+                                record
+                                    .live_export_map
+                                    .insert(key, (val, false));
+                            }
+                            _ => {}
+                        }
+                    }
                 }
                 ReexportRecord::All { module_path } => {
                     record.imports.insert(module_path.clone(), Vec::new());
@@ -126,12 +153,4 @@ impl Parser {
 
         Ok(record)
     }
-
-    //fn get_binding_name(&self, ident: Ident) -> String {
-    //match ident {
-    //Ident::BindingIdent {id} => {
-    //String::new()
-    //}
-    //}
-    //}
 }
