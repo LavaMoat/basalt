@@ -39,16 +39,16 @@ impl Parser {
         let mut exporter = ExportAnalysis::new();
         module.visit_children_with(&mut exporter);
 
-        let imports = importer.imports;
-        let exports = exporter.exports;
-        let reexports = exporter.reexports;
-
-        for (key, symbols) in imports.iter() {
+        for (key, symbols) in importer.imports.iter() {
             let words = symbols.iter().map(|s| s.word()).collect::<Vec<_>>();
             record.imports.insert(key.clone(), words);
         }
 
-        for symbol in exports.iter() {
+        for name in exporter.live.iter() {
+           record.live_export_map.insert(name.clone(), (name.clone(), true));
+        }
+
+        for symbol in exporter.exports.iter() {
             match symbol {
                 ExportRecord::VarDecl { var } => {
                     match var.kind {
@@ -66,8 +66,6 @@ impl Parser {
                                 }
                             }
                         }
-                        // let or var could be re-assigned so should we need to detect for
-                        // assignments to determine if it goes in live_export_map
                         _ => {}
                     }
                 }
@@ -79,7 +77,6 @@ impl Parser {
                 }
                 ExportRecord::Named { specifiers } => {
                     for spec in specifiers {
-                        println!("Spec {:#?}", spec);
                         match spec {
                             ExportSpecifier::Named(export) => {
                                 let key = format!(
@@ -100,7 +97,7 @@ impl Parser {
             }
         }
 
-        for symbol in reexports.iter() {
+        for symbol in exporter.reexports.iter() {
             match symbol {
                 ReexportRecord::Named {
                     module_path,

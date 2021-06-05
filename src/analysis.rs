@@ -97,6 +97,7 @@ impl Visit for ImportAnalysis {
 pub struct ExportAnalysis {
     pub exports: Vec<ExportRecord>,
     pub reexports: Vec<ReexportRecord>,
+    pub live: Vec<String>,
 }
 
 impl ExportAnalysis {
@@ -104,6 +105,7 @@ impl ExportAnalysis {
         Self {
             exports: Default::default(),
             reexports: Default::default(),
+            live: Default::default(),
         }
     }
 }
@@ -148,8 +150,48 @@ impl Visit for ExportAnalysis {
                 _ => {
                     //println!("unhandled node: {:#?}", decl);
                 }
-            },
-            _ => {}
+            }
+            ModuleItem::Stmt(stmt) => match stmt {
+                // Track assignments for live export map.
+                //
+                // NOTE: this currently only handles assignments at the module level.
+                Stmt::Expr(expr) => match &*expr.expr {
+                    Expr::Assign(expr) => {
+                        match &expr.left {
+                            PatOrExpr::Pat(pat) => match &**pat {
+                                Pat::Ident(ident) => {
+                                    let lhs = format!("{}", ident.id.sym);
+                                    // Set if we can find an existing export that would
+                                    // receive the assignment.
+                                    for rec in self.exports.iter() {
+                                        match rec {
+                                            ExportRecord::VarDecl { var } => {
+                                                for decl in var.decls.iter() {
+                                                    match &decl.name {
+                                                        Pat::Ident(ident) => {
+                                                            let target_name = format!("{}", ident.id.sym);
+                                                            if lhs == target_name {
+                                                                self.live.push(target_name);
+                                                                break;
+                                                            }
+                                                        }
+                                                        _ => {}
+                                                    }
+                                                }
+                                            }
+                                            _ => {}
+                                        }
+                                    }
+                                }
+                                _ => {}
+                            }
+                            _ => {}
+                        }
+                    }
+                    _ => {}
+                }
+                _ => {}
+            }
         }
     }
 }
