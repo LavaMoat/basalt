@@ -177,7 +177,7 @@ impl Visit for ExportAnalysis {
     */
 
     fn visit_module_item(&mut self, n: &ModuleItem, _: &dyn Node) {
-        println!("{:#?}", n);
+        //println!("{:#?}", n);
         match n {
             ModuleItem::ModuleDecl(decl) => match decl {
                 ModuleDecl::ExportAll(export) => {

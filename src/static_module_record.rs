@@ -7,7 +7,12 @@ use serde::{Deserialize, Serialize};
 use swc_ecma_ast::*;
 use swc_ecma_visit::{Node, Visit, VisitWith};
 
-use crate::analysis::{ExportAnalysis, ImportAnalysis, ExportRecord};
+use crate::analysis::{
+    ExportAnalysis,
+    ImportAnalysis,
+    ExportRecord,
+    ReexportRecord,
+};
 
 pub type LiveExport = (String, bool);
 
@@ -39,6 +44,7 @@ impl Parser {
 
         let imports = importer.imports;
         let exports = exporter.exports;
+        let reexports = exporter.reexports;
 
         //println!("Imports {:#?}", imports);
         //println!("Exports {:#?}", exports);
@@ -63,9 +69,36 @@ impl Parser {
                     // TODO: handle export expression declarations
                 }
                 ExportRecord::NamedSpecifier { orig: _, exported: _ } => {
-                    // TODO: handle named specifiers
+                    //// TODO: handle named specifiers
+                    //println!("Named {:#?}", orig);
                 }
             }
+        }
+
+        for symbol in reexports.iter() {
+            println!("Re exports {:#?}", symbol);
+            match symbol {
+                ReexportRecord::Named { module_path, specifiers } => {
+                    println!("Got named re-export {}", module_path);
+                    let words =
+                        specifiers.iter()
+                        .map(|s| {
+                            match s {
+                                ExportSpecifier::Named(export) => {
+                                    format!("{}", export.orig.sym)
+                                }
+                                _ => todo!("Handle non-named re-exports")
+                            }
+                        })
+                        .collect::<Vec<_>>();
+                    record.imports.insert(module_path.clone(), words);
+                }
+                ReexportRecord::All { module_path } => {
+                    println!("GOT ALL RE-EXPORT RECORD {}", module_path);
+                    record.imports.insert(module_path.clone(), Vec::new());
+                }
+            }
+            //record.imports.insert();
         }
 
         /*
