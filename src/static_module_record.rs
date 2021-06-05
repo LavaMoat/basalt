@@ -5,13 +5,10 @@ use anyhow::Result;
 use serde::{Deserialize, Serialize};
 
 use swc_ecma_ast::*;
-use swc_ecma_visit::{Node, Visit, VisitWith};
+use swc_ecma_visit::VisitWith;
 
 use crate::analysis::{
-    ExportAnalysis,
-    ImportAnalysis,
-    ExportRecord,
-    ReexportRecord,
+    ExportAnalysis, ExportRecord, ImportAnalysis, ReexportRecord,
 };
 
 pub type LiveExport = (String, bool);
@@ -46,136 +43,68 @@ impl Parser {
         let exports = exporter.exports;
         let reexports = exporter.reexports;
 
-        //println!("Imports {:#?}", imports);
-        //println!("Exports {:#?}", exports);
-
         for (key, symbols) in imports.iter() {
-            let words = symbols.iter()
-                .map(|s| s.word())
-                .collect::<Vec<_>>();
+            let words = symbols.iter().map(|s| s.word()).collect::<Vec<_>>();
             record.imports.insert(key.clone(), words);
         }
 
         for symbol in exports.iter() {
             match symbol {
-                ExportRecord::All { module_path } => {
-                    record.imports.insert(module_path.clone(), vec![]);
-                    record.export_alls.push(module_path.clone());
-                }
                 ExportRecord::Decl { decl: _ } => {
                     // TODO: handle export declarations
+                    println!("GOT EXPORT DECLARATION");
                 }
                 ExportRecord::DefaultExpr { expr: _ } => {
                     // TODO: handle export expression declarations
+                    println!("GOT DEFAULT EXPORT EXPRESSION");
                 }
-                ExportRecord::NamedSpecifier { orig: _, exported: _ } => {
-                    //// TODO: handle named specifiers
-                    //println!("Named {:#?}", orig);
-                }
-            }
-        }
-
-        for symbol in reexports.iter() {
-            println!("Re exports {:#?}", symbol);
-            match symbol {
-                ReexportRecord::Named { module_path, specifiers } => {
-                    println!("Got named re-export {}", module_path);
-                    let words =
-                        specifiers.iter()
-                        .map(|s| {
-                            match s {
-                                ExportSpecifier::Named(export) => {
-                                    format!("{}", export.orig.sym)
-                                }
-                                _ => todo!("Handle non-named re-exports")
+                ExportRecord::Named { specifiers } => {
+                    for spec in specifiers {
+                        println!("Spec {:#?}", spec);
+                        match spec {
+                            ExportSpecifier::Named(export) => {
+                                let key = format!(
+                                    "{}",
+                                    export
+                                        .exported
+                                        .as_ref()
+                                        .unwrap_or(&export.orig)
+                                        .sym
+                                );
+                                let val = format!("{}", export.orig.sym);
+                                record.fixed_export_map.insert(key, vec![val]);
                             }
-                        })
-                        .collect::<Vec<_>>();
-                    record.imports.insert(module_path.clone(), words);
-                }
-                ReexportRecord::All { module_path } => {
-                    println!("GOT ALL RE-EXPORT RECORD {}", module_path);
-                    record.imports.insert(module_path.clone(), Vec::new());
-                }
-            }
-            //record.imports.insert();
-        }
-
-        /*
-        if let Some(module) = bundler
-            .load_transformed(&file_name, true)
-            .context("load_transformed failed")?
-        {
-
-            for spec in module.exports.reexports.iter() {
-                let module_path = format!("{}", spec.0.src.value);
-                if spec.1.is_empty() {
-                    record.imports.insert(module_path.clone(), vec![]);
-                    record.export_alls.push(module_path);
-                } else {
-                    let words = collect_words(&spec.1);
-                    record.imports.insert(module_path.clone(), words);
-
-                    // Question: is this the correct way to represent multiple specifiers in the
-                    // live export map, add a new entry for each specifier?
-                    for s in spec.1.iter() {
-                        match s {
-                            Specifier::Specific { local, alias } => {
-                                let key = format!("{}", local.sym());
-                                let alias = if let Some(alias) = alias {
-                                    format!("{}", alias.sym())
-                                } else {
-                                    key.clone()
-                                };
-                                let value = (alias, false);
-                                record.live_export_map.insert(key, value);
-                            }
-                            Specifier::Namespace { .. } => {
-                                todo!()
-                            }
+                            _ => {}
                         }
                     }
                 }
             }
         }
-        */
 
-        let (fixed, live) = self.analyze_exports(&module);
-        record.fixed_export_map.extend(fixed);
-        record.live_export_map.extend(live);
+        for symbol in reexports.iter() {
+            match symbol {
+                ReexportRecord::Named {
+                    module_path,
+                    specifiers,
+                } => {
+                    let words = specifiers
+                        .iter()
+                        .map(|s| match s {
+                            ExportSpecifier::Named(export) => {
+                                format!("{}", export.orig.sym)
+                            }
+                            _ => todo!("Handle non-named re-exports"),
+                        })
+                        .collect::<Vec<_>>();
+                    record.imports.insert(module_path.clone(), words);
+                }
+                ReexportRecord::All { module_path } => {
+                    record.imports.insert(module_path.clone(), Vec::new());
+                    record.export_alls.push(module_path.clone());
+                }
+            }
+        }
 
         Ok(record)
-    }
-
-    fn analyze_exports(
-        &self,
-        module: &Module,
-    ) -> (HashMap<String, Vec<String>>, HashMap<String, LiveExport>) {
-        let mut v = ExportDetector {
-            fixed: HashMap::new(),
-            live: HashMap::new(),
-        };
-        module.visit_children_with(&mut v);
-        (v.fixed, v.live)
-    }
-}
-
-struct ExportDetector {
-    fixed: HashMap<String, Vec<String>>,
-    live: HashMap<String, LiveExport>,
-}
-
-impl Visit for ExportDetector {
-    fn visit_export_default_expr(
-        &mut self,
-        _n: &ExportDefaultExpr,
-        _: &dyn Node,
-    ) {
-        self.fixed
-            .insert(String::from("default"), vec![String::from("default")]);
-    }
-
-    fn visit_export_decl(&mut self, n: &ExportDecl, _: &dyn Node) {
-        //println!("Export decl {:#?}", n);
     }
 }

@@ -31,19 +31,9 @@ impl ImportRecord {
 
 #[derive(Debug)]
 pub enum ExportRecord {
-    All {
-        module_path: String,
-    },
-    Decl {
-        decl: Decl,
-    },
-    DefaultExpr {
-        expr: Box<Expr>,
-    },
-    NamedSpecifier {
-        orig: Ident,
-        exported: Option<Ident>,
-    },
+    Decl { decl: Decl },
+    DefaultExpr { expr: Box<Expr> },
+    Named { specifiers: Vec<ExportSpecifier> },
 }
 
 #[derive(Debug)]
@@ -119,7 +109,6 @@ impl ExportAnalysis {
 }
 
 impl Visit for ExportAnalysis {
-
     /*
     fn visit_export_decl(&mut self, n: &ExportDecl, _: &dyn Node) {
         self.exports.push(ExportRecord::Decl {
@@ -180,11 +169,13 @@ impl Visit for ExportAnalysis {
         //println!("{:#?}", n);
         match n {
             ModuleItem::ModuleDecl(decl) => match decl {
+                // export * from 'import-and-export-all.js';
                 ModuleDecl::ExportAll(export) => {
                     let module_path = format!("{}", export.src.value);
-                    self.exports.push(ExportRecord::All { module_path });
+                    self.reexports.push(ReexportRecord::All { module_path });
                 }
                 ModuleDecl::ExportNamed(export) => {
+                    // export { grey as gray } from './reexport-name-and-rename.js';
                     if let Some(ref src) = export.src {
                         let module_path = format!("{}", src.value);
                         let specifiers = export.specifiers.clone();
@@ -192,13 +183,15 @@ impl Visit for ExportAnalysis {
                             module_path,
                             specifiers,
                         });
+                    // export { aleph as alpha };
+                    } else {
+                        let specifiers = export.specifiers.clone();
+                        self.exports.push(ExportRecord::Named { specifiers });
                     }
                 }
-                ModuleDecl::ExportAll(export) => {
-                    let module_path = format!("{}", export.src.value);
-                    self.reexports.push(ReexportRecord::All { module_path });
+                _ => {
+                    //println!("unhandled node: {:?}", decl);
                 }
-                _ => {}
             },
             _ => {}
         }
