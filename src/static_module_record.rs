@@ -50,9 +50,28 @@ impl Parser {
 
         for symbol in exports.iter() {
             match symbol {
-                ExportRecord::Decl { decl: _ } => {
-                    // TODO: handle export declarations
-                    println!("GOT EXPORT DECLARATION");
+                ExportRecord::VarDecl { var } => {
+                    match var.kind {
+                        VarDeclKind::Const => {
+                            println!("GOT const VAR DECLARATION {:#?}", var);
+                            for decl in var.decls.iter() {
+                                //let key = format!("{}", decl.name);
+                                match &decl.name {
+                                    Pat::Ident(ident) => {
+                                        let key = format!("{}", ident.id.sym);
+                                        let val = key.clone();
+                                        record.fixed_export_map.insert(key, vec![val]);
+                                    }
+                                    _ => {}
+                                }
+                            }
+                        }
+                        // let or var could be re-assigned so should we need to detect for
+                        // assignments to determine if it goes in live_export_map
+                        _ => {
+
+                        }
+                    }
                 }
                 ExportRecord::DefaultExpr { expr: _ } => {
                     // TODO: handle export expression declarations
@@ -107,4 +126,12 @@ impl Parser {
 
         Ok(record)
     }
+
+    //fn get_binding_name(&self, ident: Ident) -> String {
+        //match ident {
+            //Ident::BindingIdent {id} => {
+                //String::new()
+            //}
+        //}
+    //}
 }
