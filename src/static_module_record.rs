@@ -53,14 +53,14 @@ impl Parser {
                 ExportRecord::VarDecl { var } => {
                     match var.kind {
                         VarDeclKind::Const => {
-                            println!("GOT const VAR DECLARATION {:#?}", var);
                             for decl in var.decls.iter() {
-                                //let key = format!("{}", decl.name);
                                 match &decl.name {
                                     Pat::Ident(ident) => {
                                         let key = format!("{}", ident.id.sym);
                                         let val = key.clone();
-                                        record.fixed_export_map.insert(key, vec![val]);
+                                        record
+                                            .fixed_export_map
+                                            .insert(key, vec![val]);
                                     }
                                     _ => {}
                                 }
@@ -68,14 +68,14 @@ impl Parser {
                         }
                         // let or var could be re-assigned so should we need to detect for
                         // assignments to determine if it goes in live_export_map
-                        _ => {
-
-                        }
+                        _ => {}
                     }
                 }
                 ExportRecord::DefaultExpr { expr: _ } => {
-                    // TODO: handle export expression declarations
-                    println!("GOT DEFAULT EXPORT EXPRESSION");
+                    record.fixed_export_map.insert(
+                        String::from("default"),
+                        vec![String::from("default")],
+                    );
                 }
                 ExportRecord::Named { specifiers } => {
                     for spec in specifiers {
@@ -128,10 +128,10 @@ impl Parser {
     }
 
     //fn get_binding_name(&self, ident: Ident) -> String {
-        //match ident {
-            //Ident::BindingIdent {id} => {
-                //String::new()
-            //}
-        //}
+    //match ident {
+    //Ident::BindingIdent {id} => {
+    //String::new()
+    //}
+    //}
     //}
 }

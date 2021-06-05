@@ -140,6 +140,11 @@ impl Visit for ExportAnalysis {
                     }
                     _ => {}
                 },
+                ModuleDecl::ExportDefaultExpr(export) => {
+                    self.exports.push(ExportRecord::DefaultExpr {
+                        expr: export.expr.clone(),
+                    });
+                }
                 _ => {
                     //println!("unhandled node: {:#?}", decl);
                 }
