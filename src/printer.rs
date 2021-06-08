@@ -8,6 +8,7 @@ use swc_bundler::Resolve;
 use swc_common::{comments::SingleThreadedComments, FileName, SourceMap};
 
 use crate::types::ModuleNode;
+use crate::iterators::module_graph::ModuleGraph;
 
 const TREE_BAR: &str = "│";
 const TREE_BRANCH: &str = "├──";
@@ -54,7 +55,13 @@ impl Printer {
 
         let (_, _, node) = self.parse_file(file.as_ref())?;
         println!("{}", file.as_ref().display());
-        self.print_imports(options, node, &mut state)?;
+
+        let graph = ModuleGraph::new(file)?;
+        for node in graph {
+            println!("Got an iterator node {:#?}", node);
+        }
+
+        //self.print_imports(options, node, &mut state)?;
 
         Ok(())
     }

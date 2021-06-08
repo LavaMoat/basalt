@@ -3,6 +3,7 @@ use std::path::PathBuf;
 use anyhow::{bail, Result};
 
 mod analysis;
+mod iterators;
 mod printer;
 mod static_module_record;
 mod swc_utils;

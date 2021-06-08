@@ -37,6 +37,10 @@ impl ModuleNode {
         }
         Ok(())
     }
+
+    pub fn is_empty(&self) -> bool {
+        self.dependencies.is_empty()
+    }
 }
 
 impl From<Module> for ModuleNode {
