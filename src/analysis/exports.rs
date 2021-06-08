@@ -5,6 +5,7 @@ use swc_ecma_visit::{Node, Visit};
 #[derive(Debug)]
 pub enum ExportRecord {
     VarDecl { var: VarDecl },
+    FnDecl { func: FnDecl },
     Named { specifiers: Vec<ExportSpecifier> },
     DefaultExpr { expr: Box<Expr> },
 }
@@ -84,11 +85,19 @@ impl Visit for ExportAnalysis {
                     }
                 }
                 ModuleDecl::ExportDecl(export) => match &export.decl {
+                    // export const foo = null;
                     Decl::Var(var) => {
                         self.exports
                             .push(ExportRecord::VarDecl { var: var.clone() });
                     }
-                    _ => {}
+                    // export function foo() {}
+                    Decl::Fn(func) => {
+                        println!("Got function export declaration {:#?}", func);
+                        self.exports
+                            .push(ExportRecord::FnDecl { func: func.clone() });
+                    }
+                    _ => {
+                    }
                 },
                 ModuleDecl::ExportDefaultExpr(export) => {
                     self.exports.push(ExportRecord::DefaultExpr {

@@ -17,6 +17,8 @@ export { grey as gray } from './reexport-name-and-rename.js';
 // Late binding of an exported variable.
 quuux = 'Hello, World!';
 
+//export function someMethod() {}
+
 //export function lateLiveExport() {
   //quuux = 'Hello, World!';
 //}

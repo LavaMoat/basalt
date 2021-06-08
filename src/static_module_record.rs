@@ -42,7 +42,6 @@ impl Parser {
         module.visit_children_with(&mut exporter);
 
         let export_names = exporter.var_export_names();
-        println!("Got export names {:#?}", export_names);
         let mut live_exports = LiveExportAnalysis::new(export_names);
         module.visit_children_with(&mut live_exports);
 
@@ -57,13 +56,20 @@ impl Parser {
 
         for symbol in exporter.exports.iter() {
             match symbol {
+                ExportRecord::FnDecl { func } => {
+                    let key = func.ident.sym.as_ref().to_string();
+                    let val = key.clone();
+                    record
+                        .fixed_export_map
+                        .insert(key, vec![val]);
+                }
                 ExportRecord::VarDecl { var } => {
                     match var.kind {
                         VarDeclKind::Const => {
                             for decl in var.decls.iter() {
                                 match &decl.name {
                                     Pat::Ident(ident) => {
-                                        let key = format!("{}", ident.id.sym);
+                                        let key = ident.id.sym.as_ref().to_string();
                                         let val = key.clone();
                                         record
                                             .fixed_export_map

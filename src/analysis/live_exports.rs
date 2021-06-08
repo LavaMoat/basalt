@@ -1,4 +1,12 @@
-//! Helper to analyze exports from a module.
+//! Helper to analyze live exports from a module.
+//!
+//! Live exports are exports that have been exported
+//! and are assigned later either at the module level
+//! or later as part of a function (lazy live export).
+//!
+//! It is used to indicate that the compiled code should
+//! set a proxy trap so changes to the export are propagated
+//! out to it's references.
 use swc_ecma_ast::*;
 use swc_ecma_visit::{Node, Visit};
 
