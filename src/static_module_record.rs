@@ -8,7 +8,8 @@ use swc_ecma_ast::*;
 use swc_ecma_visit::VisitWith;
 
 use crate::analysis::{
-    ExportAnalysis, ExportRecord, ImportAnalysis, ReexportRecord,
+    imports::ImportAnalysis,
+    exports::{ExportAnalysis, ExportRecord, ReexportRecord},
 };
 
 pub type LiveExport = (String, bool);
