@@ -10,6 +10,7 @@ use swc_ecma_visit::VisitWith;
 use crate::analysis::{
     imports::ImportAnalysis,
     exports::{ExportAnalysis, ExportRecord, ReexportRecord},
+    live_exports::LiveExportAnalysis,
 };
 
 pub type LiveExport = (String, bool);
@@ -40,12 +41,17 @@ impl Parser {
         let mut exporter = ExportAnalysis::new();
         module.visit_children_with(&mut exporter);
 
+        let export_names = exporter.var_export_names();
+        println!("Got export names {:#?}", export_names);
+        let mut live_exports = LiveExportAnalysis::new(export_names);
+        module.visit_children_with(&mut live_exports);
+
         for (key, symbols) in importer.imports.iter() {
             let words = symbols.iter().map(|s| s.word()).collect::<Vec<_>>();
             record.imports.insert(key.clone(), words);
         }
 
-        for name in exporter.live.iter() {
+        for name in live_exports.live.iter() {
            record.live_export_map.insert(name.clone(), (name.clone(), true));
         }
 

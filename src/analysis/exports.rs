@@ -36,51 +36,26 @@ impl ExportAnalysis {
         }
     }
 
-    fn check_live_statement(&mut self, stmt: &Stmt) {
-
-        println!("Check live statement {:#?}", stmt);
-
-        match stmt {
-            // Track assignments for live export map.
-            //
-            // NOTE: this currently only handles assignments at the module level.
-            Stmt::Expr(expr) => match &*expr.expr {
-                Expr::Assign(expr) => {
-                    match &expr.left {
-                        PatOrExpr::Pat(pat) => match &**pat {
+    /// Get the names of exported symbols so that the live export
+    /// analysis can detect which exports have assignment.
+    pub fn var_export_names(&self) -> Vec<&str> {
+        let mut out = Vec::new();
+        for rec in self.exports.iter() {
+            match rec {
+                ExportRecord::VarDecl { var } => {
+                    for decl in var.decls.iter() {
+                        match &decl.name {
                             Pat::Ident(ident) => {
-                                let lhs = format!("{}", ident.id.sym);
-                                // Set if we can find an existing export that would
-                                // receive the assignment.
-                                for rec in self.exports.iter() {
-                                    match rec {
-                                        ExportRecord::VarDecl { var } => {
-                                            for decl in var.decls.iter() {
-                                                match &decl.name {
-                                                    Pat::Ident(ident) => {
-                                                        let target_name = format!("{}", ident.id.sym);
-                                                        if lhs == target_name {
-                                                            self.live.push(target_name);
-                                                            break;
-                                                        }
-                                                    }
-                                                    _ => {}
-                                                }
-                                            }
-                                        }
-                                        _ => {}
-                                    }
-                                }
+                                out.push(ident.id.sym.as_ref());
                             }
                             _ => {}
                         }
-                        _ => {}
                     }
                 }
                 _ => {}
             }
-            _ => {}
         }
+        out
     }
 }
 
@@ -124,7 +99,7 @@ impl Visit for ExportAnalysis {
                     //println!("unhandled node: {:#?}", decl);
                 }
             }
-            ModuleItem::Stmt(stmt) => self.check_live_statement(stmt)
+            _ => {}
         }
     }
 
