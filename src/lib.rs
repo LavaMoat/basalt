@@ -1,16 +1,22 @@
+//! Analyzer, linter and bundler for LavaMoat.
+#![feature(unboxed_closures)]
+#![feature(fn_traits)]
+
+#![deny(missing_docs)]
+
 use std::path::PathBuf;
 
 use anyhow::{bail, Result};
 
 mod analysis;
-mod iterators;
-mod printer;
-mod static_module_record;
+mod module_node;
+pub mod printer;
+pub mod static_module_record;
 mod swc_utils;
-mod types;
 
 pub use static_module_record::{Parser, StaticModuleRecord};
 
+/// List all modules.
 pub fn list(module: PathBuf, include_file: bool) -> Result<()> {
     if !module.is_file() {
         bail!(
@@ -18,16 +24,14 @@ pub fn list(module: PathBuf, include_file: bool) -> Result<()> {
             module.display()
         );
     }
-    let options = printer::PrintOptions {
-        print_tree: true,
-        include_file,
-    };
+    let options = printer::PrintOptions { include_file };
 
     let printer = printer::Printer::new();
     printer.print(module, &options)?;
     Ok(())
 }
 
+/// Print the static module record as JSON.
 pub fn smr(module: PathBuf) -> Result<()> {
     if !module.is_file() {
         bail!(
