@@ -2,8 +2,8 @@
 use anyhow::Result;
 
 use swc_atoms::JsWord;
-use swc_ecma_ast::*;
 use swc_common::DUMMY_SP;
+use swc_ecma_ast::*;
 
 use super::StaticModuleRecord;
 
@@ -45,9 +45,8 @@ impl<'a> Generator<'a> {
                     is_generator: false,
                     type_params: None,
                     return_type: None,
-                }))
-            })
-            ),
+                })),
+            })),
         });
 
         script.body.push(stmt);
@@ -58,36 +57,32 @@ impl<'a> Generator<'a> {
     /// Build up the functor function parameters.
     fn params(&self) -> Vec<Pat> {
         let props = &[IMPORTS, LIVE_VAR, ONCE_VAR];
-        vec![
-            Pat::Object(ObjectPat {
-                span: DUMMY_SP,
-                props: {
-                    let mut out = Vec::with_capacity(3);
-                    for prop in props {
-                        out.push(
-                            ObjectPatProp::KeyValue(KeyValuePatProp {
-                                key: PropName::Ident(Ident {
-                                    span: DUMMY_SP,
-                                    sym: (*prop).into(),
-                                    optional: false,
-                                }),
-                                value: Box::new(Pat::Ident(BindingIdent{
-                                    id: Ident {
-                                        span: DUMMY_SP,
-                                        sym: self.prefix_hidden(prop),
-                                        optional: false,
-                                    },
-                                    type_ann: None,
-                                }))
-                            })
-                        );
-                    }
-                    out
-                },
-                optional: false,
-                type_ann: None,
-            })
-        ]
+        vec![Pat::Object(ObjectPat {
+            span: DUMMY_SP,
+            props: {
+                let mut out = Vec::with_capacity(3);
+                for prop in props {
+                    out.push(ObjectPatProp::KeyValue(KeyValuePatProp {
+                        key: PropName::Ident(Ident {
+                            span: DUMMY_SP,
+                            sym: (*prop).into(),
+                            optional: false,
+                        }),
+                        value: Box::new(Pat::Ident(BindingIdent {
+                            id: Ident {
+                                span: DUMMY_SP,
+                                sym: self.prefix_hidden(prop),
+                                optional: false,
+                            },
+                            type_ann: None,
+                        })),
+                    }));
+                }
+                out
+            },
+            optional: false,
+            type_ann: None,
+        })]
     }
 
     /// The function body block.
@@ -139,17 +134,14 @@ impl<'a> Generator<'a> {
                     sym: self.prefix_hidden(IMPORTS),
                     optional: false,
                 }))),
-                args: vec![
-                    self.imports_arg_map(),
-                    self.imports_arg_all(),
-                ],
+                args: vec![self.imports_arg_map(), self.imports_arg_all()],
                 type_args: None,
-            })
-            ),
+            })),
         });
         stmt
     }
 
+    /// The arguments passed to the call to orchestrate the imports.
     fn imports_arg_map(&self) -> ExprOrSpread {
         ExprOrSpread {
             spread: None,
@@ -162,54 +154,131 @@ impl<'a> Generator<'a> {
                 })),
                 args: Some(self.imports_map_constructor_args()),
                 type_args: None,
-            }))
+            })),
         }
     }
 
+    /// The arguments passed to the Map constructor for the first argument
+    /// to the call to the imports function.
     fn imports_map_constructor_args(&self) -> Vec<ExprOrSpread> {
         let mut out = Vec::with_capacity(self.meta.imports.len());
         for (key, props) in self.meta.imports.iter() {
-            println!("Key {:?}", key);
-            println!("Props {:#?}", props);
-            out.push(
-                ExprOrSpread {
-                    spread: None,
-                    expr: Box::new(Expr::Array(ArrayLit {
-                        span: DUMMY_SP,
-                        elems: vec![
-
-                        ],
-                    })),
-                }
-            );
+            let key: &str = &key[..];
+            out.push(ExprOrSpread {
+                spread: None,
+                expr: Box::new(Expr::Array(ArrayLit {
+                    span: DUMMY_SP,
+                    elems: vec![
+                        Some(ExprOrSpread {
+                            spread: None,
+                            expr: Box::new(Expr::Lit(Lit::Str(Str {
+                                span: DUMMY_SP,
+                                kind: StrKind::Normal {
+                                    contains_quote: true,
+                                },
+                                value: key.into(),
+                                has_escape: false,
+                            }))),
+                        }),
+                        Some(self.imports_map_constructor_args_map(props)),
+                    ],
+                })),
+            });
         }
         out
     }
 
+    /// The arguments for each nested map.
+    fn imports_map_constructor_args_map(
+        &self,
+        props: &Vec<String>,
+    ) -> ExprOrSpread {
+        ExprOrSpread {
+            spread: None,
+            expr: Box::new(Expr::New(NewExpr {
+                span: DUMMY_SP,
+                callee: Box::new(Expr::Ident(Ident {
+                    span: DUMMY_SP,
+                    sym: MAP.into(),
+                    optional: false,
+                })),
+                args: Some(vec![ExprOrSpread {
+                    spread: None,
+                    expr: Box::new(Expr::Array(ArrayLit {
+                        span: DUMMY_SP,
+                        elems: {
+                            let mut out = Vec::with_capacity(props.len());
+                            for prop in props {
+                                let prop: &str = &prop[..];
+                                println!("Render prop key {}", prop);
+                                out.push(Some(ExprOrSpread {
+                                    spread: None,
+                                    expr: Box::new(Expr::Array(ArrayLit {
+                                        span: DUMMY_SP,
+                                        elems: vec![
+                                            Some(ExprOrSpread {
+                                                spread: None,
+                                                expr: Box::new(Expr::Lit(
+                                                    Lit::Str(Str {
+                                                        span: DUMMY_SP,
+                                                        kind: StrKind::Normal {
+                                                            contains_quote:
+                                                                true,
+                                                        },
+                                                        value: prop.into(),
+                                                        has_escape: false,
+                                                    }),
+                                                )),
+                                            }),
+                                            Some(ExprOrSpread {
+                                                spread: None,
+                                                expr: Box::new(Expr::Array(
+                                                    ArrayLit {
+                                                        span: DUMMY_SP,
+                                                        elems: vec![],
+                                                    },
+                                                )),
+                                            }),
+                                        ],
+                                    })),
+                                }));
+                            }
+                            out
+                        },
+                    })),
+                }]),
+                type_args: None,
+            })),
+        }
+    }
+
+    /// All imports argument. The second parameter when invoking the
+    /// imports orchestration function.
     fn imports_arg_all(&self) -> ExprOrSpread {
         ExprOrSpread {
             spread: None,
             expr: Box::new(Expr::Array(ArrayLit {
                 span: DUMMY_SP,
                 elems: {
-                    let mut out = Vec::with_capacity(self.meta.export_alls.len());
+                    let mut out =
+                        Vec::with_capacity(self.meta.export_alls.len());
                     for name in self.meta.export_alls.iter() {
                         let nm: &str = &name[..];
-                        out.push(Some(
-                            ExprOrSpread {
-                                spread: None,
-                                expr: Box::new(Expr::Lit(Lit::Str(Str {
-                                    span: DUMMY_SP,
-                                    kind: StrKind::Normal{contains_quote: true},
-                                    value: nm.into(),
-                                    has_escape: false,
-                                }))),
-                            }
-                        ));
+                        out.push(Some(ExprOrSpread {
+                            spread: None,
+                            expr: Box::new(Expr::Lit(Lit::Str(Str {
+                                span: DUMMY_SP,
+                                kind: StrKind::Normal {
+                                    contains_quote: true,
+                                },
+                                value: nm.into(),
+                                has_escape: false,
+                            }))),
+                        }));
                     }
                     out
                 },
-            }))
+            })),
         }
     }
 

@@ -14,7 +14,7 @@ pub mod printer;
 pub mod static_module_record;
 mod swc_utils;
 
-pub use static_module_record::{Parser, Generator, StaticModuleRecord};
+pub use static_module_record::{Generator, Parser, StaticModuleRecord};
 
 /// Operations for static module record generation.
 pub enum StaticModuleRecordOperation {
@@ -64,7 +64,8 @@ pub fn smr(module: PathBuf, op: StaticModuleRecordOperation) -> Result<()> {
                 JscTarget::Es2020,
                 SourceMapsConfig::Bool(true),
                 None,
-                false)?;
+                false,
+            )?;
             //println!("{:#?}", result);
             print!("{}", result.code);
         }

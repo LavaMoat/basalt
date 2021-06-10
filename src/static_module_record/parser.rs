@@ -46,12 +46,10 @@ impl Parser {
         for (key, symbols) in importer.imports.iter() {
             let mut names = symbols
                 .iter()
-                .map(|s| {
-                    match s {
-                        ImportRecord::Named { local, .. } => local.clone(),
-                        ImportRecord::Default { local, .. } => local.clone(),
-                        ImportRecord::All { local} => local.clone(),
-                    }
+                .map(|s| match s {
+                    ImportRecord::Named { local, .. } => local.clone(),
+                    ImportRecord::Default { local, .. } => local.clone(),
+                    ImportRecord::All { local } => local.clone(),
                 })
                 .collect::<Vec<_>>();
             record.import_decls.append(&mut names);
