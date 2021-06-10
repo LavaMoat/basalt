@@ -101,7 +101,23 @@ impl<'a> Generator<'a> {
             kind: VarDeclKind::Let,
             declare: false,
             decls: {
-                let mut out = Vec::new();
+                let mut out = Vec::with_capacity(self.meta.importDecls.len());
+                for name in self.meta.importDecls.iter() {
+                    let nm: &str = &name[..];
+                    out.push(VarDeclarator {
+                        span: DUMMY_SP,
+                        definite: false,
+                        init: None,
+                        name: Pat::Ident(BindingIdent {
+                            id: Ident {
+                                span: DUMMY_SP,
+                                sym: nm.into(),
+                                optional: false,
+                            },
+                            type_ann: None,
+                        }),
+                    });
+                }
                 out
             },
         }));
