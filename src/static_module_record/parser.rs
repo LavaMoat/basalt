@@ -54,7 +54,7 @@ impl Parser {
                     }
                 })
                 .collect::<Vec<_>>();
-            record.importDecls.append(&mut names);
+            record.import_decls.append(&mut names);
 
             let words = symbols.iter().map(|s| s.word()).collect::<Vec<_>>();
             record.imports.insert(key.clone(), words);

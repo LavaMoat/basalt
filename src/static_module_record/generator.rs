@@ -12,6 +12,7 @@ const HIDDEN_PREFIX: &str = "$h\u{200d}_";
 const IMPORTS: &str = "imports";
 const LIVE_VAR: &str = "liveVar";
 const ONCE_VAR: &str = "onceVar";
+const MAP: &str = "Map";
 
 /// Generate a static module record functor program.
 pub struct Generator<'a> {
@@ -101,8 +102,8 @@ impl<'a> Generator<'a> {
             kind: VarDeclKind::Let,
             declare: false,
             decls: {
-                let mut out = Vec::with_capacity(self.meta.importDecls.len());
-                for name in self.meta.importDecls.iter() {
+                let mut out = Vec::with_capacity(self.meta.import_decls.len());
+                for name in self.meta.import_decls.iter() {
                     let nm: &str = &name[..];
                     out.push(VarDeclarator {
                         span: DUMMY_SP,
@@ -123,8 +124,73 @@ impl<'a> Generator<'a> {
         }));
 
         block.stmts.push(local_vars);
+        block.stmts.push(self.imports_func_call());
 
         block
+    }
+
+    fn imports_func_call(&self) -> Stmt {
+        let stmt = Stmt::Expr(ExprStmt {
+            span: DUMMY_SP,
+            expr: Box::new(Expr::Call(CallExpr {
+                span: DUMMY_SP,
+                callee: ExprOrSuper::Expr(Box::new(Expr::Ident(Ident {
+                    span: DUMMY_SP,
+                    sym: self.prefix_hidden(IMPORTS),
+                    optional: false,
+                }))),
+                args: vec![
+                    self.imports_arg_map(),
+                    self.imports_arg_all(),
+                ],
+                type_args: None,
+            })
+            ),
+        });
+        stmt
+    }
+
+    fn imports_arg_map(&self) -> ExprOrSpread {
+        ExprOrSpread {
+            spread: None,
+            expr: Box::new(Expr::New(NewExpr {
+                span: DUMMY_SP,
+                callee: Box::new(Expr::Ident(Ident {
+                    span: DUMMY_SP,
+                    sym: MAP.into(),
+                    optional: false,
+                })),
+                args: Some(vec![]),
+                type_args: None,
+            }))
+        }
+    }
+
+    fn imports_arg_all(&self) -> ExprOrSpread {
+        ExprOrSpread {
+            spread: None,
+            expr: Box::new(Expr::Array(ArrayLit {
+                span: DUMMY_SP,
+                elems: {
+                    let mut out = Vec::with_capacity(self.meta.export_alls.len());
+                    for name in self.meta.export_alls.iter() {
+                        let nm: &str = &name[..];
+                        out.push(Some(
+                            ExprOrSpread {
+                                spread: None,
+                                expr: Box::new(Expr::Lit(Lit::Str(Str {
+                                    span: DUMMY_SP,
+                                    kind: StrKind::Normal{contains_quote: true},
+                                    value: nm.into(),
+                                    has_escape: false,
+                                }))),
+                            }
+                        ));
+                    }
+                    out
+                },
+            }))
+        }
     }
 
     fn prefix_hidden(&self, word: &str) -> JsWord {

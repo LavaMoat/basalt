@@ -23,7 +23,7 @@ pub struct StaticModuleRecord {
 
     /// List of import declarations.
     #[serde(skip)]
-    pub importDecls: Vec<String>,
+    pub import_decls: Vec<String>,
 }
 
 pub mod generator;
