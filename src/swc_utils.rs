@@ -4,6 +4,7 @@ use std::sync::Arc;
 
 use anyhow::Result;
 
+use swc::Compiler;
 use swc_common::{
     errors::{emitter::ColorConfig, Handler},
     FileName, SourceFile, SourceMap,
@@ -60,4 +61,17 @@ pub(crate) fn load_file<P: AsRef<Path>>(
             })
             .expect("Failed to parse module"),
     ))
+}
+
+pub(crate) fn get_compiler() -> (Arc<SourceMap>, Arc<Compiler>) {
+    let sm: Arc<SourceMap> = Arc::new(Default::default());
+    let handler = Handler::with_tty_emitter(
+        ColorConfig::Auto,
+        true,
+        false,
+        Some(sm.clone()),
+    );
+    let compiler =
+        Arc::new(swc::Compiler::new(Arc::clone(&sm), Arc::new(handler)));
+    (sm, compiler)
 }

@@ -6,6 +6,7 @@
 use std::path::PathBuf;
 
 use anyhow::{bail, Result};
+use swc::config::{JscTarget, SourceMapsConfig};
 
 mod analysis;
 mod module_node;
@@ -57,7 +58,15 @@ pub fn smr(module: PathBuf, op: StaticModuleRecordOperation) -> Result<()> {
         StaticModuleRecordOperation::Functor => {
             let generator = Generator::new(&smr);
             let script = generator.create()?;
-            println!("{:#?}", script);
+            let (_source_map, compiler) = crate::swc_utils::get_compiler();
+            let result = compiler.print(
+                &script,
+                JscTarget::Es2020,
+                SourceMapsConfig::Bool(true),
+                None,
+                false)?;
+            //println!("{:#?}", result);
+            print!("{}", result.code);
         }
     }
     Ok(())

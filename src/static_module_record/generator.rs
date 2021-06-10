@@ -160,10 +160,30 @@ impl<'a> Generator<'a> {
                     sym: MAP.into(),
                     optional: false,
                 })),
-                args: Some(vec![]),
+                args: Some(self.imports_map_constructor_args()),
                 type_args: None,
             }))
         }
+    }
+
+    fn imports_map_constructor_args(&self) -> Vec<ExprOrSpread> {
+        let mut out = Vec::with_capacity(self.meta.imports.len());
+        for (key, props) in self.meta.imports.iter() {
+            println!("Key {:?}", key);
+            println!("Props {:#?}", props);
+            out.push(
+                ExprOrSpread {
+                    spread: None,
+                    expr: Box::new(Expr::Array(ArrayLit {
+                        span: DUMMY_SP,
+                        elems: vec![
+
+                        ],
+                    })),
+                }
+            );
+        }
+        out
     }
 
     fn imports_arg_all(&self) -> ExprOrSpread {
