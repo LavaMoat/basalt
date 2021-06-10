@@ -35,11 +35,7 @@ impl<'a> LiveExportAnalysis<'a> {
 }
 
 impl<'a> Visit for LiveExportAnalysis<'a> {
-    fn visit_stmt(
-        &mut self,
-        n: &Stmt,
-        _: &dyn Node
-    ) {
+    fn visit_stmt(&mut self, n: &Stmt, _: &dyn Node) {
         match n {
             // Track assignments for live export map.
             Stmt::Expr(expr) => match &*expr.expr {
@@ -51,18 +47,20 @@ impl<'a> Visit for LiveExportAnalysis<'a> {
                                 // receive the assignment.
                                 for name in self.exports.iter() {
                                     if ident.id.sym.as_ref() == *name {
-                                        self.live.push(ident.id.sym.as_ref().to_string());
+                                        self.live.push(
+                                            ident.id.sym.as_ref().to_string(),
+                                        );
                                         break;
                                     }
                                 }
                             }
                             _ => {}
-                        }
+                        },
                         _ => {}
                     }
                 }
                 _ => {}
-            }
+            },
             _ => {}
         }
     }

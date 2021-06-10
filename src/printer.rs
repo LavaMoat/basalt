@@ -5,7 +5,7 @@ use anyhow::Result;
 use spack::resolvers::NodeResolver;
 use swc_bundler::Resolve;
 
-use crate::module_node::{VisitedDependency, parse_file};
+use crate::module_node::{parse_file, VisitedDependency};
 
 const TREE_BAR: &str = "│";
 const TREE_BRANCH: &str = "├──";

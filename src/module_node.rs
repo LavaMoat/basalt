@@ -1,9 +1,9 @@
-use std::sync::Arc;
 use std::path::Path;
+use std::sync::Arc;
 
 use anyhow::{anyhow, Context, Result};
-use swc_bundler::Resolve;
 use spack::resolvers::NodeResolver;
+use swc_bundler::Resolve;
 use swc_common::{comments::SingleThreadedComments, FileName, SourceMap};
 use swc_ecma_ast::Module;
 use swc_ecma_dep_graph::{analyze_dependencies, DependencyDescriptor};
@@ -36,15 +36,13 @@ pub fn parse_file<P: AsRef<Path>>(
     file: P,
     resolver: &Box<dyn Resolve>,
 ) -> Result<ParsedModule> {
-    let (file_name, source_map, module) =
-        crate::swc_utils::load_file(file)?;
+    let (file_name, source_map, module) = crate::swc_utils::load_file(file)?;
     let comments: SingleThreadedComments = Default::default();
     let mut node = ModuleNode::from(module);
     node.analyze(&source_map, &comments);
     node.resolve(resolver, &file_name)?;
     Ok((file_name, source_map, node))
 }
-
 
 #[derive(Debug)]
 pub struct ModuleNode {
@@ -81,19 +79,34 @@ impl ModuleNode {
     }
 
     pub fn iter<'a>(&'a self) -> NodeIterator<'a> {
-        NodeIterator { node: self, index: 0, resolver: Box::new(NodeResolver::new()) }
+        NodeIterator {
+            node: self,
+            index: 0,
+            resolver: Box::new(NodeResolver::new()),
+        }
     }
 
     /// Visit all dependencies of this node recursively.
     pub fn visit<F>(&self, callback: &F) -> Result<()>
-        where F: Fn(VisitedDependency) {
-        let mut state = VisitState { open: Vec::new(), parents: Vec::new() };
+    where
+        F: Fn(VisitedDependency),
+    {
+        let mut state = VisitState {
+            open: Vec::new(),
+            parents: Vec::new(),
+        };
         self.visit_all(self, &mut state, callback)
     }
 
-    fn visit_all<F>(&self, node: &ModuleNode, state: &mut VisitState, callback: &F) -> Result<()>
-        where F: Fn(VisitedDependency) {
-
+    fn visit_all<F>(
+        &self,
+        node: &ModuleNode,
+        state: &mut VisitState,
+        callback: &F,
+    ) -> Result<()>
+    where
+        F: Fn(VisitedDependency),
+    {
         state.open.push(BranchState { last: false });
 
         for res in node.iter() {
@@ -157,9 +170,11 @@ impl<'a> Iterator for NodeIterator<'a> {
             self.index += 1;
             if let FileName::Real(file_name) = &resolved.1 {
                 return match parse_file(file_name, &self.resolver) {
-                    Ok(parsed) => Some(Ok((self.index - 1, resolved.0.clone(), parsed))),
+                    Ok(parsed) => {
+                        Some(Ok((self.index - 1, resolved.0.clone(), parsed)))
+                    }
                     Err(e) => Some(Err(anyhow!(e))),
-                }
+                };
             }
         }
 

@@ -3,7 +3,7 @@ use std::path::PathBuf;
 use anyhow::Result;
 use structopt::StructOpt;
 
-use basalt::{list, smr};
+use basalt::{list, smr, StaticModuleRecordOperation};
 
 #[derive(StructOpt)]
 #[structopt(about = "Lavamoat analyzer and bundler")]
@@ -19,8 +19,15 @@ enum BasaltCommands {
         module: PathBuf,
     },
 
-    /// Generate a static module record for a module
-    Smr {
+    /// Generate the static module record meta data for a module
+    Meta {
+        /// Module entry point
+        #[structopt(parse(from_os_str))]
+        module: PathBuf,
+    },
+
+    /// Generate a static module record functor program
+    Functor {
         /// Module entry point
         #[structopt(parse(from_os_str))]
         module: PathBuf,
@@ -41,9 +48,11 @@ fn main() -> Result<()> {
         } => {
             list(module, include_file)?;
         }
-
-        BasaltCommands::Smr { module } => {
-            smr(module)?;
+        BasaltCommands::Meta { module } => {
+            smr(module, StaticModuleRecordOperation::Meta)?;
+        }
+        BasaltCommands::Functor { module } => {
+            smr(module, StaticModuleRecordOperation::Functor)?;
         }
     }
     Ok(())

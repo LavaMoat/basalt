@@ -96,8 +96,7 @@ impl Visit for ExportAnalysis {
                         self.exports
                             .push(ExportRecord::FnDecl { func: func.clone() });
                     }
-                    _ => {
-                    }
+                    _ => {}
                 },
                 ModuleDecl::ExportDefaultExpr(export) => {
                     self.exports.push(ExportRecord::DefaultExpr {
@@ -107,9 +106,8 @@ impl Visit for ExportAnalysis {
                 _ => {
                     //println!("unhandled node: {:#?}", decl);
                 }
-            }
+            },
             _ => {}
         }
     }
-
 }

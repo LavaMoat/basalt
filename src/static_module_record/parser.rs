@@ -1,43 +1,23 @@
-//! Static module record.
-//!
-//! More information in the [static module record design document](https://github.com/endojs/endo/blob/master/packages/static-module-record/DESIGN.md).
-use std::collections::HashMap;
+//! Parse static module record meta data.
 use std::path::Path;
 
 use anyhow::Result;
-use serde::{Deserialize, Serialize};
 
 use swc_ecma_ast::*;
 use swc_ecma_visit::VisitWith;
 
 use crate::analysis::{
-    imports::ImportAnalysis,
     exports::{ExportAnalysis, ExportRecord, ReexportRecord},
+    imports::ImportAnalysis,
     live_exports::LiveExportAnalysis,
 };
 
-/// Type for live exports.
-pub type LiveExport = (String, bool);
-
-/// Static module record that can be serialized to JSON.
-#[derive(Serialize, Deserialize, Default, Debug)]
-#[serde(rename_all = "camelCase")]
-pub struct StaticModuleRecord {
-    /// All exports, eg: `export * from './foo.js';`
-    pub export_alls: Vec<String>,
-    /// All the imports for the module.
-    pub imports: HashMap<String, Vec<String>>,
-    /// Map of live exports.
-    pub live_export_map: HashMap<String, LiveExport>,
-    /// Map of fixed exports.
-    pub fixed_export_map: HashMap<String, Vec<String>>,
-}
+use super::StaticModuleRecord;
 
 /// Parses a module to a static module record.
 pub struct Parser {}
 
 impl Parser {
-
     /// Create a new parser.
     pub fn new() -> Self {
         Parser {}
@@ -69,7 +49,9 @@ impl Parser {
         }
 
         for name in live_exports.live.iter() {
-           record.live_export_map.insert(name.clone(), (name.clone(), true));
+            record
+                .live_export_map
+                .insert(name.clone(), (name.clone(), true));
         }
 
         for symbol in exporter.exports.iter() {
@@ -77,29 +59,25 @@ impl Parser {
                 ExportRecord::FnDecl { func } => {
                     let key = func.ident.sym.as_ref().to_string();
                     let val = key.clone();
-                    record
-                        .fixed_export_map
-                        .insert(key, vec![val]);
+                    record.fixed_export_map.insert(key, vec![val]);
                 }
-                ExportRecord::VarDecl { var } => {
-                    match var.kind {
-                        VarDeclKind::Const => {
-                            for decl in var.decls.iter() {
-                                match &decl.name {
-                                    Pat::Ident(ident) => {
-                                        let key = ident.id.sym.as_ref().to_string();
-                                        let val = key.clone();
-                                        record
-                                            .fixed_export_map
-                                            .insert(key, vec![val]);
-                                    }
-                                    _ => {}
+                ExportRecord::VarDecl { var } => match var.kind {
+                    VarDeclKind::Const => {
+                        for decl in var.decls.iter() {
+                            match &decl.name {
+                                Pat::Ident(ident) => {
+                                    let key = ident.id.sym.as_ref().to_string();
+                                    let val = key.clone();
+                                    record
+                                        .fixed_export_map
+                                        .insert(key, vec![val]);
                                 }
+                                _ => {}
                             }
                         }
-                        _ => {}
                     }
-                }
+                    _ => {}
+                },
                 ExportRecord::DefaultExpr { expr: _ } => {
                     record.fixed_export_map.insert(
                         String::from("default"),
