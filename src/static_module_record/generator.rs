@@ -1,10 +1,17 @@
 //! Generator the functor program from a static module record meta data.
 use anyhow::Result;
 
+use swc_atoms::JsWord;
 use swc_ecma_ast::*;
 use swc_common::DUMMY_SP;
 
 use super::StaticModuleRecord;
+
+const HIDDEN_PREFIX: &str = "$h\u{200d}_";
+const HIDDEN_CONST_VAR_PREFIX:&str = "$c\u{200d}_";
+const IMPORTS: &str = "imports";
+const LIVE_VAR: &str = "liveVar";
+const ONCE_VAR: &str = "onceVar";
 
 /// Generate a static module record functor program.
 pub struct Generator<'a> {
@@ -31,7 +38,7 @@ impl<'a> Generator<'a> {
                 span: DUMMY_SP,
                 expr: Box::new(Expr::Arrow(ArrowExpr {
                     span: DUMMY_SP,
-                    params: Vec::new(),
+                    params: self.params(),
                     body: BlockStmtOrExpr::BlockStmt(BlockStmt {
                         span: DUMMY_SP,
                         stmts: Vec::new(),
@@ -48,5 +55,44 @@ impl<'a> Generator<'a> {
         script.body.push(stmt);
 
         Ok(script)
+    }
+
+    /// Build up the functor function parameters.
+    fn params(&self) -> Vec<Pat> {
+        let props = &[IMPORTS, LIVE_VAR, ONCE_VAR];
+        vec![
+            Pat::Object(ObjectPat {
+                span: DUMMY_SP,
+                props: {
+                    let mut out = Vec::with_capacity(3);
+                    for prop in props {
+                        out.push(
+                            ObjectPatProp::KeyValue(KeyValuePatProp {
+                                key: PropName::Ident(Ident {
+                                    span: DUMMY_SP,
+                                    sym: (*prop).into(),
+                                    optional: false,
+                                }),
+                                value: Box::new(Pat::Ident(BindingIdent{
+                                    id: Ident {
+                                        span: DUMMY_SP,
+                                        sym: self.prefix_hidden(prop),
+                                        optional: false,
+                                    },
+                                    type_ann: None,
+                                }))
+                            })
+                        );
+                    }
+                    out
+                },
+                optional: false,
+                type_ann: None,
+            })
+        ]
+    }
+
+    fn prefix_hidden(&self, word: &str) -> JsWord {
+        format!("{}{}", HIDDEN_PREFIX, word).into()
     }
 }
