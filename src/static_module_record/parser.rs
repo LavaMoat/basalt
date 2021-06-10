@@ -8,7 +8,7 @@ use swc_ecma_visit::VisitWith;
 
 use crate::analysis::{
     exports::{ExportAnalysis, ExportRecord, ReexportRecord},
-    imports::ImportAnalysis,
+    imports::{ImportAnalysis, ImportRecord},
     live_exports::LiveExportAnalysis,
 };
 
@@ -44,6 +44,18 @@ impl Parser {
         module.visit_children_with(&mut live_exports);
 
         for (key, symbols) in importer.imports.iter() {
+            let mut names = symbols
+                .iter()
+                .map(|s| {
+                    match s {
+                        ImportRecord::Named { local, .. } => local.clone(),
+                        ImportRecord::Default { local, .. } => local.clone(),
+                        ImportRecord::All { local} => local.clone(),
+                    }
+                })
+                .collect::<Vec<_>>();
+            record.importDecls.append(&mut names);
+
             let words = symbols.iter().map(|s| s.word()).collect::<Vec<_>>();
             record.imports.insert(key.clone(), words);
         }
