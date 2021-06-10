@@ -20,6 +20,8 @@ pub struct StaticModuleRecord {
     pub live_export_map: HashMap<String, LiveExport>,
     /// Map of fixed exports.
     pub fixed_export_map: HashMap<String, Vec<String>>,
+    /// List of import declarations.
+    pub importDecls: Vec<String>,
 }
 
 pub mod generator;

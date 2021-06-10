@@ -8,7 +8,7 @@ use swc_common::DUMMY_SP;
 use super::StaticModuleRecord;
 
 const HIDDEN_PREFIX: &str = "$h\u{200d}_";
-const HIDDEN_CONST_VAR_PREFIX:&str = "$c\u{200d}_";
+//const HIDDEN_CONST_VAR_PREFIX:&str = "$c\u{200d}_";
 const IMPORTS: &str = "imports";
 const LIVE_VAR: &str = "liveVar";
 const ONCE_VAR: &str = "onceVar";
@@ -39,10 +39,7 @@ impl<'a> Generator<'a> {
                 expr: Box::new(Expr::Arrow(ArrowExpr {
                     span: DUMMY_SP,
                     params: self.params(),
-                    body: BlockStmtOrExpr::BlockStmt(BlockStmt {
-                        span: DUMMY_SP,
-                        stmts: Vec::new(),
-                    }),
+                    body: BlockStmtOrExpr::BlockStmt(self.body()),
                     is_async: false,
                     is_generator: false,
                     type_params: None,
@@ -90,6 +87,28 @@ impl<'a> Generator<'a> {
                 type_ann: None,
             })
         ]
+    }
+
+    /// The function body block.
+    fn body(&self) -> BlockStmt {
+        let mut block = BlockStmt {
+            span: DUMMY_SP,
+            stmts: Vec::new(),
+        };
+
+        let local_vars = Stmt::Decl(Decl::Var(VarDecl {
+            span: DUMMY_SP,
+            kind: VarDeclKind::Let,
+            declare: false,
+            decls: {
+                let mut out = Vec::new();
+                out
+            },
+        }));
+
+        block.stmts.push(local_vars);
+
+        block
     }
 
     fn prefix_hidden(&self, word: &str) -> JsWord {
