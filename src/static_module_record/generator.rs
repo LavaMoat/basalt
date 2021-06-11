@@ -13,6 +13,7 @@ const IMPORTS: &str = "imports";
 const LIVE_VAR: &str = "liveVar";
 const ONCE_VAR: &str = "onceVar";
 const MAP: &str = "Map";
+const LIVE: &str = "live";
 
 /// Generate a static module record functor program.
 pub struct Generator<'a> {
@@ -216,6 +217,9 @@ impl<'a> Generator<'a> {
                             for (prop, alias) in props.iter().zip(aliases.iter()) {
                                 let prop: &str = &prop[..];
                                 let alias: &str = &alias[..];
+                                let live = self.meta.live_export_map.contains_key(prop);
+                                //println!("is live {:?} {:?}", live, prop);
+
                                 out.push(Some(ExprOrSpread {
                                     spread: None,
                                     expr: Box::new(Expr::Array(ArrayLit {
@@ -240,7 +244,7 @@ impl<'a> Generator<'a> {
                                                 expr: Box::new(Expr::Array(
                                                     ArrayLit {
                                                         span: DUMMY_SP,
-                                                        elems: vec![Some(self.imports_prop_func(alias))],
+                                                        elems: vec![Some(self.imports_prop_func(alias, live))],
                                                     },
                                                 )),
                                             }),
@@ -258,48 +262,68 @@ impl<'a> Generator<'a> {
     }
 
     /// The import function which lazily assigns to the locally scoped variable.
-    fn imports_prop_func(&self, alias: &str) -> ExprOrSpread {
+    fn imports_prop_func(&self, alias: &str, live: bool) -> ExprOrSpread {
         let arg = self.prefix_hidden("a");
-
-        // TODO: handle live exports injection
-
-        ExprOrSpread {
-            spread: None,
-            expr: Box::new(Expr::Arrow(ArrowExpr {
-                span: DUMMY_SP,
-                params: vec![Pat::Ident(BindingIdent {
-                    id: Ident {
-                        span: DUMMY_SP,
-                        sym: arg.clone(),
-                        optional: false,
-                    },
-                    type_ann: None,
-                })],
-                body: BlockStmtOrExpr::Expr(Box::new(Expr::Paren(ParenExpr {
+        if live {
+            ExprOrSpread {
+                spread: None,
+                expr: Box::new(Expr::Member(MemberExpr {
                     span: DUMMY_SP,
-                    expr: Box::new(Expr::Assign(AssignExpr {
+                    obj: ExprOrSuper::Expr(Box::new(Expr::Ident(Ident {
                         span: DUMMY_SP,
-                        op: AssignOp::Assign,
-                        left: PatOrExpr::Pat(Box::new(Pat::Ident(BindingIdent {
-                            id: Ident {
-                                span: DUMMY_SP,
-                                sym: alias.into(),
-                                optional: false,
-                            },
-                            type_ann: None,
-                        }))),
-                        right: Box::new(Expr::Ident(Ident {
+                        sym: self.prefix_hidden(LIVE),
+                        optional: false,
+                    }))),
+                    prop: Box::new(Expr::Lit(Lit::Str(Str {
+                        span: DUMMY_SP,
+                        kind: StrKind::Normal {
+                            contains_quote: true,
+                        },
+                        has_escape: false,
+                        value: alias.into(),
+                    }))),
+                    computed: true,
+                })),
+            }
+        } else {
+            ExprOrSpread {
+                spread: None,
+                expr: Box::new(Expr::Arrow(ArrowExpr {
+                    span: DUMMY_SP,
+                    params: vec![Pat::Ident(BindingIdent {
+                        id: Ident {
                             span: DUMMY_SP,
-                            sym: arg,
+                            sym: arg.clone(),
                             optional: false,
+                        },
+                        type_ann: None,
+                    })],
+                    body: BlockStmtOrExpr::Expr(Box::new(Expr::Paren(ParenExpr {
+                        span: DUMMY_SP,
+                        expr: Box::new(Expr::Assign(AssignExpr {
+                            span: DUMMY_SP,
+                            op: AssignOp::Assign,
+                            left: PatOrExpr::Pat(Box::new(Pat::Ident(BindingIdent {
+                                id: Ident {
+                                    span: DUMMY_SP,
+                                    sym: alias.into(),
+                                    optional: false,
+                                },
+                                type_ann: None,
+                            }))),
+                            right: Box::new(Expr::Ident(Ident {
+                                span: DUMMY_SP,
+                                sym: arg,
+                                optional: false,
+                            })),
                         })),
-                    })),
-                }))),
-                is_async: false,
-                is_generator: false,
-                return_type: None,
-                type_params: None,
-            })),
+                    }))),
+                    is_async: false,
+                    is_generator: false,
+                    return_type: None,
+                    type_params: None,
+                })),
+            }
         }
     }
 
