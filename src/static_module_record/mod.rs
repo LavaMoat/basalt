@@ -24,6 +24,10 @@ pub struct StaticModuleRecord {
     /// List of import declarations.
     #[serde(skip)]
     pub import_decls: Vec<String>,
+
+    /// Map from import to declaration names (specifiers).
+    #[serde(skip)]
+    pub import_alias: HashMap<String, Vec<String>>,
 }
 
 pub mod generator;

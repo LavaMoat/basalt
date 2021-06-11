@@ -52,10 +52,12 @@ impl Parser {
                     ImportRecord::All { local } => local.clone(),
                 })
                 .collect::<Vec<_>>();
-            record.import_decls.append(&mut names);
 
             let words = symbols.iter().map(|s| s.word()).collect::<Vec<_>>();
             record.imports.insert(key.clone(), words);
+
+            record.import_alias.insert(key.clone(), names.clone());
+            record.import_decls.append(&mut names);
         }
 
         for name in live_exports.live.iter() {
@@ -138,6 +140,7 @@ impl Parser {
                             _ => unreachable!(),
                         })
                         .collect::<Vec<_>>();
+                    record.import_alias.insert(module_path.clone(), words.clone());
                     record.imports.insert(module_path.clone(), words);
 
                     for spec in specifiers {
@@ -161,6 +164,7 @@ impl Parser {
                     }
                 }
                 ReexportRecord::All { module_path } => {
+                    record.import_alias.insert(module_path.clone(), Vec::new());
                     record.imports.insert(module_path.clone(), Vec::new());
                     record.export_alls.push(module_path.clone());
                 }

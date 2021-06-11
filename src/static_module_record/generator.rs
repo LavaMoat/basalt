@@ -27,6 +27,9 @@ impl<'a> Generator<'a> {
 
     /// Create the program script AST node.
     pub fn create(&self) -> Result<Script> {
+
+        //println!("{:#?}", self.meta);
+
         let mut script = Script {
             span: DUMMY_SP,
             body: Vec::with_capacity(1),
@@ -164,6 +167,7 @@ impl<'a> Generator<'a> {
         let mut out = Vec::with_capacity(self.meta.imports.len());
         for (key, props) in self.meta.imports.iter() {
             let key: &str = &key[..];
+            let aliases = self.meta.import_alias.get(key).unwrap();
             out.push(ExprOrSpread {
                 spread: None,
                 expr: Box::new(Expr::Array(ArrayLit {
@@ -180,7 +184,7 @@ impl<'a> Generator<'a> {
                                 has_escape: false,
                             }))),
                         }),
-                        Some(self.imports_map_constructor_args_map(props)),
+                        Some(self.imports_map_constructor_args_map(props, aliases)),
                     ],
                 })),
             });
@@ -192,6 +196,7 @@ impl<'a> Generator<'a> {
     fn imports_map_constructor_args_map(
         &self,
         props: &Vec<String>,
+        aliases: &Vec<String>,
     ) -> ExprOrSpread {
         ExprOrSpread {
             spread: None,
@@ -208,9 +213,9 @@ impl<'a> Generator<'a> {
                         span: DUMMY_SP,
                         elems: {
                             let mut out = Vec::with_capacity(props.len());
-                            for prop in props {
+                            for (prop, alias) in props.iter().zip(aliases.iter()) {
                                 let prop: &str = &prop[..];
-                                println!("Render prop key {}", prop);
+                                let alias: &str = &alias[..];
                                 out.push(Some(ExprOrSpread {
                                     spread: None,
                                     expr: Box::new(Expr::Array(ArrayLit {
@@ -235,7 +240,7 @@ impl<'a> Generator<'a> {
                                                 expr: Box::new(Expr::Array(
                                                     ArrayLit {
                                                         span: DUMMY_SP,
-                                                        elems: vec![],
+                                                        elems: vec![Some(self.imports_prop_func(alias))],
                                                     },
                                                 )),
                                             }),
@@ -248,6 +253,52 @@ impl<'a> Generator<'a> {
                     })),
                 }]),
                 type_args: None,
+            })),
+        }
+    }
+
+    /// The import function which lazily assigns to the locally scoped variable.
+    fn imports_prop_func(&self, alias: &str) -> ExprOrSpread {
+        let arg = self.prefix_hidden("a");
+
+        // TODO: handle live exports injection
+
+        ExprOrSpread {
+            spread: None,
+            expr: Box::new(Expr::Arrow(ArrowExpr {
+                span: DUMMY_SP,
+                params: vec![Pat::Ident(BindingIdent {
+                    id: Ident {
+                        span: DUMMY_SP,
+                        sym: arg.clone(),
+                        optional: false,
+                    },
+                    type_ann: None,
+                })],
+                body: BlockStmtOrExpr::Expr(Box::new(Expr::Paren(ParenExpr {
+                    span: DUMMY_SP,
+                    expr: Box::new(Expr::Assign(AssignExpr {
+                        span: DUMMY_SP,
+                        op: AssignOp::Assign,
+                        left: PatOrExpr::Pat(Box::new(Pat::Ident(BindingIdent {
+                            id: Ident {
+                                span: DUMMY_SP,
+                                sym: alias.into(),
+                                optional: false,
+                            },
+                            type_ann: None,
+                        }))),
+                        right: Box::new(Expr::Ident(Ident {
+                            span: DUMMY_SP,
+                            sym: arg,
+                            optional: false,
+                        })),
+                    })),
+                }))),
+                is_async: false,
+                is_generator: false,
+                return_type: None,
+                type_params: None,
             })),
         }
     }
