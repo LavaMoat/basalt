@@ -48,6 +48,7 @@ pub fn meta(module: PathBuf) -> Result<()> {
     Ok(())
 }
 
+/*
 /// Print the static module record as JSON.
 pub fn functor(module: PathBuf) -> Result<()> {
     if !module.is_file() {
@@ -73,6 +74,7 @@ pub fn functor(module: PathBuf) -> Result<()> {
     print!("{}", result.code);
     Ok(())
 }
+*/
 
 /// Transform a module to a static module record program.
 pub fn transform(module: PathBuf) -> Result<()> {

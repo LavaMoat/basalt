@@ -4,6 +4,7 @@ use anyhow::Result;
 use swc_atoms::JsWord;
 use swc_common::DUMMY_SP;
 use swc_ecma_ast::*;
+use swc_ecma_visit::{Visit, VisitWith, Node};
 
 use super::StaticModuleRecord;
 
@@ -14,6 +15,16 @@ const LIVE_VAR: &str = "liveVar";
 const ONCE_VAR: &str = "onceVar";
 const MAP: &str = "Map";
 const LIVE: &str = "live";
+
+struct Visitor<'a> {
+    body: &'a mut Vec<Stmt>,
+}
+
+impl<'a> Visit for Visitor<'a> {
+    fn visit_module_item(&mut self, n: &ModuleItem, _: &dyn Node) {
+        println!("Visiting module item.");
+    }
+}
 
 /// Generate a static module record functor program.
 pub struct Generator<'a> {
@@ -27,7 +38,7 @@ impl<'a> Generator<'a> {
     }
 
     /// Create the program script AST node.
-    pub fn create(&self) -> Result<Script> {
+    pub fn create(&self, module: Module) -> Result<Script> {
         //println!("{:#?}", self.meta);
 
         let mut script = Script {
@@ -43,7 +54,7 @@ impl<'a> Generator<'a> {
                 expr: Box::new(Expr::Arrow(ArrowExpr {
                     span: DUMMY_SP,
                     params: self.params(),
-                    body: BlockStmtOrExpr::BlockStmt(self.body()),
+                    body: BlockStmtOrExpr::BlockStmt(self.body(module)),
                     is_async: false,
                     is_generator: false,
                     type_params: None,
@@ -89,7 +100,7 @@ impl<'a> Generator<'a> {
     }
 
     /// The function body block.
-    fn body(&self) -> BlockStmt {
+    fn body(&self, module: Module) -> BlockStmt {
         let mut block = BlockStmt {
             span: DUMMY_SP,
             stmts: Vec::new(),
@@ -123,6 +134,9 @@ impl<'a> Generator<'a> {
 
         block.stmts.push(local_vars);
         block.stmts.push(self.imports_func_call());
+
+        let mut visitor = Visitor {body: &mut block.stmts};
+        module.visit_children_with(&mut visitor);
 
         //block.stmts.push(self.imports_func_call());
 

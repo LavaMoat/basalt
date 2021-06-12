@@ -3,7 +3,7 @@ use std::path::PathBuf;
 use anyhow::Result;
 use structopt::StructOpt;
 
-use basalt::{functor, list, meta, transform};
+use basalt::{list, meta, transform};
 
 #[derive(StructOpt)]
 #[structopt(about = "Lavamoat analyzer and bundler")]
@@ -26,14 +26,7 @@ enum BasaltCommands {
         module: PathBuf,
     },
 
-    /// Generate a static module record functor program
-    Functor {
-        /// Module entry point
-        #[structopt(parse(from_os_str))]
-        module: PathBuf,
-    },
-
-    /// Transform a static module to a functor program
+    /// Transform a module to a functor program
     Transform {
         /// Module entry point
         #[structopt(parse(from_os_str))]
@@ -57,9 +50,6 @@ fn main() -> Result<()> {
         }
         BasaltCommands::Meta { module } => {
             meta(module)?;
-        }
-        BasaltCommands::Functor { module } => {
-            functor(module)?;
         }
         BasaltCommands::Transform { module } => {
             transform(module)?;

@@ -13,7 +13,7 @@ use swc_common::{
 };
 use swc_ecma_ast::*;
 use swc_ecma_parser::{lexer::Lexer, Parser, StringInput, Syntax};
-use swc_ecma_visit::{Fold, VisitMut, VisitMutWith};
+use swc_ecma_visit::Fold;
 
 use anyhow::Result;
 
@@ -28,7 +28,7 @@ impl<'a> Fold for TransformFold<'a> {
     fn fold_program(&mut self, n: Program) -> Program {
         match n {
             Program::Module(module) => {
-                let script = self.generator.create()
+                let script = self.generator.create(module)
                     .expect("failed to generate transformed script");
                 Program::Script(script)
             }
@@ -46,7 +46,7 @@ impl Transform {
         Self {}
     }
 
-    /// Transform the module to a program.
+    /// Transform the module file to a program script.
     pub fn transform<P: AsRef<Path>>(
         &self,
         module: P,
@@ -71,7 +71,6 @@ impl Transform {
         );
 
         let mut parser = Parser::new_from(lexer);
-
         for e in parser.take_errors() {
             e.into_diagnostic(&handler).emit();
         }
