@@ -140,7 +140,9 @@ impl Parser {
                             _ => unreachable!(),
                         })
                         .collect::<Vec<_>>();
-                    record.import_alias.insert(module_path.clone(), words.clone());
+                    record
+                        .import_alias
+                        .insert(module_path.clone(), words.clone());
                     record.imports.insert(module_path.clone(), words);
 
                     for spec in specifiers {

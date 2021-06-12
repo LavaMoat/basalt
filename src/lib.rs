@@ -14,7 +14,9 @@ pub mod printer;
 pub mod static_module_record;
 mod swc_utils;
 
-pub use static_module_record::{Generator, Parser, StaticModuleRecord};
+pub use static_module_record::{
+    Generator, Parser, StaticModuleRecord, Transform,
+};
 
 /// List all modules.
 pub fn list(module: PathBuf, include_file: bool) -> Result<()> {
@@ -68,6 +70,21 @@ pub fn functor(module: PathBuf) -> Result<()> {
         false,
     )?;
     //println!("{:#?}", result);
+    print!("{}", result.code);
+    Ok(())
+}
+
+/// Transform a module to a static module record program.
+pub fn transform(module: PathBuf) -> Result<()> {
+    if !module.is_file() {
+        bail!(
+            "Module {} does not exist or is not a file",
+            module.display()
+        );
+    }
+
+    let transformer = Transform::new();
+    let result = transformer.transform(module)?;
     print!("{}", result.code);
     Ok(())
 }

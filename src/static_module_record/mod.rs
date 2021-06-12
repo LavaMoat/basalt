@@ -32,6 +32,8 @@ pub struct StaticModuleRecord {
 
 pub mod generator;
 pub mod parser;
+pub mod transform;
 
 pub use generator::Generator;
 pub use parser::Parser;
+pub use transform::Transform;

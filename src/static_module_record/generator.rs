@@ -8,7 +8,7 @@ use swc_ecma_ast::*;
 use super::StaticModuleRecord;
 
 const HIDDEN_PREFIX: &str = "$h\u{200d}_";
-//const HIDDEN_CONST_VAR_PREFIX:&str = "$c\u{200d}_";
+const HIDDEN_CONST_VAR_PREFIX: &str = "$c\u{200d}_";
 const IMPORTS: &str = "imports";
 const LIVE_VAR: &str = "liveVar";
 const ONCE_VAR: &str = "onceVar";
@@ -28,7 +28,6 @@ impl<'a> Generator<'a> {
 
     /// Create the program script AST node.
     pub fn create(&self) -> Result<Script> {
-
         //println!("{:#?}", self.meta);
 
         let mut script = Script {
@@ -125,6 +124,8 @@ impl<'a> Generator<'a> {
         block.stmts.push(local_vars);
         block.stmts.push(self.imports_func_call());
 
+        //block.stmts.push(self.imports_func_call());
+
         block
     }
 
@@ -185,7 +186,11 @@ impl<'a> Generator<'a> {
                                 has_escape: false,
                             }))),
                         }),
-                        Some(self.imports_map_constructor_args_map(props, aliases)),
+                        Some(
+                            self.imports_map_constructor_args_map(
+                                props, aliases,
+                            ),
+                        ),
                     ],
                 })),
             });
@@ -214,10 +219,15 @@ impl<'a> Generator<'a> {
                         span: DUMMY_SP,
                         elems: {
                             let mut out = Vec::with_capacity(props.len());
-                            for (prop, alias) in props.iter().zip(aliases.iter()) {
+                            for (prop, alias) in
+                                props.iter().zip(aliases.iter())
+                            {
                                 let prop: &str = &prop[..];
                                 let alias: &str = &alias[..];
-                                let live = self.meta.live_export_map.contains_key(prop);
+                                let live = self
+                                    .meta
+                                    .live_export_map
+                                    .contains_key(prop);
                                 //println!("is live {:?} {:?}", live, prop);
 
                                 out.push(Some(ExprOrSpread {
@@ -298,26 +308,30 @@ impl<'a> Generator<'a> {
                         },
                         type_ann: None,
                     })],
-                    body: BlockStmtOrExpr::Expr(Box::new(Expr::Paren(ParenExpr {
-                        span: DUMMY_SP,
-                        expr: Box::new(Expr::Assign(AssignExpr {
+                    body: BlockStmtOrExpr::Expr(Box::new(Expr::Paren(
+                        ParenExpr {
                             span: DUMMY_SP,
-                            op: AssignOp::Assign,
-                            left: PatOrExpr::Pat(Box::new(Pat::Ident(BindingIdent {
-                                id: Ident {
-                                    span: DUMMY_SP,
-                                    sym: alias.into(),
-                                    optional: false,
-                                },
-                                type_ann: None,
-                            }))),
-                            right: Box::new(Expr::Ident(Ident {
+                            expr: Box::new(Expr::Assign(AssignExpr {
                                 span: DUMMY_SP,
-                                sym: arg,
-                                optional: false,
+                                op: AssignOp::Assign,
+                                left: PatOrExpr::Pat(Box::new(Pat::Ident(
+                                    BindingIdent {
+                                        id: Ident {
+                                            span: DUMMY_SP,
+                                            sym: alias.into(),
+                                            optional: false,
+                                        },
+                                        type_ann: None,
+                                    },
+                                ))),
+                                right: Box::new(Expr::Ident(Ident {
+                                    span: DUMMY_SP,
+                                    sym: arg,
+                                    optional: false,
+                                })),
                             })),
-                        })),
-                    }))),
+                        },
+                    ))),
                     is_async: false,
                     is_generator: false,
                     return_type: None,
@@ -359,5 +373,9 @@ impl<'a> Generator<'a> {
 
     fn prefix_hidden(&self, word: &str) -> JsWord {
         format!("{}{}", HIDDEN_PREFIX, word).into()
+    }
+
+    fn prefix_const(&self, word: &str) -> JsWord {
+        format!("{}{}", HIDDEN_CONST_VAR_PREFIX, word).into()
     }
 }
