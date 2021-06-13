@@ -17,13 +17,94 @@ const MAP: &str = "Map";
 const LIVE: &str = "live";
 
 struct Visitor<'a> {
+    meta: &'a StaticModuleRecord,
     body: &'a mut Vec<Stmt>,
 }
 
-impl<'a> Visit for Visitor<'a> {
-    fn visit_module_item(&mut self, n: &ModuleItem, _: &dyn Node) {
-        println!("Visiting module item.");
+impl<'a> Visitor<'a> {
+
+    /// Get a potential symbol identity from a statement.
+    fn identity<'b>(&mut self, n: &'b Stmt) -> Option<&'b str> {
+        match n {
+            Stmt::Expr(expr) => match &*expr.expr {
+                Expr::Assign(expr) => {
+                    match &expr.left {
+                        PatOrExpr::Pat(pat) => match &**pat {
+                            Pat::Ident(ident) => {
+                                return Some(ident.id.sym.as_ref())
+                            }
+                            _ => {}
+                        },
+                        _ => {}
+                    }
+                }
+                _ => {}
+            },
+            Stmt::Decl(decl) => match decl {
+                Decl::Var(var) => {
+                    // TODO: support multiple var declarations
+                    if !var.decls.is_empty() {
+                        let name = &var.decls.get(0).unwrap().name;
+                        match name {
+                            Pat::Ident(ident) => {
+                                return Some(ident.id.sym.as_ref())
+                            }
+                            _ => {}
+                        }
+                    }
+                }
+                _ => {}
+            }
+            _ => {}
+        }
+        None
     }
+
+    fn is_live_statement<'b>(&mut self, n: &'b Stmt) -> (bool, Option<&'b str>) {
+        if let Some(identity) = self.identity(n) {
+            if self.meta.live_export_map.contains_key(identity) {
+                return (true, Some(identity))
+            }
+        }
+        (false, None)
+    }
+
+    fn is_fixed_statement<'b>(&mut self, n: &'b Stmt) -> (bool, Option<&'b str>) {
+        if let Some(identity) = self.identity(n) {
+            if self.meta.fixed_export_map.contains_key(identity) {
+                return (true, Some(identity))
+            } else {
+                let aliases = self.meta.fixed_export_map
+                    .iter()
+                    .map(|(k, v)| v)
+                    .flatten()
+                    .map(|s| &s[..])
+                    .collect::<Vec<_>>();
+                if aliases.contains(&identity) {
+                    return (true, Some(identity))
+                }
+            }
+        }
+        (false, None)
+    }
+
+}
+
+impl<'a> Visit for Visitor<'a> {
+    fn visit_stmt(&mut self, n: &Stmt, _: &dyn Node) {
+        let (is_live, live_name) = self.is_live_statement(n);
+        if is_live {
+            println!("IS A LIVE STATEMENT {:?}", live_name);
+        } else {
+            let (is_fixed, fixed_name) = self.is_fixed_statement(n);
+            if is_fixed {
+                println!("IS A FIXED STATEMENT {:?}", fixed_name);
+            } else {
+                println!("GOT A PASSTHROUGH STATEMENT {:#?}", n);
+            }
+        }
+    }
+
 }
 
 /// Generate a static module record functor program.
@@ -135,7 +216,7 @@ impl<'a> Generator<'a> {
         block.stmts.push(local_vars);
         block.stmts.push(self.imports_func_call());
 
-        let mut visitor = Visitor {body: &mut block.stmts};
+        let mut visitor = Visitor {meta: self.meta, body: &mut block.stmts};
         module.visit_children_with(&mut visitor);
 
         //block.stmts.push(self.imports_func_call());
