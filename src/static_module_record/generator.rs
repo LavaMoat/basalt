@@ -16,6 +16,14 @@ const ONCE_VAR: &str = "onceVar";
 const MAP: &str = "Map";
 const LIVE: &str = "live";
 
+fn prefix_hidden(word: &str) -> JsWord {
+    format!("{}{}", HIDDEN_PREFIX, word).into()
+}
+
+fn prefix_const(word: &str) -> JsWord {
+    format!("{}{}", HIDDEN_CONST_VAR_PREFIX, word).into()
+}
+
 struct Visitor<'a> {
     meta: &'a StaticModuleRecord,
     body: &'a mut Vec<Stmt>,
@@ -94,13 +102,81 @@ impl<'a> Visit for Visitor<'a> {
     fn visit_stmt(&mut self, n: &Stmt, _: &dyn Node) {
         let (is_live, live_name) = self.is_live_statement(n);
         if is_live {
-            println!("IS A LIVE STATEMENT {:?}", live_name);
+            //println!("IS A LIVE STATEMENT {:?}", live_name);
+            let live_name = live_name.unwrap();
+            let prop_name = prefix_const(live_name);
+            let prop_target = prefix_hidden(LIVE);
+
+            let decl = Stmt::Decl(Decl::Var(VarDecl {
+                span: DUMMY_SP,
+                kind: VarDeclKind::Let,
+                declare: false,
+                decls: vec![
+                    VarDeclarator {
+                        span: DUMMY_SP,
+                        name: Pat::Ident(BindingIdent {
+                            id: Ident {
+                                span: DUMMY_SP,
+                                sym: prop_name.clone(),
+                                optional: false,
+                            },
+                            type_ann: None,
+                        }),
+                        // NOTE: currently we always initialize to null
+                        // NOTE: an improvement could respect the source
+                        // NOTE: initialization value
+                        init: Some(Box::new(Expr::Lit(Lit::Null(Null {span: DUMMY_SP})))),
+                        definite: false,
+                    }
+                ],
+            }));
+
+            let call = Stmt::Expr(ExprStmt {
+                span: DUMMY_SP,
+                expr: Box::new(Expr::Call(CallExpr {
+                    span: DUMMY_SP,
+                    callee: ExprOrSuper::Expr(Box::new(
+                        Expr::Member(MemberExpr {
+                            span: DUMMY_SP,
+                            obj: ExprOrSuper::Expr(Box::new(
+                                Expr::Ident(Ident {
+                                    span: DUMMY_SP,
+                                    sym: prop_target,
+                                    optional: false,
+                                })
+                            )),
+                            prop: Box::new(Expr::Ident(Ident {
+                                span: DUMMY_SP,
+                                sym: live_name.into(),
+                                optional: false,
+                            })),
+                            computed: false,
+                        })
+                    )),
+                    args: vec![
+                        ExprOrSpread {
+                            spread: None,
+                            expr: Box::new(Expr::Ident(Ident {
+                                span: DUMMY_SP,
+                                sym: prop_name,
+                                optional: false,
+                            }))
+                        }
+                    ],
+                    type_args: None,
+                })),
+            });
+
+            self.body.push(decl);
+            self.body.push(call);
+
         } else {
             let (is_fixed, fixed_name) = self.is_fixed_statement(n);
             if is_fixed {
                 println!("IS A FIXED STATEMENT {:?}", fixed_name);
             } else {
-                println!("GOT A PASSTHROUGH STATEMENT {:#?}", n);
+                //println!("GOT A PASSTHROUGH STATEMENT {:#?}", n);
+                self.body.push(n.clone());
             }
         }
     }
@@ -166,7 +242,7 @@ impl<'a> Generator<'a> {
                         value: Box::new(Pat::Ident(BindingIdent {
                             id: Ident {
                                 span: DUMMY_SP,
-                                sym: self.prefix_hidden(prop),
+                                sym: prefix_hidden(prop),
                                 optional: false,
                             },
                             type_ann: None,
@@ -231,7 +307,7 @@ impl<'a> Generator<'a> {
                 span: DUMMY_SP,
                 callee: ExprOrSuper::Expr(Box::new(Expr::Ident(Ident {
                     span: DUMMY_SP,
-                    sym: self.prefix_hidden(IMPORTS),
+                    sym: prefix_hidden(IMPORTS),
                     optional: false,
                 }))),
                 args: vec![self.imports_arg_map(), self.imports_arg_all()],
@@ -368,7 +444,7 @@ impl<'a> Generator<'a> {
 
     /// The import function which lazily assigns to the locally scoped variable.
     fn imports_prop_func(&self, alias: &str, live: bool) -> ExprOrSpread {
-        let arg = self.prefix_hidden("a");
+        let arg = prefix_hidden("a");
         if live {
             ExprOrSpread {
                 spread: None,
@@ -376,7 +452,7 @@ impl<'a> Generator<'a> {
                     span: DUMMY_SP,
                     obj: ExprOrSuper::Expr(Box::new(Expr::Ident(Ident {
                         span: DUMMY_SP,
-                        sym: self.prefix_hidden(LIVE),
+                        sym: prefix_hidden(LIVE),
                         optional: false,
                     }))),
                     prop: Box::new(Expr::Lit(Lit::Str(Str {
@@ -466,11 +542,4 @@ impl<'a> Generator<'a> {
         }
     }
 
-    fn prefix_hidden(&self, word: &str) -> JsWord {
-        format!("{}{}", HIDDEN_PREFIX, word).into()
-    }
-
-    fn prefix_const(&self, word: &str) -> JsWord {
-        format!("{}{}", HIDDEN_CONST_VAR_PREFIX, word).into()
-    }
 }

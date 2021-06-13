@@ -14,6 +14,8 @@ const aleph = 0;
 export { aleph as alpha };
 export { grey as gray } from './reexport-name-and-rename.js';
 
+//function foo() {}
+
 // Late binding of an exported variable.
 quuux = 'Hello, World!';
 
