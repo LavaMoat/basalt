@@ -1,4 +1,5 @@
 //! Generator the functor program from a static module record meta data.
+use std::collections::HashMap;
 use anyhow::Result;
 
 use swc_atoms::JsWord;
@@ -157,7 +158,14 @@ impl<'a> Visit for Visitor<'a> {
                 ModuleDecl::ExportNamed(export) => {
                     // Not a re-export
                     if export.src.is_none() {
-                        //println!("Got named export {:#?}", export);
+                        println!("Got named export {:#?}", export);
+
+                        let prop_target = prefix_hidden(ONCE);
+                        // TODO: handle alias in fixed exports!
+                        let call =
+                            call_stmt(prop_target, "alpha", "aleph".into());
+
+                        self.body.push(call);
                     }
                 }
                 ModuleDecl::ExportDefaultExpr(export) => {
@@ -359,12 +367,15 @@ impl<'a> Generator<'a> {
 
     /// Build up the functor function parameters.
     fn params(&self) -> Vec<Pat> {
-        let props = &[IMPORTS, LIVE_VAR, ONCE_VAR];
+        let mut props = HashMap::new();
+        props.insert(IMPORTS, IMPORTS);
+        props.insert(LIVE_VAR, LIVE);
+        props.insert(ONCE_VAR, ONCE);
         vec![Pat::Object(ObjectPat {
             span: DUMMY_SP,
             props: {
                 let mut out = Vec::with_capacity(3);
-                for prop in props {
+                for (prop, target) in props {
                     out.push(ObjectPatProp::KeyValue(KeyValuePatProp {
                         key: PropName::Ident(Ident {
                             span: DUMMY_SP,
@@ -374,7 +385,7 @@ impl<'a> Generator<'a> {
                         value: Box::new(Pat::Ident(BindingIdent {
                             id: Ident {
                                 span: DUMMY_SP,
-                                sym: prefix_hidden(prop),
+                                sym: prefix_hidden(target),
                                 optional: false,
                             },
                             type_ann: None,
