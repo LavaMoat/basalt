@@ -133,18 +133,6 @@ impl<'a> Visitor<'a> {
         if let Some(identity) = self.identity(n) {
             if self.meta.fixed_export_map.contains_key(identity) {
                 return (true, Some(identity));
-            } else {
-                /*
-                let aliases = self.meta.fixed_export_map
-                    .iter()
-                    .map(|(k, v)| v)
-                    .flatten()
-                    .map(|s| &s[..])
-                    .collect::<Vec<_>>();
-                if aliases.contains(&identity) {
-                    return (true, Some(identity))
-                }
-                */
             }
         }
         (false, None)
@@ -158,14 +146,19 @@ impl<'a> Visit for Visitor<'a> {
                 ModuleDecl::ExportNamed(export) => {
                     // Not a re-export
                     if export.src.is_none() {
-                        println!("Got named export {:#?}", export);
 
-                        let prop_target = prefix_hidden(ONCE);
-                        // TODO: handle alias in fixed exports!
-                        let call =
-                            call_stmt(prop_target, "alpha", "aleph".into());
+                        for spec in export.specifiers.iter() {
+                            println!("Got named export {:#?}", spec);
 
-                        self.body.push(call);
+                            if let ExportSpecifier::Named(spec) = spec {
+                                let export_name = spec.exported.as_ref().unwrap_or(&spec.orig).sym.as_ref();
+                                let local_name = spec.orig.sym.as_ref();
+                                let prop_target = prefix_hidden(ONCE);
+                                let call =
+                                    call_stmt(prop_target, export_name, local_name.into());
+                                self.body.push(call);
+                            }
+                        }
                     }
                 }
                 ModuleDecl::ExportDefaultExpr(export) => {
@@ -297,20 +290,9 @@ impl<'a> Visit for Visitor<'a> {
             self.body.push(decl);
             self.body.push(call);
 
-            let live_assign = n.clone();
+            // TODO: Rename the variable on the left hand side of an assignment???
+            self.body.push(n.clone());
 
-            // Rename the variable on the left hand side of an assignment???
-            /*
-            if let Stmt::Expr(ref mut expr) = live_assign {
-                if let Expr::Assign(ref mut assign) = *expr.expr {
-                    if let PatOrExpr::Pat(ref mut pat) = assign.left {
-                        println!("Live assign {:#?}", pat);
-                    }
-                }
-            }
-            */
-
-            self.body.push(live_assign);
         } else {
             let (is_fixed, fixed_name) = self.is_fixed_statement(n);
             if is_fixed {
@@ -541,11 +523,25 @@ impl<'a> Generator<'a> {
                             {
                                 let prop: &str = &prop[..];
                                 let alias: &str = &alias[..];
-                                let live = self
+                                let mut live = self
                                     .meta
                                     .live_export_map
-                                    .contains_key(prop);
-                                //println!("is live {:?} {:?}", live, prop);
+                                    .contains_key(prop)
+                                    || {
+                                        // NOTE: This is a bit of a hack :(
+                                        // NOTE: becuase imports doesn't contain the local name
+                                        // NOTE: so `export {gray as grey} from './gray.js'` only
+                                        // NOTE: gives us `grey` and `grey` right now.
+                                        let live_alias = self.meta.live_export_map.iter().find(|(k, v)| {
+                                            if v.0 == prop {
+                                                return true
+                                            }
+                                            false
+                                        });
+                                        live_alias.is_some()
+                                    };
+
+                                //println!("is live {:?} {:?} {:?}", live, prop, alias);
 
                                 out.push(Some(ExprOrSpread {
                                     spread: None,
