@@ -17,7 +17,9 @@ use swc_ecma_visit::Fold;
 
 use anyhow::Result;
 
-use super::{StaticModuleRecord, Generator, Parser as StaticModuleRecordParser};
+use super::{
+    Generator, Parser as StaticModuleRecordParser, StaticModuleRecord,
+};
 
 struct TransformFold<'a> {
     meta: &'a StaticModuleRecord,
@@ -28,7 +30,9 @@ impl<'a> Fold for TransformFold<'a> {
     fn fold_program(&mut self, n: Program) -> Program {
         match n {
             Program::Module(module) => {
-                let script = self.generator.create(module)
+                let script = self
+                    .generator
+                    .create(module)
                     .expect("failed to generate transformed script");
                 Program::Script(script)
             }
@@ -83,7 +87,10 @@ impl Transform {
         let parser = StaticModuleRecordParser::new();
         let meta = parser.parse(&module)?;
         let generator = Generator::new(&meta);
-        let mut transform = TransformFold { meta: &meta, generator };
+        let mut transform = TransformFold {
+            meta: &meta,
+            generator,
+        };
 
         let compiler = Compiler::new(sm, Arc::new(handler));
         let program = Program::Module(module);
