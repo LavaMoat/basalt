@@ -15,6 +15,7 @@ const LIVE_VAR: &str = "liveVar";
 const ONCE_VAR: &str = "onceVar";
 const MAP: &str = "Map";
 const LIVE: &str = "live";
+const ONCE: &str = "once";
 
 fn prefix_hidden(word: &str) -> JsWord {
     format!("{}{}", HIDDEN_PREFIX, word).into()
@@ -27,6 +28,64 @@ fn prefix_const(word: &str) -> JsWord {
 struct Visitor<'a> {
     meta: &'a StaticModuleRecord,
     body: &'a mut Vec<Stmt>,
+}
+
+fn var_symbol_names(var: &VarDecl) -> Vec<(&str, &VarDeclarator)> {
+    var.decls
+        .iter()
+        .filter(|decl| {
+            match &decl.name {
+                Pat::Ident(binding) => true,
+                _ => false
+            }
+        })
+        .map(|decl| {
+            match &decl.name {
+                Pat::Ident(binding) => {
+                    (binding.id.sym.as_ref(), decl)
+                }
+                _ => unreachable!()
+            }
+        })
+        .collect::<Vec<_>>()
+}
+
+fn call_stmt(prop_target: JsWord, prop_name: &str, arg: JsWord) -> Stmt {
+    Stmt::Expr(ExprStmt {
+        span: DUMMY_SP,
+        expr: Box::new(Expr::Call(CallExpr {
+            span: DUMMY_SP,
+            callee: ExprOrSuper::Expr(Box::new(
+                Expr::Member(MemberExpr {
+                    span: DUMMY_SP,
+                    obj: ExprOrSuper::Expr(Box::new(
+                        Expr::Ident(Ident {
+                            span: DUMMY_SP,
+                            sym: prop_target,
+                            optional: false,
+                        })
+                    )),
+                    prop: Box::new(Expr::Ident(Ident {
+                        span: DUMMY_SP,
+                        sym: prop_name.into(),
+                        optional: false,
+                    })),
+                    computed: false,
+                })
+            )),
+            args: vec![
+                ExprOrSpread {
+                    spread: None,
+                    expr: Box::new(Expr::Ident(Ident {
+                        span: DUMMY_SP,
+                        sym: arg,
+                        optional: false,
+                    }))
+                }
+            ],
+            type_args: None,
+        })),
+    })
 }
 
 impl<'a> Visitor<'a> {
@@ -82,6 +141,7 @@ impl<'a> Visitor<'a> {
             if self.meta.fixed_export_map.contains_key(identity) {
                 return (true, Some(identity))
             } else {
+                /*
                 let aliases = self.meta.fixed_export_map
                     .iter()
                     .map(|(k, v)| v)
@@ -91,6 +151,7 @@ impl<'a> Visitor<'a> {
                 if aliases.contains(&identity) {
                     return (true, Some(identity))
                 }
+                */
             }
         }
         (false, None)
@@ -99,10 +160,60 @@ impl<'a> Visitor<'a> {
 }
 
 impl<'a> Visit for Visitor<'a> {
+
+    fn visit_module_item(&mut self, n: &ModuleItem, node: &dyn Node) {
+        match n {
+            ModuleItem::ModuleDecl(decl) => match decl {
+                ModuleDecl::ExportNamed(export) => {
+                    // Not a re-export
+                    if export.src.is_none() {
+                        //println!("Got named export {:#?}", export);
+                    }
+                }
+                ModuleDecl::ExportDefaultExpr(export) => {
+                    // TODO
+                    // const { default: $c_default } = { default: 42 };
+                    // $h_once.default($c_default);
+                    //println!("Got default export expression...");
+                }
+                ModuleDecl::ExportDecl(export) => match &export.decl {
+                    Decl::Var(var) => {
+
+                        let names = var_symbol_names(var);
+
+                        // Pass through the declaration untouched
+                        //self.body.push(Stmt::Decl(Decl::Var(var.clone())));
+
+                        for (name, decl) in names {
+                            if self.meta.fixed_export_map.contains_key(name) {
+                                self.body.push(
+                                    Stmt::Decl(
+                                        Decl::Var(VarDecl {
+                                            span: DUMMY_SP,
+                                            kind: var.kind.clone(),
+                                            declare: false,
+                                            decls: vec![decl.clone()],
+                                        })));
+
+                                let prop_target = prefix_hidden(ONCE);
+                                // TODO: handle alias in fixed exports!
+                                let call = call_stmt(
+                                    prop_target, name, name.into());
+                                self.body.push(call);
+                            }
+                        }
+                    }
+                    _ => {}
+                }
+                _ => {}
+            }
+            ModuleItem::Stmt(stmt) => self.visit_stmt(stmt, node)
+        }
+    }
+
     fn visit_stmt(&mut self, n: &Stmt, _: &dyn Node) {
         let (is_live, live_name) = self.is_live_statement(n);
         if is_live {
-            //println!("IS A LIVE STATEMENT {:?}", live_name);
             let live_name = live_name.unwrap();
             let prop_name = prefix_const(live_name);
             let prop_target = prefix_hidden(LIVE);
@@ -131,44 +242,13 @@ impl<'a> Visit for Visitor<'a> {
                 ],
             }));
 
-            let call = Stmt::Expr(ExprStmt {
-                span: DUMMY_SP,
-                expr: Box::new(Expr::Call(CallExpr {
-                    span: DUMMY_SP,
-                    callee: ExprOrSuper::Expr(Box::new(
-                        Expr::Member(MemberExpr {
-                            span: DUMMY_SP,
-                            obj: ExprOrSuper::Expr(Box::new(
-                                Expr::Ident(Ident {
-                                    span: DUMMY_SP,
-                                    sym: prop_target,
-                                    optional: false,
-                                })
-                            )),
-                            prop: Box::new(Expr::Ident(Ident {
-                                span: DUMMY_SP,
-                                sym: live_name.into(),
-                                optional: false,
-                            })),
-                            computed: false,
-                        })
-                    )),
-                    args: vec![
-                        ExprOrSpread {
-                            spread: None,
-                            expr: Box::new(Expr::Ident(Ident {
-                                span: DUMMY_SP,
-                                sym: prop_name,
-                                optional: false,
-                            }))
-                        }
-                    ],
-                    type_args: None,
-                })),
-            });
+            let call = call_stmt(prop_target, live_name, prop_name);
 
             self.body.push(decl);
             self.body.push(call);
+
+            // TODO: should this be renamed to $c_quuux???
+            self.body.push(n.clone());
 
         } else {
             let (is_fixed, fixed_name) = self.is_fixed_statement(n);
