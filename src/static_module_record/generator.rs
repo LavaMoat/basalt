@@ -394,13 +394,15 @@ impl<'a> Generator<'a> {
             stmts: Vec::new(),
         };
 
+        let decls = self.meta.decls();
+
         let local_vars = Stmt::Decl(Decl::Var(VarDecl {
             span: DUMMY_SP,
             kind: VarDeclKind::Let,
             declare: false,
             decls: {
-                let mut out = Vec::with_capacity(self.meta.import_decls.len());
-                for name in self.meta.import_decls.iter() {
+                let mut out = Vec::with_capacity(decls.len());
+                for name in decls.iter() {
                     let nm: &str = &name[..];
                     out.push(VarDeclarator {
                         span: DUMMY_SP,

@@ -44,12 +44,31 @@ pub struct StaticModuleRecord<'a> {
     pub module: &'a Module,
 
     /// List of import declarations.
+    ///
+    /// This is used by the transform to set up the locally
+    /// scoped variable names.
     #[serde(skip)]
     pub import_decls: Vec<&'a str>,
 
     /// Map from import to declaration names (specifiers).
     #[serde(skip)]
     pub import_alias: HashMap<&'a str, Vec<&'a str>>,
+}
+
+impl<'a> StaticModuleRecord<'a> {
+
+    /// Get the list of import declarations.
+    ///
+    /// This is used by the transform to set up the locally
+    /// scoped variable names.
+    pub fn decls(&self) -> Vec<&'a str> {
+        self.imports
+            .iter()
+            .map(|(k, v)| v )
+            .flatten()
+            .map(|i| i.name)
+            .collect::<Vec<_>>()
+    }
 }
 
 pub mod generator;
