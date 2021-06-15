@@ -506,7 +506,7 @@ impl<'a> Generator<'a> {
     /// The arguments for each nested map.
     fn imports_map_constructor_args_map(
         &self,
-        props: &Vec<String>,
+        props: &Vec<&str>,
         aliases: &Vec<&str>,
     ) -> ExprOrSpread {
         ExprOrSpread {

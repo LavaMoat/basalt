@@ -18,12 +18,12 @@ pub enum ImportRecord {
 }
 
 impl ImportRecord {
-    pub fn word(&self) -> String {
+    pub fn word(&self) -> &str {
         match self {
-            ImportRecord::All { .. } => String::from("*"),
-            ImportRecord::Default { .. } => String::from("default"),
+            ImportRecord::All { .. } => "*",
+            ImportRecord::Default { .. } => "default",
             ImportRecord::Named { local, alias } => {
-                alias.clone().unwrap_or(local.clone())
+                alias.as_ref().map(|s| &s[..]).unwrap_or(&local[..])
             }
         }
     }

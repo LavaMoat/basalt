@@ -162,7 +162,7 @@ impl Parser {
                         .insert(&module_path[..], words.clone());
 
                     // TODO: make imports words a string slice!!!!
-                    let words = words.iter().map(|s| s.to_string()).collect::<Vec<_>>();
+                    //let words = words.iter().map(|s| s.to_string()).collect::<Vec<_>>();
                     record.imports.insert(&module_path[..], words);
 
                     for spec in specifiers {

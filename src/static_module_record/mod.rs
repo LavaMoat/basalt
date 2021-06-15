@@ -19,7 +19,7 @@ pub struct StaticModuleRecord<'a> {
     /// All exports, eg: `export * from './foo.js';`
     pub export_alls: Vec<&'a str>,
     /// All the imports for the module.
-    pub imports: HashMap<&'a str, Vec<String>>,
+    pub imports: HashMap<&'a str, Vec<&'a str>>,
     /// Map of live exports.
     pub live_export_map: HashMap<String, LiveExport>,
     /// Map of fixed exports.
