@@ -68,9 +68,9 @@ impl Parser {
 
 
             let words = symbols.iter().map(|s| s.word()).collect::<Vec<_>>();
-            record.imports.insert(key.clone(), words);
+            record.imports.insert(&key[..], words);
 
-            record.import_alias.insert(key.clone(), names.clone());
+            record.import_alias.insert(&key[..], names.clone());
 
             record.import_decls.append(&mut names);
         }
@@ -159,11 +159,11 @@ impl Parser {
 
                     record
                         .import_alias
-                        .insert(module_path.clone(), words.clone());
+                        .insert(&module_path[..], words.clone());
 
                     // TODO: make imports words a string slice!!!!
                     let words = words.iter().map(|s| s.to_string()).collect::<Vec<_>>();
-                    record.imports.insert(module_path.clone(), words);
+                    record.imports.insert(&module_path[..], words);
 
                     for spec in specifiers {
                         match spec {
@@ -186,9 +186,10 @@ impl Parser {
                     }
                 }
                 ReexportRecord::All { module_path } => {
-                    record.import_alias.insert(module_path.clone(), Vec::new());
-                    record.imports.insert(module_path.clone(), Vec::new());
-                    record.export_alls.push(module_path.clone());
+                    let module_path = &module_path[..];
+                    record.imports.insert(module_path, Vec::new());
+                    record.import_alias.insert(module_path, Vec::new());
+                    record.export_alls.push(module_path);
                 }
             }
         }

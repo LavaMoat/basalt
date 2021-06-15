@@ -17,9 +17,9 @@ pub type LiveExport = (String, bool);
 #[serde(rename_all = "camelCase")]
 pub struct StaticModuleRecord<'a> {
     /// All exports, eg: `export * from './foo.js';`
-    pub export_alls: Vec<String>,
+    pub export_alls: Vec<&'a str>,
     /// All the imports for the module.
-    pub imports: HashMap<String, Vec<String>>,
+    pub imports: HashMap<&'a str, Vec<String>>,
     /// Map of live exports.
     pub live_export_map: HashMap<String, LiveExport>,
     /// Map of fixed exports.
@@ -35,7 +35,7 @@ pub struct StaticModuleRecord<'a> {
 
     /// Map from import to declaration names (specifiers).
     #[serde(skip)]
-    pub import_alias: HashMap<String, Vec<&'a str>>,
+    pub import_alias: HashMap<&'a str, Vec<&'a str>>,
 }
 
 pub mod generator;
