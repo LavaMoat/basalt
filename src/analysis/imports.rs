@@ -5,28 +5,9 @@ use swc_ecma_visit::{Node, Visit};
 
 #[derive(Debug)]
 pub enum ImportRecord {
-    All {
-        local: String,
-    },
-    Default {
-        local: String,
-    },
-    Named {
-        local: String,
-        alias: Option<String>,
-    },
-}
-
-impl ImportRecord {
-    pub fn word(&self) -> &str {
-        match self {
-            ImportRecord::All { .. } => "*",
-            ImportRecord::Default { .. } => "default",
-            ImportRecord::Named { local, alias } => {
-                alias.as_ref().map(|s| &s[..]).unwrap_or(&local[..])
-            }
-        }
-    }
+    All { name: String },
+    Default { name: String },
+    Named { name: String, alias: String },
 }
 
 #[derive(Default, Debug)]
@@ -44,7 +25,7 @@ impl ImportAnalysis {
 
 impl Visit for ImportAnalysis {
     fn visit_import_decl(&mut self, n: &ImportDecl, _: &dyn Node) {
-        let module_path = format!("{}", n.src.value);
+        let module_path = n.src.value.as_ref().to_string();
         for spec in n.specifiers.iter() {
             let list = self
                 .imports
@@ -53,22 +34,22 @@ impl Visit for ImportAnalysis {
             match spec {
                 ImportSpecifier::Namespace(item) => {
                     list.push(ImportRecord::All {
-                        local: format!("{}", item.local.sym),
+                        name: item.local.sym.as_ref().to_string(),
                     });
                 }
                 ImportSpecifier::Default(item) => {
                     list.push(ImportRecord::Default {
-                        local: format!("{}", item.local.sym),
+                        name: item.local.sym.as_ref().to_string(),
                     });
                 }
                 ImportSpecifier::Named(item) => {
-                    list.push(ImportRecord::Named {
-                        local: format!("{}", item.local.sym),
-                        alias: item
-                            .imported
-                            .as_ref()
-                            .map(|ident| format!("{}", ident.sym)),
-                    });
+                    let alias = item.local.sym.as_ref().to_string();
+                    let name = item
+                        .imported
+                        .as_ref()
+                        .map(|n| n.sym.as_ref().to_string())
+                        .unwrap_or(item.local.sym.as_ref().to_string());
+                    list.push(ImportRecord::Named { name, alias });
                 }
             }
         }

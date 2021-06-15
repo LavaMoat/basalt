@@ -1,6 +1,4 @@
 //! Parse static module record meta data.
-use std::path::Path;
-
 use anyhow::Result;
 
 use swc_ecma_ast::*;
@@ -45,7 +43,6 @@ impl Parser {
             imports: Default::default(),
             live_export_map: Default::default(),
             fixed_export_map: Default::default(),
-            import_alias: Default::default(),
         };
 
         module.visit_children_with(&mut self.importer);
@@ -55,30 +52,25 @@ impl Parser {
         module.visit_children_with(&mut self.live_exports);
 
         for (key, symbols) in self.importer.imports.iter() {
-            let mut names = symbols
-                .iter()
-                .map(|s| match s {
-                    ImportRecord::Named { local, .. } => local.as_ref(),
-                    ImportRecord::Default { local, .. } => local.as_ref(),
-                    ImportRecord::All { local } => local.as_ref(),
-                })
-                .collect::<Vec<_>>();
-
             let imports = symbols
                 .iter()
                 .map(|s| match s {
-                    ImportRecord::Named { local, alias } => {
-                        ImportName{
-                        name: local.as_ref(),
-                        alias: alias.as_ref().map(|s| &s[..]) }
+                    ImportRecord::Named { name, alias } => ImportName {
+                        name: name.as_ref(),
+                        alias: Some(&alias[..]),
                     },
-                    ImportRecord::Default { local, .. } => ImportName{ name: local.as_ref(), alias: None},
-                    ImportRecord::All { local } => ImportName{ name: local.as_ref(), alias: None},
+                    ImportRecord::Default { name, .. } => ImportName {
+                        name: name.as_ref(),
+                        alias: None,
+                    },
+                    ImportRecord::All { name } => ImportName {
+                        name: name.as_ref(),
+                        alias: None,
+                    },
                 })
                 .collect::<Vec<_>>();
 
             record.imports.insert(&key[..], imports);
-            record.import_alias.insert(&key[..], names.clone());
         }
 
         for name in self.live_exports.live.iter() {
@@ -139,8 +131,6 @@ impl Parser {
                     module_path,
                     specifiers,
                 } => {
-
-                    // FIXME: remove this!!!
                     let words = specifiers
                         .iter()
                         .filter(|s| {
@@ -151,35 +141,18 @@ impl Parser {
                             }
                         })
                         .map(|s| match s {
-                            ExportSpecifier::Named(export) => {
-                                export.orig.sym.as_ref()
-                            }
-                            _ => unreachable!(),
-                        })
-                        .collect::<Vec<_>>();
-                    record.import_alias.insert(&module_path[..], words);
-
-                    let words = specifiers
-                        .iter()
-                        .filter(|s| {
-                            if let ExportSpecifier::Named(_) = s {
-                                true
-                            } else {
-                                false
-                            }
-                        })
-                        .map(|s| match s {
-                            ExportSpecifier::Named(export) => {
-                                ImportName { name: export.orig.sym.as_ref(), alias:None }
-                            }
+                            ExportSpecifier::Named(export) => ImportName {
+                                name: export.orig.sym.as_ref(),
+                                alias: export
+                                    .exported
+                                    .as_ref()
+                                    .map(|ident| ident.sym.as_ref()),
+                            },
                             _ => unreachable!(),
                         })
                         .collect::<Vec<_>>();
 
-                    record.imports.insert(
-                        &module_path[..],
-                        words
-                    );
+                    record.imports.insert(&module_path[..], words);
 
                     for spec in specifiers {
                         match spec {
@@ -203,7 +176,6 @@ impl Parser {
                 ReexportRecord::All { module_path } => {
                     let module_path = &module_path[..];
                     record.imports.insert(module_path, Vec::new());
-                    record.import_alias.insert(module_path, Vec::new());
                     record.export_alls.push(module_path);
                 }
             }

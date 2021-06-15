@@ -66,13 +66,13 @@ impl Visit for ExportAnalysis {
             ModuleItem::ModuleDecl(decl) => match decl {
                 // export * from 'import-and-export-all.js';
                 ModuleDecl::ExportAll(export) => {
-                    let module_path = format!("{}", export.src.value);
+                    let module_path = export.src.value.as_ref().to_string();
                     self.reexports.push(ReexportRecord::All { module_path });
                 }
                 ModuleDecl::ExportNamed(export) => {
                     // export { grey as gray } from './reexport-name-and-rename.js';
                     if let Some(ref src) = export.src {
-                        let module_path = format!("{}", src.value);
+                        let module_path = src.value.as_ref().to_string();
                         let specifiers = export.specifiers.clone();
                         self.reexports.push(ReexportRecord::Named {
                             module_path,
@@ -92,7 +92,6 @@ impl Visit for ExportAnalysis {
                     }
                     // export function foo() {}
                     Decl::Fn(func) => {
-                        println!("Got function export declaration {:#?}", func);
                         self.exports
                             .push(ExportRecord::FnDecl { func: func.clone() });
                     }

@@ -4,22 +4,18 @@ use std::sync::Arc;
 
 use swc::{
     config::{JscTarget, Options, SourceMapsConfig},
-    Compiler, PassBuilder, TransformOutput,
+    Compiler, TransformOutput,
 };
 use swc_common::{
     errors::{emitter::ColorConfig, Handler},
-    hygiene::Mark,
-    FileName, SourceMap, DUMMY_SP,
+    SourceMap,
 };
 use swc_ecma_ast::*;
 use swc_ecma_parser::{lexer::Lexer, Parser, StringInput, Syntax};
-use swc_ecma_visit::Fold;
 
 use anyhow::Result;
 
-use super::{
-    Generator, Parser as StaticModuleRecordParser, StaticModuleRecord,
-};
+use super::{Generator, Parser as StaticModuleRecordParser};
 
 /// Transform the module file to a program script.
 pub fn transform<P: AsRef<Path>>(file: P) -> Result<TransformOutput> {

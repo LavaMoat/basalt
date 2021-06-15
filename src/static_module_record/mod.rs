@@ -42,25 +42,37 @@ pub struct StaticModuleRecord<'a> {
     /// The source module AST node.
     #[serde(skip)]
     pub module: &'a Module,
-
-    /// Map from import to declaration names (specifiers).
-    #[serde(skip)]
-    pub import_alias: HashMap<&'a str, Vec<&'a str>>,
 }
 
 impl<'a> StaticModuleRecord<'a> {
-
     /// Get the list of import declarations.
     ///
     /// This is used by the transform to set up the locally
     /// scoped variable names.
-    pub fn decls(&self) -> Vec<&'a str> {
+    pub fn decls(&self) -> Vec<&str> {
         self.imports
             .iter()
-            .map(|(k, v)| v )
+            .map(|(_k, v)| v)
             .flatten()
-            .map(|i| i.name)
+            .map(|i| i.alias.as_deref().unwrap_or(i.name))
             .collect::<Vec<_>>()
+    }
+
+    /// Get the list of aliases for an import specifier.
+    ///
+    /// If an alias is not available the name is used instead.
+    pub fn aliases(&self) -> HashMap<&str, Vec<&str>> {
+        self.imports
+            .iter()
+            .map(|(k, v)| {
+                (
+                    *k,
+                    v.iter()
+                        .map(|i| i.alias.as_deref().unwrap_or(i.name))
+                        .collect::<Vec<_>>(),
+                )
+            })
+            .collect::<HashMap<_, _>>()
     }
 }
 

@@ -36,7 +36,7 @@ fn var_symbol_names(var: &VarDecl) -> Vec<(&str, &VarDeclarator)> {
     var.decls
         .iter()
         .filter(|decl| match &decl.name {
-            Pat::Ident(binding) => true,
+            Pat::Ident(_binding) => true,
             _ => false,
         })
         .map(|decl| match &decl.name {
@@ -125,18 +125,6 @@ impl<'a> Visitor<'a> {
         }
         (false, None)
     }
-
-    fn is_fixed_statement<'b>(
-        &mut self,
-        n: &'b Stmt,
-    ) -> (bool, Option<&'b str>) {
-        if let Some(identity) = self.identity(n) {
-            if self.meta.fixed_export_map.contains_key(identity) {
-                return (true, Some(identity));
-            }
-        }
-        (false, None)
-    }
 }
 
 impl<'a> Visit for Visitor<'a> {
@@ -147,8 +135,6 @@ impl<'a> Visit for Visitor<'a> {
                     // Not a re-export
                     if export.src.is_none() {
                         for spec in export.specifiers.iter() {
-                            println!("Got named export {:#?}", spec);
-
                             if let ExportSpecifier::Named(spec) = spec {
                                 let export_name = spec
                                     .exported
@@ -300,13 +286,7 @@ impl<'a> Visit for Visitor<'a> {
             // TODO: Rename the variable on the left hand side of an assignment???
             self.body.push(n.clone());
         } else {
-            let (is_fixed, fixed_name) = self.is_fixed_statement(n);
-            if is_fixed {
-                println!("IS A FIXED STATEMENT {:?}", fixed_name);
-            } else {
-                //println!("GOT A PASSTHROUGH STATEMENT {:#?}", n);
-                self.body.push(n.clone());
-            }
+            self.body.push(n.clone());
         }
     }
 }
@@ -324,8 +304,6 @@ impl<'a> Generator<'a> {
 
     /// Create the program script AST node.
     pub fn create(&self) -> Result<Script> {
-        //println!("{:#?}", self.meta);
-
         let mut script = Script {
             span: DUMMY_SP,
             body: Vec::with_capacity(1),
@@ -395,7 +373,6 @@ impl<'a> Generator<'a> {
         };
 
         let decls = self.meta.decls();
-
         let local_vars = Stmt::Decl(Decl::Var(VarDecl {
             span: DUMMY_SP,
             kind: VarDeclKind::Let,
@@ -476,7 +453,8 @@ impl<'a> Generator<'a> {
         let mut out = Vec::with_capacity(self.meta.imports.len());
         for (key, props) in self.meta.imports.iter() {
             let key: &str = &key[..];
-            let aliases = self.meta.import_alias.get(key).unwrap();
+            let computed_aliases = self.meta.aliases();
+            let aliases = computed_aliases.get(key).unwrap();
             out.push(ExprOrSpread {
                 spread: None,
                 expr: Box::new(Expr::Array(ArrayLit {
@@ -531,7 +509,7 @@ impl<'a> Generator<'a> {
                             {
                                 let prop = prop.name;
                                 let alias: &str = &alias[..];
-                                let mut live = self
+                                let live = self
                                     .meta
                                     .live_export_map
                                     .contains_key(prop)
@@ -544,7 +522,7 @@ impl<'a> Generator<'a> {
                                             .meta
                                             .live_export_map
                                             .iter()
-                                            .find(|(k, v)| {
+                                            .find(|(_k, v)| {
                                                 if v.0 == prop {
                                                     return true;
                                                 }

@@ -6,7 +6,6 @@
 use std::path::PathBuf;
 
 use anyhow::{bail, Result};
-use swc::config::{JscTarget, SourceMapsConfig};
 
 mod analysis;
 mod module_node;
