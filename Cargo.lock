@@ -97,6 +97,7 @@ name = "basalt"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "indexmap",
  "log",
  "pretty_env_logger",
  "serde",

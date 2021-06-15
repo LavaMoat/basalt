@@ -9,7 +9,7 @@ Currently the `swc` project should be checked out in the parent directory as we 
 To print the module graph for a file:
 
 ```
-cargo +nightly run -- ls test/fixtures/basic-tree/main.js
+cargo +nightly run -- ls tests/fixtures/basic-tree/main.js
 ```
 
 ## Static Module Record
@@ -17,13 +17,13 @@ cargo +nightly run -- ls test/fixtures/basic-tree/main.js
 To print the static module record meta data for a file:
 
 ```
-cargo +nightly run -- meta test/fixtures/static-module-record/main.js
+cargo +nightly run -- meta tests/fixtures/static-module-record/main.js
 ```
 
 To print the static module record functor for a file:
 
 ```
-cargo +nightly run -- functor test/fixtures/static-module-record/main.js
+cargo +nightly run -- functor tests/fixtures/static-module-record/main.js
 ```
 
 ## API Documentation

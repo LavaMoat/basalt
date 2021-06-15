@@ -1,5 +1,5 @@
 //! Transform a module to a static module record program.
-use std::path::Path;
+use std::path::PathBuf;
 use std::sync::Arc;
 
 use swc::{
@@ -8,7 +8,7 @@ use swc::{
 };
 use swc_common::{
     errors::{emitter::ColorConfig, Handler},
-    SourceMap,
+    FileName, SourceMap,
 };
 use swc_ecma_ast::*;
 use swc_ecma_parser::{lexer::Lexer, Parser, StringInput, Syntax};
@@ -17,8 +17,22 @@ use anyhow::Result;
 
 use super::{Generator, Parser as StaticModuleRecordParser};
 
+/// Sources that may be transformed
+#[derive(Debug)]
+pub enum TransformSource {
+    /// Load a file from disc for the transformation.
+    File(PathBuf),
+    /// Load from a string.
+    Str {
+        /// The module source.
+        content: String,
+        /// The file name for the module.
+        file_name: String,
+    },
+}
+
 /// Transform the module file to a program script.
-pub fn transform<P: AsRef<Path>>(file: P) -> Result<TransformOutput> {
+pub fn transform(source: TransformSource) -> Result<TransformOutput> {
     let sm: Arc<SourceMap> = Arc::new(Default::default());
     let handler = Handler::with_tty_emitter(
         ColorConfig::Auto,
@@ -30,7 +44,14 @@ pub fn transform<P: AsRef<Path>>(file: P) -> Result<TransformOutput> {
     let mut options: Options = Default::default();
     options.source_maps = Some(SourceMapsConfig::Bool(true));
 
-    let fm = sm.load_file(file.as_ref())?;
+    let fm = match source {
+        TransformSource::File(path) => sm.load_file(&path)?,
+        TransformSource::Str { content, file_name } => sm.new_source_file(
+            FileName::Custom(file_name.into()),
+            content.into(),
+        ),
+    };
+
     let lexer = Lexer::new(
         Syntax::Es(Default::default()),
         JscTarget::Es2020,

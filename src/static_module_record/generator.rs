@@ -7,6 +7,8 @@ use swc_common::DUMMY_SP;
 use swc_ecma_ast::*;
 use swc_ecma_visit::{Node, Visit, VisitWith};
 
+use indexmap::IndexMap;
+
 use super::{ImportName, StaticModuleRecord};
 
 const HIDDEN_PREFIX: &str = "$h\u{200d}_";
@@ -333,7 +335,7 @@ impl<'a> Generator<'a> {
 
     /// Build up the functor function parameters.
     fn params(&self) -> Vec<Pat> {
-        let mut props = HashMap::new();
+        let mut props = IndexMap::new();
         props.insert(IMPORTS, IMPORTS);
         props.insert(LIVE_VAR, LIVE);
         props.insert(ONCE_VAR, ONCE);
@@ -373,33 +375,36 @@ impl<'a> Generator<'a> {
         };
 
         let decls = self.meta.decls();
-        let local_vars = Stmt::Decl(Decl::Var(VarDecl {
-            span: DUMMY_SP,
-            kind: VarDeclKind::Let,
-            declare: false,
-            decls: {
-                let mut out = Vec::with_capacity(decls.len());
-                for name in decls.iter() {
-                    let nm: &str = &name[..];
-                    out.push(VarDeclarator {
-                        span: DUMMY_SP,
-                        definite: false,
-                        init: None,
-                        name: Pat::Ident(BindingIdent {
-                            id: Ident {
-                                span: DUMMY_SP,
-                                sym: nm.into(),
-                                optional: false,
-                            },
-                            type_ann: None,
-                        }),
-                    });
-                }
-                out
-            },
-        }));
 
-        block.stmts.push(local_vars);
+        if !decls.is_empty() {
+            let local_vars = Stmt::Decl(Decl::Var(VarDecl {
+                span: DUMMY_SP,
+                kind: VarDeclKind::Let,
+                declare: false,
+                decls: {
+                    let mut out = Vec::with_capacity(decls.len());
+                    for name in decls.iter() {
+                        let nm: &str = &name[..];
+                        out.push(VarDeclarator {
+                            span: DUMMY_SP,
+                            definite: false,
+                            init: None,
+                            name: Pat::Ident(BindingIdent {
+                                id: Ident {
+                                    span: DUMMY_SP,
+                                    sym: nm.into(),
+                                    optional: false,
+                                },
+                                type_ann: None,
+                            }),
+                        });
+                    }
+                    out
+                },
+            }));
+            block.stmts.push(local_vars);
+        }
+
         block.stmts.push(self.imports_func_call());
 
         let mut visitor = Visitor {

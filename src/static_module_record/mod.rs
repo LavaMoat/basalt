@@ -82,4 +82,4 @@ pub mod transform;
 
 pub use generator::Generator;
 pub use parser::Parser;
-pub use transform::transform;
+pub use transform::{transform, TransformSource};

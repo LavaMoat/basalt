@@ -12,6 +12,7 @@ log = "0.4"
 pretty_env_logger = "0.4"
 serde = "1"
 serde_json = "1"
+indexmap = "1.6"
 
 swc = { version = "0.20", path = "../swc" }
 swc_bundler = { version = "0.37", path = "../swc/bundler" }
