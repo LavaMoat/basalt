@@ -1,7 +1,7 @@
 //! Static module record.
 //!
 //! More information in the [static module record design document](https://github.com/endojs/endo/blob/master/packages/static-module-record/DESIGN.md).
-use std::collections::HashMap;
+use indexmap::IndexMap;
 
 use swc_ecma_ast::Module;
 
@@ -33,11 +33,11 @@ pub struct StaticModuleRecord<'a> {
     /// All exports, eg: `export * from './foo.js';`
     pub export_alls: Vec<&'a str>,
     /// All the imports for the module.
-    pub imports: HashMap<&'a str, Vec<ImportName<'a>>>,
+    pub imports: IndexMap<&'a str, Vec<ImportName<'a>>>,
     /// Map of live exports.
-    pub live_export_map: HashMap<&'a str, LiveExport<'a>>,
+    pub live_export_map: IndexMap<&'a str, LiveExport<'a>>,
     /// Map of fixed exports.
-    pub fixed_export_map: HashMap<&'a str, Vec<&'a str>>,
+    pub fixed_export_map: IndexMap<&'a str, Vec<&'a str>>,
 
     /// The source module AST node.
     #[serde(skip)]
@@ -61,7 +61,7 @@ impl<'a> StaticModuleRecord<'a> {
     /// Get the list of aliases for an import specifier.
     ///
     /// If an alias is not available the name is used instead.
-    pub fn aliases(&self) -> HashMap<&str, Vec<&str>> {
+    pub fn aliases(&self) -> IndexMap<&str, Vec<&str>> {
         self.imports
             .iter()
             .map(|(k, v)| {
@@ -72,7 +72,7 @@ impl<'a> StaticModuleRecord<'a> {
                         .collect::<Vec<_>>(),
                 )
             })
-            .collect::<HashMap<_, _>>()
+            .collect::<IndexMap<_, _>>()
     }
 }
 

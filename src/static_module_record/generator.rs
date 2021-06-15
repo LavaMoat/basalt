@@ -1,6 +1,5 @@
 //! Generator the functor program from a static module record meta data.
 use anyhow::Result;
-use std::collections::HashMap;
 
 use swc_atoms::JsWord;
 use swc_common::DUMMY_SP;

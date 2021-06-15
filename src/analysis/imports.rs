@@ -1,7 +1,8 @@
 //! Helper to analyze imports from a module.
-use std::collections::HashMap;
 use swc_ecma_ast::*;
 use swc_ecma_visit::{Node, Visit};
+
+use indexmap::IndexMap;
 
 #[derive(Debug)]
 pub enum ImportRecord {
@@ -12,7 +13,7 @@ pub enum ImportRecord {
 
 #[derive(Default, Debug)]
 pub struct ImportAnalysis {
-    pub imports: HashMap<String, Vec<ImportRecord>>,
+    pub imports: IndexMap<String, Vec<ImportRecord>>,
 }
 
 impl ImportAnalysis {
