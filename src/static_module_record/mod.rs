@@ -43,13 +43,6 @@ pub struct StaticModuleRecord<'a> {
     #[serde(skip)]
     pub module: &'a Module,
 
-    /// List of import declarations.
-    ///
-    /// This is used by the transform to set up the locally
-    /// scoped variable names.
-    #[serde(skip)]
-    pub import_decls: Vec<&'a str>,
-
     /// Map from import to declaration names (specifiers).
     #[serde(skip)]
     pub import_alias: HashMap<&'a str, Vec<&'a str>>,

@@ -45,7 +45,6 @@ impl Parser {
             imports: Default::default(),
             live_export_map: Default::default(),
             fixed_export_map: Default::default(),
-            import_decls: Default::default(),
             import_alias: Default::default(),
         };
 
@@ -79,10 +78,7 @@ impl Parser {
                 .collect::<Vec<_>>();
 
             record.imports.insert(&key[..], imports);
-
             record.import_alias.insert(&key[..], names.clone());
-
-            record.import_decls.append(&mut names);
         }
 
         for name in self.live_exports.live.iter() {
