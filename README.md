@@ -4,6 +4,14 @@ LavaMoat analyzer, linter and bundler.
 
 Currently the `swc` project should be checked out in the parent directory as we are building from source; later we will build against the packages in the cargo repository.
 
+## Test
+
+To run the tests:
+
+```
+cargo +nightly test -- --nocapture
+```
+
 ## List
 
 To print the module graph for a file:
@@ -23,7 +31,7 @@ cargo +nightly run -- meta tests/fixtures/static-module-record/main.js
 To print the static module record functor for a file:
 
 ```
-cargo +nightly run -- functor tests/fixtures/static-module-record/main.js
+cargo +nightly run -- transform tests/fixtures/static-module-record/main.js
 ```
 
 ## API Documentation

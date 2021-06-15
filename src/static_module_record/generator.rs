@@ -155,6 +155,9 @@ impl<'a> Visit for Visitor<'a> {
                         }
                     }
                 }
+                ModuleDecl::ExportDefaultDecl(export) => {
+                    todo!("Export default decl");
+                }
                 ModuleDecl::ExportDefaultExpr(export) => {
                     // TODO
                     // const { default: $c_default } = { default: 42 };
