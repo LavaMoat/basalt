@@ -1,6 +1,6 @@
 //! Generator the functor program from a static module record meta data.
-use std::collections::HashMap;
 use anyhow::Result;
+use std::collections::HashMap;
 
 use swc_atoms::JsWord;
 use swc_common::DUMMY_SP;
@@ -28,7 +28,7 @@ fn prefix_const(word: &str) -> JsWord {
 }
 
 struct Visitor<'a> {
-    meta: &'a StaticModuleRecord,
+    meta: &'a StaticModuleRecord<'a>,
     body: &'a mut Vec<Stmt>,
 }
 
@@ -146,16 +146,23 @@ impl<'a> Visit for Visitor<'a> {
                 ModuleDecl::ExportNamed(export) => {
                     // Not a re-export
                     if export.src.is_none() {
-
                         for spec in export.specifiers.iter() {
                             println!("Got named export {:#?}", spec);
 
                             if let ExportSpecifier::Named(spec) = spec {
-                                let export_name = spec.exported.as_ref().unwrap_or(&spec.orig).sym.as_ref();
+                                let export_name = spec
+                                    .exported
+                                    .as_ref()
+                                    .unwrap_or(&spec.orig)
+                                    .sym
+                                    .as_ref();
                                 let local_name = spec.orig.sym.as_ref();
                                 let prop_target = prefix_hidden(ONCE);
-                                let call =
-                                    call_stmt(prop_target, export_name, local_name.into());
+                                let call = call_stmt(
+                                    prop_target,
+                                    export_name,
+                                    local_name.into(),
+                                );
                                 self.body.push(call);
                             }
                         }
@@ -292,7 +299,6 @@ impl<'a> Visit for Visitor<'a> {
 
             // TODO: Rename the variable on the left hand side of an assignment???
             self.body.push(n.clone());
-
         } else {
             let (is_fixed, fixed_name) = self.is_fixed_statement(n);
             if is_fixed {
@@ -307,17 +313,17 @@ impl<'a> Visit for Visitor<'a> {
 
 /// Generate a static module record functor program.
 pub struct Generator<'a> {
-    meta: &'a StaticModuleRecord,
+    meta: &'a StaticModuleRecord<'a>,
 }
 
 impl<'a> Generator<'a> {
     /// Create a new generator.
-    pub fn new(meta: &'a StaticModuleRecord) -> Self {
+    pub fn new(meta: &'a StaticModuleRecord<'a>) -> Self {
         Generator { meta }
     }
 
     /// Create the program script AST node.
-    pub fn create(&self, module: Module) -> Result<Script> {
+    pub fn create(&self) -> Result<Script> {
         //println!("{:#?}", self.meta);
 
         let mut script = Script {
@@ -333,7 +339,7 @@ impl<'a> Generator<'a> {
                 expr: Box::new(Expr::Arrow(ArrowExpr {
                     span: DUMMY_SP,
                     params: self.params(),
-                    body: BlockStmtOrExpr::BlockStmt(self.body(module)),
+                    body: BlockStmtOrExpr::BlockStmt(self.body()),
                     is_async: false,
                     is_generator: false,
                     type_params: None,
@@ -356,7 +362,7 @@ impl<'a> Generator<'a> {
         vec![Pat::Object(ObjectPat {
             span: DUMMY_SP,
             props: {
-                let mut out = Vec::with_capacity(3);
+                let mut out = Vec::with_capacity(props.len());
                 for (prop, target) in props {
                     out.push(ObjectPatProp::KeyValue(KeyValuePatProp {
                         key: PropName::Ident(Ident {
@@ -382,7 +388,7 @@ impl<'a> Generator<'a> {
     }
 
     /// The function body block.
-    fn body(&self, module: Module) -> BlockStmt {
+    fn body(&self) -> BlockStmt {
         let mut block = BlockStmt {
             span: DUMMY_SP,
             stmts: Vec::new(),
@@ -421,7 +427,7 @@ impl<'a> Generator<'a> {
             meta: self.meta,
             body: &mut block.stmts,
         };
-        module.visit_children_with(&mut visitor);
+        self.meta.module.visit_children_with(&mut visitor);
 
         //block.stmts.push(self.imports_func_call());
 
@@ -532,12 +538,17 @@ impl<'a> Generator<'a> {
                                         // NOTE: becuase imports doesn't contain the local name
                                         // NOTE: so `export {gray as grey} from './gray.js'` only
                                         // NOTE: gives us `grey` and `grey` right now.
-                                        let live_alias = self.meta.live_export_map.iter().find(|(k, v)| {
-                                            if v.0 == prop {
-                                                return true
-                                            }
-                                            false
-                                        });
+                                        let live_alias = self
+                                            .meta
+                                            .live_export_map
+                                            .iter()
+                                            .find(|(k, v)| {
+                                                if v.0 == prop {
+                                                    return true;
+                                                }
+                                                false
+                                            });
+
                                         live_alias.is_some()
                                     };
 

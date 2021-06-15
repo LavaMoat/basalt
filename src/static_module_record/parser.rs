@@ -23,15 +23,25 @@ impl Parser {
         Parser {}
     }
 
+    /*
     /// Load a module from a file and parse it.
-    pub fn load<P: AsRef<Path>>(&self, file: P) -> Result<StaticModuleRecord> {
+    pub fn load<'a, P: AsRef<Path>>(&self, file: P) -> Result<StaticModuleRecord<'a>> {
         let (_, _, module) = crate::swc_utils::load_file(file)?;
-        self.parse(&module)
+        self.parse(module)
     }
+    */
 
     /// Parse a module to a static module record.
-    pub fn parse(&self, module: &Module) -> Result<StaticModuleRecord> {
-        let mut record: StaticModuleRecord = Default::default();
+    pub fn parse<'a>(&self, module: &'a Module) -> Result<StaticModuleRecord<'a>> {
+        let mut record = StaticModuleRecord{
+            module,
+            export_alls: Default::default(),
+            imports: Default::default(),
+            live_export_map: Default::default(),
+            fixed_export_map: Default::default(),
+            import_decls: Default::default(),
+            import_alias: Default::default(),
+        };
 
         let mut importer = ImportAnalysis::new();
         module.visit_children_with(&mut importer);
@@ -135,6 +145,7 @@ impl Parser {
                         })
                         .map(|s| match s {
                             ExportSpecifier::Named(export) => {
+                                //export.orig.sym.as_ref()
                                 format!("{}", export.orig.sym)
                             }
                             _ => unreachable!(),

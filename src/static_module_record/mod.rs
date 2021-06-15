@@ -3,15 +3,19 @@
 //! More information in the [static module record design document](https://github.com/endojs/endo/blob/master/packages/static-module-record/DESIGN.md).
 use std::collections::HashMap;
 
+use swc_ecma_ast::Module;
+
 use serde::{Deserialize, Serialize};
 
 /// Type for live exports.
 pub type LiveExport = (String, bool);
 
+//pub struct Specifer
+
 /// Static module record that can be serialized to JSON.
-#[derive(Serialize, Deserialize, Default, Debug)]
+#[derive(Serialize, Debug)]
 #[serde(rename_all = "camelCase")]
-pub struct StaticModuleRecord {
+pub struct StaticModuleRecord<'a> {
     /// All exports, eg: `export * from './foo.js';`
     pub export_alls: Vec<String>,
     /// All the imports for the module.
@@ -20,6 +24,10 @@ pub struct StaticModuleRecord {
     pub live_export_map: HashMap<String, LiveExport>,
     /// Map of fixed exports.
     pub fixed_export_map: HashMap<String, Vec<String>>,
+
+    /// The source module AST node.
+    #[serde(skip)]
+    pub module: &'a Module,
 
     /// List of import declarations.
     #[serde(skip)]
@@ -36,4 +44,4 @@ pub mod transform;
 
 pub use generator::Generator;
 pub use parser::Parser;
-pub use transform::Transform;
+pub use transform::transform;

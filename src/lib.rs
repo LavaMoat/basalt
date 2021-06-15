@@ -15,78 +15,48 @@ pub mod static_module_record;
 mod swc_utils;
 
 pub use static_module_record::{
-    Generator, Parser, StaticModuleRecord, Transform,
+    Generator, Parser,
 };
 
 /// List all modules.
-pub fn list(module: PathBuf, include_file: bool) -> Result<()> {
-    if !module.is_file() {
+pub fn list(file: PathBuf, include_file: bool) -> Result<()> {
+    if !file.is_file() {
         bail!(
             "Module {} does not exist or is not a file",
-            module.display()
+            file.display()
         );
     }
     let options = printer::PrintOptions { include_file };
-
     let printer = printer::Printer::new();
-    printer.print(module, &options)?;
+    printer.print(file, &options)?;
     Ok(())
 }
 
 /// Print the static module record meta data as JSON.
-pub fn meta(module: PathBuf) -> Result<()> {
-    if !module.is_file() {
+pub fn meta(file: PathBuf) -> Result<()> {
+    if !file.is_file() {
         bail!(
             "Module {} does not exist or is not a file",
-            module.display()
+            file.display()
         );
     }
     let parser = Parser::new();
-    let smr = parser.load(module)?;
+    let (_, _, module) = crate::swc_utils::load_file(file)?;
+    let smr = parser.parse(&module)?;
     let contents = serde_json::to_string_pretty(&smr)?;
     println!("{}", contents);
     Ok(())
 }
 
-/*
-/// Print the static module record as JSON.
-pub fn functor(module: PathBuf) -> Result<()> {
-    if !module.is_file() {
-        bail!(
-            "Module {} does not exist or is not a file",
-            module.display()
-        );
-    }
-
-    let parser = Parser::new();
-    let smr = parser.load(module)?;
-    let generator = Generator::new(&smr);
-    let script = generator.create()?;
-    let (_source_map, compiler) = crate::swc_utils::get_compiler();
-    let result = compiler.print(
-        &script,
-        JscTarget::Es2020,
-        SourceMapsConfig::Bool(true),
-        None,
-        false,
-    )?;
-    //println!("{:#?}", result);
-    print!("{}", result.code);
-    Ok(())
-}
-*/
-
 /// Transform a module to a static module record program.
-pub fn transform(module: PathBuf) -> Result<()> {
-    if !module.is_file() {
+pub fn transform(file: PathBuf) -> Result<()> {
+    if !file.is_file() {
         bail!(
             "Module {} does not exist or is not a file",
-            module.display()
+            file.display()
         );
     }
-
-    let transformer = Transform::new();
-    let result = transformer.transform(module)?;
+    let result = static_module_record::transform(file)?;
     print!("{}", result.code);
     Ok(())
 }
