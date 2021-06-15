@@ -7,7 +7,7 @@ use swc_common::DUMMY_SP;
 use swc_ecma_ast::*;
 use swc_ecma_visit::{Node, Visit, VisitWith};
 
-use super::StaticModuleRecord;
+use super::{ImportName, StaticModuleRecord};
 
 const HIDDEN_PREFIX: &str = "$h\u{200d}_";
 const HIDDEN_CONST_VAR_PREFIX: &str = "$c\u{200d}_";
@@ -506,7 +506,7 @@ impl<'a> Generator<'a> {
     /// The arguments for each nested map.
     fn imports_map_constructor_args_map(
         &self,
-        props: &Vec<&str>,
+        props: &Vec<ImportName<'a>>,
         aliases: &Vec<&str>,
     ) -> ExprOrSpread {
         ExprOrSpread {
@@ -527,7 +527,7 @@ impl<'a> Generator<'a> {
                             for (prop, alias) in
                                 props.iter().zip(aliases.iter())
                             {
-                                let prop: &str = &prop[..];
+                                let prop = prop.name;
                                 let alias: &str = &alias[..];
                                 let mut live = self
                                     .meta

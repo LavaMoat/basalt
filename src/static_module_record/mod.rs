@@ -5,10 +5,26 @@ use std::collections::HashMap;
 
 use swc_ecma_ast::Module;
 
-use serde::{Deserialize, Serialize};
+use serde::{Serialize, Serializer};
 
 /// Type for live exports.
 pub type LiveExport<'a> = (&'a str, bool);
+
+/// Import specifier that may be aliased.
+#[derive(Debug)]
+pub struct ImportName<'a> {
+    name: &'a str,
+    alias: Option<&'a str>,
+}
+
+impl<'a> Serialize for ImportName<'a> {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        serializer.serialize_str(self.name)
+    }
+}
 
 /// Static module record that can be serialized to JSON.
 #[derive(Serialize, Debug)]
@@ -17,7 +33,7 @@ pub struct StaticModuleRecord<'a> {
     /// All exports, eg: `export * from './foo.js';`
     pub export_alls: Vec<&'a str>,
     /// All the imports for the module.
-    pub imports: HashMap<&'a str, Vec<&'a str>>,
+    pub imports: HashMap<&'a str, Vec<ImportName<'a>>>,
     /// Map of live exports.
     pub live_export_map: HashMap<&'a str, LiveExport<'a>>,
     /// Map of fixed exports.

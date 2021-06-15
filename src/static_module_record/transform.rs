@@ -22,9 +22,7 @@ use super::{
 };
 
 /// Transform the module file to a program script.
-pub fn transform<P: AsRef<Path>>(
-    file: P,
-) -> Result<TransformOutput> {
+pub fn transform<P: AsRef<Path>>(file: P) -> Result<TransformOutput> {
     let sm: Arc<SourceMap> = Arc::new(Default::default());
     let handler = Handler::with_tty_emitter(
         ColorConfig::Auto,
