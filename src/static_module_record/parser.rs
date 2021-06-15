@@ -15,24 +15,21 @@ use crate::analysis::{
 use super::StaticModuleRecord;
 
 /// Parses a module to a static module record.
-pub struct Parser {}
+pub struct Parser {
+    importer: ImportAnalysis,
+    exporter: ExportAnalysis,
+}
 
 impl Parser {
     /// Create a new parser.
     pub fn new() -> Self {
-        Parser {}
+        let importer = ImportAnalysis::new();
+        let exporter = ExportAnalysis::new();
+        Parser { importer, exporter }
     }
-
-    /*
-    /// Load a module from a file and parse it.
-    pub fn load<'a, P: AsRef<Path>>(&self, file: P) -> Result<StaticModuleRecord<'a>> {
-        let (_, _, module) = crate::swc_utils::load_file(file)?;
-        self.parse(module)
-    }
-    */
 
     /// Parse a module to a static module record.
-    pub fn parse<'a>(&self, module: &'a Module) -> Result<StaticModuleRecord<'a>> {
+    pub fn parse<'a>(&'a mut self, module: &'a Module) -> Result<StaticModuleRecord<'a>> {
         let mut record = StaticModuleRecord{
             module,
             export_alls: Default::default(),
@@ -43,30 +40,38 @@ impl Parser {
             import_alias: Default::default(),
         };
 
-        let mut importer = ImportAnalysis::new();
-        module.visit_children_with(&mut importer);
+        module.visit_children_with(&mut self.importer);
+        module.visit_children_with(&mut self.exporter);
 
-        let mut exporter = ExportAnalysis::new();
-        module.visit_children_with(&mut exporter);
-
-        let export_names = exporter.var_export_names();
+        let export_names = self.exporter.var_export_names();
         let mut live_exports = LiveExportAnalysis::new(export_names);
         module.visit_children_with(&mut live_exports);
 
-        for (key, symbols) in importer.imports.iter() {
+        for (key, symbols) in self.importer.imports.iter() {
+            //let mut names = symbols
+                //.iter()
+                //.map(|s| match s {
+                    //ImportRecord::Named { local, .. } => local.clone(),
+                    //ImportRecord::Default { local, .. } => local.clone(),
+                    //ImportRecord::All { local } => local.clone(),
+                //})
+                //.collect::<Vec<_>>();
+
             let mut names = symbols
                 .iter()
                 .map(|s| match s {
-                    ImportRecord::Named { local, .. } => local.clone(),
-                    ImportRecord::Default { local, .. } => local.clone(),
-                    ImportRecord::All { local } => local.clone(),
+                    ImportRecord::Named { local, .. } => local.as_ref(),
+                    ImportRecord::Default { local, .. } => local.as_ref(),
+                    ImportRecord::All { local } => local.as_ref(),
                 })
                 .collect::<Vec<_>>();
+
 
             let words = symbols.iter().map(|s| s.word()).collect::<Vec<_>>();
             record.imports.insert(key.clone(), words);
 
             record.import_alias.insert(key.clone(), names.clone());
+
             record.import_decls.append(&mut names);
         }
 
@@ -76,7 +81,7 @@ impl Parser {
                 .insert(name.clone(), (name.clone(), true));
         }
 
-        for symbol in exporter.exports.iter() {
+        for symbol in self.exporter.exports.iter() {
             match symbol {
                 ExportRecord::FnDecl { func } => {
                     let key = func.ident.sym.as_ref().to_string();
@@ -128,7 +133,7 @@ impl Parser {
             }
         }
 
-        for symbol in exporter.reexports.iter() {
+        for symbol in self.exporter.reexports.iter() {
             match symbol {
                 ReexportRecord::Named {
                     module_path,
@@ -145,15 +150,19 @@ impl Parser {
                         })
                         .map(|s| match s {
                             ExportSpecifier::Named(export) => {
-                                //export.orig.sym.as_ref()
-                                format!("{}", export.orig.sym)
+                                export.orig.sym.as_ref()
+                                //format!("{}", export.orig.sym)
                             }
                             _ => unreachable!(),
                         })
                         .collect::<Vec<_>>();
+
                     record
                         .import_alias
                         .insert(module_path.clone(), words.clone());
+
+                    // TODO: make imports words a string slice!!!!
+                    let words = words.iter().map(|s| s.to_string()).collect::<Vec<_>>();
                     record.imports.insert(module_path.clone(), words);
 
                     for spec in specifiers {

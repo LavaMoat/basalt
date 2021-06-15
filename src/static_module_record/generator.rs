@@ -507,7 +507,7 @@ impl<'a> Generator<'a> {
     fn imports_map_constructor_args_map(
         &self,
         props: &Vec<String>,
-        aliases: &Vec<String>,
+        aliases: &Vec<&str>,
     ) -> ExprOrSpread {
         ExprOrSpread {
             spread: None,

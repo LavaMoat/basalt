@@ -40,7 +40,7 @@ pub fn meta(file: PathBuf) -> Result<()> {
             file.display()
         );
     }
-    let parser = Parser::new();
+    let mut parser = Parser::new();
     let (_, _, module) = crate::swc_utils::load_file(file)?;
     let smr = parser.parse(&module)?;
     let contents = serde_json::to_string_pretty(&smr)?;

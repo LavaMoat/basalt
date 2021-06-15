@@ -31,11 +31,11 @@ pub struct StaticModuleRecord<'a> {
 
     /// List of import declarations.
     #[serde(skip)]
-    pub import_decls: Vec<String>,
+    pub import_decls: Vec<&'a str>,
 
     /// Map from import to declaration names (specifiers).
     #[serde(skip)]
-    pub import_alias: HashMap<String, Vec<String>>,
+    pub import_alias: HashMap<String, Vec<&'a str>>,
 }
 
 pub mod generator;

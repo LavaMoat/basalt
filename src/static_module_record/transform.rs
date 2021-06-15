@@ -54,7 +54,7 @@ pub fn transform<P: AsRef<Path>>(
         .map_err(|e| e.into_diagnostic(&handler).emit())
         .expect("failed to parse module");
 
-    let parser = StaticModuleRecordParser::new();
+    let mut parser = StaticModuleRecordParser::new();
     let meta = parser.parse(&module)?;
     let generator = Generator::new(&meta);
     let compiler = Compiler::new(sm, Arc::new(handler));
