@@ -8,9 +8,7 @@ use swc_ecma_ast::Module;
 use serde::{Deserialize, Serialize};
 
 /// Type for live exports.
-pub type LiveExport = (String, bool);
-
-//pub struct Specifer
+pub type LiveExport<'a> = (&'a str, bool);
 
 /// Static module record that can be serialized to JSON.
 #[derive(Serialize, Debug)]
@@ -21,9 +19,9 @@ pub struct StaticModuleRecord<'a> {
     /// All the imports for the module.
     pub imports: HashMap<&'a str, Vec<&'a str>>,
     /// Map of live exports.
-    pub live_export_map: HashMap<String, LiveExport>,
+    pub live_export_map: HashMap<&'a str, LiveExport<'a>>,
     /// Map of fixed exports.
-    pub fixed_export_map: HashMap<String, Vec<String>>,
+    pub fixed_export_map: HashMap<&'a str, Vec<&'a str>>,
 
     /// The source module AST node.
     #[serde(skip)]

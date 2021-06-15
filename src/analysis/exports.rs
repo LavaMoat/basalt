@@ -39,7 +39,7 @@ impl ExportAnalysis {
 
     /// Get the names of exported symbols so that the live export
     /// analysis can detect which exports have assignment.
-    pub fn var_export_names(&self) -> Vec<&str> {
+    pub fn var_export_names(&self) -> Vec<String> {
         let mut out = Vec::new();
         for rec in self.exports.iter() {
             match rec {
@@ -47,7 +47,7 @@ impl ExportAnalysis {
                     for decl in var.decls.iter() {
                         match &decl.name {
                             Pat::Ident(ident) => {
-                                out.push(ident.id.sym.as_ref());
+                                out.push(ident.id.sym.as_ref().to_string());
                             }
                             _ => {}
                         }

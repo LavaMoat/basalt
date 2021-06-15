@@ -20,21 +20,21 @@ use swc_ecma_visit::{Node, Visit};
 /// statements could appear so we detect the statements in a separate
 /// visitor pass.
 #[derive(Default, Debug)]
-pub struct LiveExportAnalysis<'a> {
-    pub exports: Vec<&'a str>,
+pub struct LiveExportAnalysis {
+    pub exports: Vec<String>,
     pub live: Vec<String>,
 }
 
-impl<'a> LiveExportAnalysis<'a> {
-    pub fn new(exports: Vec<&'a str>) -> Self {
+impl LiveExportAnalysis {
+    pub fn new() -> Self {
         Self {
-            exports,
+            exports: Vec::new(),
             live: Default::default(),
         }
     }
 }
 
-impl<'a> Visit for LiveExportAnalysis<'a> {
+impl Visit for LiveExportAnalysis {
     fn visit_stmt(&mut self, n: &Stmt, _: &dyn Node) {
         match n {
             // Track assignments for live export map.
