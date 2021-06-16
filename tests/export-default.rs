@@ -3,16 +3,6 @@ use std::path::PathBuf;
 
 use basalt::static_module_record::{transform, TransformSource};
 
-/*
-fn print_debug(expected: &str, code: &str) {
-    println!("---");
-    print!("{}", expected);
-    println!("---");
-    print!("{}", code);
-    println!("---");
-}
-*/
-
 #[test]
 fn export_default() -> Result<()> {
     let expected =
@@ -20,7 +10,7 @@ fn export_default() -> Result<()> {
     let result = transform(TransformSource::File(PathBuf::from(
         "tests/transform/export-default/input.js",
     )))?;
-    //print_debug(&expected, &result.code);
+    //print!("{}", &result.code);
     assert_eq!(expected, result.code);
     Ok(())
 }
@@ -47,6 +37,7 @@ fn export_default_number() -> Result<()> {
     let result = transform(TransformSource::File(PathBuf::from(
         "tests/transform/export-default-number/input.js",
     )))?;
+    //print!("{}", &result.code);
     assert_eq!(expected, result.code);
     Ok(())
 }
@@ -58,6 +49,7 @@ fn export_default_arguments() -> Result<()> {
     let result = transform(TransformSource::File(PathBuf::from(
         "tests/transform/export-default-arguments/input.js",
     )))?;
+    //print!("{}", &result.code);
     assert_eq!(expected, result.code);
     Ok(())
 }
@@ -69,6 +61,7 @@ fn export_default_this() -> Result<()> {
     let result = transform(TransformSource::File(PathBuf::from(
         "tests/transform/export-default-this/input.js",
     )))?;
+    //print!("{}", &result.code);
     assert_eq!(expected, result.code);
     Ok(())
 }

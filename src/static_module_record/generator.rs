@@ -458,37 +458,47 @@ impl<'a> Generator<'a> {
     /// The arguments passed to the Map constructor for the first argument
     /// to the call to the imports function.
     fn imports_map_constructor_args(&self) -> Vec<ExprOrSpread> {
-        let mut out = Vec::with_capacity(self.meta.imports.len());
-        for (key, props) in self.meta.imports.iter() {
-            let key: &str = &key[..];
-            let computed_aliases = self.meta.aliases();
-            let aliases = computed_aliases.get(key).unwrap();
-            out.push(ExprOrSpread {
+        vec![
+            ExprOrSpread {
                 spread: None,
                 expr: Box::new(Expr::Array(ArrayLit {
                     span: DUMMY_SP,
-                    elems: vec![
-                        Some(ExprOrSpread {
-                            spread: None,
-                            expr: Box::new(Expr::Lit(Lit::Str(Str {
-                                span: DUMMY_SP,
-                                kind: StrKind::Normal {
-                                    contains_quote: true,
-                                },
-                                value: key.into(),
-                                has_escape: false,
-                            }))),
-                        }),
-                        Some(
-                            self.imports_map_constructor_args_map(
-                                props, aliases,
-                            ),
-                        ),
-                    ],
+                    elems: {
+                        let mut out = Vec::with_capacity(self.meta.imports.len());
+                        for (key, props) in self.meta.imports.iter() {
+                            let key: &str = &key[..];
+                            let computed_aliases = self.meta.aliases();
+                            let aliases = computed_aliases.get(key).unwrap();
+                            out.push(Some(ExprOrSpread {
+                                spread: None,
+                                expr: Box::new(Expr::Array(ArrayLit {
+                                    span: DUMMY_SP,
+                                    elems: vec![
+                                        Some(ExprOrSpread {
+                                            spread: None,
+                                            expr: Box::new(Expr::Lit(Lit::Str(Str {
+                                                span: DUMMY_SP,
+                                                kind: StrKind::Normal {
+                                                    contains_quote: true,
+                                                },
+                                                value: key.into(),
+                                                has_escape: false,
+                                            }))),
+                                        }),
+                                        Some(
+                                            self.imports_map_constructor_args_map(
+                                                props, aliases,
+                                            ),
+                                        ),
+                                    ],
+                                })),
+                            }));
+                        }
+                        out
+                    }
                 })),
-            });
-        }
-        out
+            }
+        ]
     }
 
     /// The arguments for each nested map.
