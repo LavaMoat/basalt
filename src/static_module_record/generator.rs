@@ -156,7 +156,8 @@ impl<'a> Visit for Visitor<'a> {
                     }
                 }
                 ModuleDecl::ExportDefaultDecl(export) => {
-                    todo!("Export default decl");
+                    // TODO: class declaration exports.
+                    //todo!("Export default decl");
                 }
                 ModuleDecl::ExportDefaultExpr(export) => {
                     // TODO
