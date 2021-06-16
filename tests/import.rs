@@ -53,7 +53,6 @@ fn import_default_alias() -> Result<()> {
     Ok(())
 }
 
-// FIXME: side effect imports are not being detected!
 #[test]
 fn import_side_effect() -> Result<()> {
     let expected =
@@ -61,7 +60,7 @@ fn import_side_effect() -> Result<()> {
     let result = transform(TransformSource::File(PathBuf::from(
         "tests/transform/import-side-effect/input.js",
     )))?;
-    println!("{}", result.code);
-    //assert_eq!(expected, result.code);
+    //println!("{}", result.code);
+    assert_eq!(expected, result.code);
     Ok(())
 }

@@ -55,19 +55,22 @@ impl Parser {
             let imports = symbols
                 .iter()
                 .map(|s| match s {
-                    ImportRecord::Named { name, alias } => ImportName {
+                    ImportRecord::None => None,
+                    ImportRecord::Named { name, alias } => Some(ImportName {
                         name: name.as_ref(),
                         alias: Some(&alias[..]),
-                    },
-                    ImportRecord::Default { name, .. } => ImportName {
+                    }),
+                    ImportRecord::Default { name, .. } => Some(ImportName {
                         name: name.as_ref(),
                         alias: None,
-                    },
-                    ImportRecord::All { name } => ImportName {
+                    }),
+                    ImportRecord::All { name } => Some(ImportName {
                         name: name.as_ref(),
                         alias: None,
-                    },
+                    }),
                 })
+                .filter(|s| s.is_some())
+                .map(|s| s.unwrap())
                 .collect::<Vec<_>>();
 
             record.imports.insert(&key[..], imports);
