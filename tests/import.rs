@@ -27,12 +27,26 @@ fn import_multiple_names() -> Result<()> {
     Ok(())
 }
 
+// FIXME: import Map key should be `default`
 #[test]
-fn import_name() -> Result<()> {
+fn import_default() -> Result<()> {
     let expected =
-        std::fs::read_to_string("tests/transform/import-name/output.js")?;
+        std::fs::read_to_string("tests/transform/import-default/output.js")?;
     let result = transform(TransformSource::File(PathBuf::from(
-        "tests/transform/import-name/input.js",
+        "tests/transform/import-default/input.js",
+    )))?;
+    //println!("{}", result.code);
+    assert_eq!(expected, result.code);
+    Ok(())
+}
+
+// FIXME: import Map key should be `default`
+#[test]
+fn import_default_alias() -> Result<()> {
+    let expected =
+        std::fs::read_to_string("tests/transform/import-default-alias/output.js")?;
+    let result = transform(TransformSource::File(PathBuf::from(
+        "tests/transform/import-default-alias/input.js",
     )))?;
     //println!("{}", result.code);
     assert_eq!(expected, result.code);
