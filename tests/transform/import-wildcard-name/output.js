@@ -5,7 +5,7 @@
             "module",
             new Map([
                 [
-                    "ns",
+                    "*",
                     [
                         ($h‍_a)=>(ns = $h‍_a)
                     ]

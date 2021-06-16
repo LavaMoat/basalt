@@ -525,7 +525,7 @@ impl<'a> Generator<'a> {
                             for (prop, alias) in
                                 props.iter().zip(aliases.iter())
                             {
-                                let prop = prop.name;
+                                let prop = prop.raw_name();
                                 let alias: &str = &alias[..];
                                 let live = self
                                     .meta

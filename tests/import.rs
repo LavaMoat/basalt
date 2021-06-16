@@ -10,7 +10,7 @@ fn import_wildcard_name() -> Result<()> {
     let result = transform(TransformSource::File(PathBuf::from(
         "tests/transform/import-wildcard-name/input.js",
     )))?;
-    //println!("{}", result.code);
+    //println!("{}", &result.code);
     assert_eq!(expected, result.code);
     Ok(())
 }
@@ -22,12 +22,11 @@ fn import_multiple_names() -> Result<()> {
     let result = transform(TransformSource::File(PathBuf::from(
         "tests/transform/import-multiple-names/input.js",
     )))?;
-    //println!("{}", result.code);
+    //println!("{}", &result.code);
     assert_eq!(expected, result.code);
     Ok(())
 }
 
-// FIXME: import Map key should be `default`
 #[test]
 fn import_default() -> Result<()> {
     let expected =
@@ -35,12 +34,11 @@ fn import_default() -> Result<()> {
     let result = transform(TransformSource::File(PathBuf::from(
         "tests/transform/import-default/input.js",
     )))?;
-    //println!("{}", result.code);
+    //println!("{}", &result.code);
     assert_eq!(expected, result.code);
     Ok(())
 }
 
-// FIXME: import Map key should be `default`
 #[test]
 fn import_default_alias() -> Result<()> {
     let expected =
@@ -48,7 +46,7 @@ fn import_default_alias() -> Result<()> {
     let result = transform(TransformSource::File(PathBuf::from(
         "tests/transform/import-default-alias/input.js",
     )))?;
-    //println!("{}", result.code);
+    //println!("{}", &result.code);
     assert_eq!(expected, result.code);
     Ok(())
 }
@@ -60,7 +58,7 @@ fn import_side_effect() -> Result<()> {
     let result = transform(TransformSource::File(PathBuf::from(
         "tests/transform/import-side-effect/input.js",
     )))?;
-    //println!("{}", result.code);
+    //println!("{}", &result.code);
     assert_eq!(expected, result.code);
     Ok(())
 }

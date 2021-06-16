@@ -5,7 +5,7 @@
             "module",
             new Map([
                 [
-                    "myName",
+                    "default",
                     [
                         ($h‍_a)=>(myName = $h‍_a)
                     ]
