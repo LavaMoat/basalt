@@ -10,7 +10,7 @@ use crate::analysis::{
     live_exports::LiveExportAnalysis,
 };
 
-use super::{ImportName, StaticModuleRecord};
+use super::{ImportName, ImportKind, StaticModuleRecord};
 
 /// Parses a module to a static module record.
 pub struct Parser {
@@ -59,14 +59,17 @@ impl Parser {
                     ImportRecord::Named { name, alias } => Some(ImportName {
                         name: name.as_ref(),
                         alias: Some(&alias[..]),
+                        kind: ImportKind::Named,
                     }),
                     ImportRecord::Default { name, .. } => Some(ImportName {
                         name: name.as_ref(),
                         alias: None,
+                        kind: ImportKind::Default,
                     }),
                     ImportRecord::All { name } => Some(ImportName {
                         name: name.as_ref(),
                         alias: None,
+                        kind: ImportKind::All,
                     }),
                 })
                 .filter(|s| s.is_some())
@@ -150,6 +153,7 @@ impl Parser {
                                     .exported
                                     .as_ref()
                                     .map(|ident| ident.sym.as_ref()),
+                                kind: ImportKind::Named,
                             },
                             _ => unreachable!(),
                         })

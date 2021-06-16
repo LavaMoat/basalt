@@ -10,11 +10,35 @@ use serde::{Serialize, Serializer};
 /// Type for live exports.
 pub type LiveExport<'a> = (&'a str, bool);
 
+/// Enumeration of the import types.
+#[derive(Debug)]
+pub enum ImportKind {
+    /// A named import specifier.
+    Named,
+    /// A default import specifier.
+    Default,
+    /// A wildcard import specifier.
+    All,
+}
+
 /// Import specifier that may be aliased.
 #[derive(Debug)]
 pub struct ImportName<'a> {
     name: &'a str,
     alias: Option<&'a str>,
+    kind: ImportKind,
+}
+
+impl<'a> ImportName<'a> {
+    /// Get the raw name for the import respecting the import kind
+    /// to return `default` or `*` when necessary.
+    pub fn raw_name(&self) -> &str {
+        match self.kind {
+            ImportKind::Named => &self.name,
+            ImportKind::Default => "default",
+            ImportKind::All => "*",
+        }
+    }
 }
 
 impl<'a> Serialize for ImportName<'a> {
@@ -22,7 +46,7 @@ impl<'a> Serialize for ImportName<'a> {
     where
         S: Serializer,
     {
-        serializer.serialize_str(self.name)
+        serializer.serialize_str(self.raw_name())
     }
 }
 
