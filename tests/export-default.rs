@@ -15,20 +15,17 @@ fn export_default() -> Result<()> {
     Ok(())
 }
 
-/*
 #[test]
 fn export_default_class() -> Result<()> {
-    //let expected =
-        //std::fs::read_to_string("tests/transform/export-default-class/output.js")?;
+    let expected =
+        std::fs::read_to_string("tests/transform/export-default-class/output.js")?;
     let result = transform(TransformSource::File(PathBuf::from(
         "tests/transform/export-default-class/input.js",
     )))?;
-    print!("{}", result.code);
-    //print_debug(&expected, &result.code);
-    //assert_eq!(expected, result.code);
+    //print!("{}", &result.code);
+    assert_eq!(expected, result.code);
     Ok(())
 }
-*/
 
 #[test]
 fn export_default_number() -> Result<()> {

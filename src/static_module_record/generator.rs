@@ -79,6 +79,58 @@ fn call_stmt(prop_target: JsWord, prop_name: &str, arg: JsWord) -> Stmt {
     })
 }
 
+fn default_stmt(prop_target: JsWord, prop_arg: JsWord, value: Box<Expr>) -> (Stmt, Stmt) {
+    let default_stmt = Stmt::Decl(Decl::Var(VarDecl {
+        span: DUMMY_SP,
+        // Default exports must be constant
+        kind: VarDeclKind::Const,
+        declare: false,
+        decls: vec![VarDeclarator {
+            span: DUMMY_SP,
+            definite: false,
+            name: Pat::Object(ObjectPat {
+                span: DUMMY_SP,
+                optional: false,
+                type_ann: None,
+                props: vec![ObjectPatProp::KeyValue(
+                    KeyValuePatProp {
+                        key: PropName::Ident(Ident {
+                            span: DUMMY_SP,
+                            optional: false,
+                            sym: DEFAULT.into(),
+                        }),
+                        value: Box::new(Pat::Ident(
+                            BindingIdent {
+                                id: Ident {
+                                    span: DUMMY_SP,
+                                    optional: false,
+                                    sym: prop_arg.clone(),
+                                },
+                                type_ann: None,
+                            },
+                        )),
+                    },
+                )],
+            }),
+            init: Some(Box::new(Expr::Object(ObjectLit {
+                span: DUMMY_SP,
+                props: vec![PropOrSpread::Prop(Box::new(
+                    Prop::KeyValue(KeyValueProp {
+                        key: PropName::Ident(Ident {
+                            span: DUMMY_SP,
+                            optional: false,
+                            sym: DEFAULT.into(),
+                        }),
+                        value,
+                    }),
+                ))],
+            }))),
+        }],
+    }));
+
+    (default_stmt, call_stmt(prop_target, "default", prop_arg))
+}
+
 impl<'a> Visitor<'a> {
     /// Get a potential symbol identity from a statement.
     fn identity<'b>(&mut self, n: &'b Stmt) -> Option<&'b str> {
@@ -156,68 +208,29 @@ impl<'a> Visit for Visitor<'a> {
                     }
                 }
                 ModuleDecl::ExportDefaultDecl(export) => {
-                    // TODO: class declaration exports.
-                    //todo!("Export default decl");
+                    let prop_target = prefix_hidden(ONCE);
+                    let prop_arg = prefix_const(DEFAULT);
+                    let value_expr = match &export.decl {
+                        DefaultDecl::Class(class_expr) => {
+                            Box::new(Expr::Class(class_expr.clone()))
+                        }
+                        DefaultDecl::Fn(fn_expr) => {
+                            Box::new(Expr::Fn(fn_expr.clone()))
+                        }
+                        _ => panic!("Typescript interface declarations are not supported")
+                    };
+                    let (default_stmt, call) = default_stmt(prop_target, prop_arg, value_expr);
+                    self.body.push(default_stmt);
+                    self.body.push(call);
                 }
                 ModuleDecl::ExportDefaultExpr(export) => {
-                    // TODO
                     // const { default: $c_default } = { default: 42 };
                     // $h_once.default($c_default);
                     if self.meta.fixed_export_map.contains_key(DEFAULT) {
                         let prop_target = prefix_hidden(ONCE);
                         let prop_arg = prefix_const(DEFAULT);
                         let value_expr = export.expr.clone();
-
-                        let default_stmt = Stmt::Decl(Decl::Var(VarDecl {
-                            span: DUMMY_SP,
-                            // Default exports must be constant
-                            kind: VarDeclKind::Const,
-                            declare: false,
-                            decls: vec![VarDeclarator {
-                                span: DUMMY_SP,
-                                definite: false,
-                                name: Pat::Object(ObjectPat {
-                                    span: DUMMY_SP,
-                                    optional: false,
-                                    type_ann: None,
-                                    props: vec![ObjectPatProp::KeyValue(
-                                        KeyValuePatProp {
-                                            key: PropName::Ident(Ident {
-                                                span: DUMMY_SP,
-                                                optional: false,
-                                                sym: DEFAULT.into(),
-                                            }),
-                                            value: Box::new(Pat::Ident(
-                                                BindingIdent {
-                                                    id: Ident {
-                                                        span: DUMMY_SP,
-                                                        optional: false,
-                                                        sym: prop_arg.clone(),
-                                                    },
-                                                    type_ann: None,
-                                                },
-                                            )),
-                                        },
-                                    )],
-                                }),
-                                init: Some(Box::new(Expr::Object(ObjectLit {
-                                    span: DUMMY_SP,
-                                    props: vec![PropOrSpread::Prop(Box::new(
-                                        Prop::KeyValue(KeyValueProp {
-                                            key: PropName::Ident(Ident {
-                                                span: DUMMY_SP,
-                                                optional: false,
-                                                sym: DEFAULT.into(),
-                                            }),
-                                            value: value_expr,
-                                        }),
-                                    ))],
-                                }))),
-                            }],
-                        }));
-
-                        let call = call_stmt(prop_target, "default", prop_arg);
-
+                        let (default_stmt, call) = default_stmt(prop_target, prop_arg, value_expr);
                         self.body.push(default_stmt);
                         self.body.push(call);
                     }
