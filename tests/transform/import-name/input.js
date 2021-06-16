@@ -1,0 +1,1 @@
+import myName from 'module';
