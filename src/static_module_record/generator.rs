@@ -132,6 +132,8 @@ fn default_stmt(
 }
 
 impl<'a> Visitor<'a> {
+
+    /*
     /// Get a potential symbol identity from a statement.
     fn identity<'b>(&mut self, n: &'b Stmt) -> Option<&'b str> {
         match n {
@@ -172,7 +174,9 @@ impl<'a> Visitor<'a> {
         }
         None
     }
+    */
 
+    /*
     fn is_live_statement<'b>(
         &mut self,
         n: &'b Stmt,
@@ -184,6 +188,7 @@ impl<'a> Visitor<'a> {
         }
         (false, None)
     }
+    */
 }
 
 impl<'a> Visit for Visitor<'a> {
@@ -262,6 +267,38 @@ impl<'a> Visit for Visitor<'a> {
                                 let call =
                                     call_stmt(prop_target, name, name.into());
                                 self.body.push(call);
+                            } else if self.meta.live_export_map.contains_key(name) {
+                                let prop_name = prefix_const(name);
+                                let prop_target = prefix_hidden(LIVE);
+
+                                let decl = Stmt::Decl(Decl::Var(VarDecl {
+                                    span: DUMMY_SP,
+                                    kind: VarDeclKind::Let,
+                                    declare: false,
+                                    decls: vec![VarDeclarator {
+                                        span: DUMMY_SP,
+                                        name: Pat::Ident(BindingIdent {
+                                            id: Ident {
+                                                span: DUMMY_SP,
+                                                sym: prop_name.clone(),
+                                                optional: false,
+                                            },
+                                            type_ann: None,
+                                        }),
+                                        // NOTE: currently we always initialize to null
+                                        // NOTE: an improvement could respect the source
+                                        // NOTE: initialization value
+                                        init: Some(Box::new(Expr::Lit(Lit::Null(Null {
+                                            span: DUMMY_SP,
+                                        })))),
+                                        definite: false,
+                                    }],
+                                }));
+
+                                let call = call_stmt(prop_target, name, prop_name);
+
+                                self.body.push(decl);
+                                self.body.push(call);
                             }
                         }
                     }
@@ -274,6 +311,7 @@ impl<'a> Visit for Visitor<'a> {
     }
 
     fn visit_stmt(&mut self, n: &Stmt, _: &dyn Node) {
+        /*
         let (is_live, live_name) = self.is_live_statement(n);
         if is_live {
             let live_name = live_name.unwrap();
@@ -314,6 +352,9 @@ impl<'a> Visit for Visitor<'a> {
         } else {
             self.body.push(n.clone());
         }
+        */
+
+        self.body.push(n.clone());
     }
 }
 

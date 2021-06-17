@@ -79,10 +79,6 @@ impl Parser {
             record.imports.insert(&key[..], imports);
         }
 
-        for name in self.live_exports.live.iter() {
-            record.live_export_map.insert(name, (name, true));
-        }
-
         for symbol in self.exporter.exports.iter() {
             match symbol {
                 ExportRecord::FnDecl { func } => {
@@ -124,6 +120,11 @@ impl Parser {
                     }
                 }
             }
+        }
+
+        for name in self.live_exports.live.iter() {
+            record.live_export_map.insert(name, (name, true));
+            record.fixed_export_map.remove(&name[..]);
         }
 
         for symbol in self.exporter.reexports.iter() {
