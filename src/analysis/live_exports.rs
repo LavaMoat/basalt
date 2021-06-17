@@ -39,26 +39,35 @@ impl Visit for LiveExportAnalysis {
         match n {
             // Track assignments for live export map.
             Stmt::Expr(expr) => match &*expr.expr {
-                Expr::Assign(expr) => {
-                    match &expr.left {
-                        PatOrExpr::Pat(pat) => match &**pat {
-                            Pat::Ident(ident) => {
-                                // Set if we can find an existing export that would
-                                // receive the assignment.
-                                for name in self.exports.iter() {
-                                    if ident.id.sym.as_ref() == *name {
-                                        self.live.push(
-                                            ident.id.sym.as_ref().to_string(),
-                                        );
-                                        break;
-                                    }
-                                }
-                            }
-                            _ => {}
-                        },
-                        _ => {}
+                // ++i, i++, --i, i--
+                Expr::Update(expr) => match &*expr.arg {
+                    Expr::Ident(ident) => {
+                        let matched = self
+                            .exports
+                            .iter()
+                            .find(|name| ident.sym.as_ref() == *name);
+                        if matched.is_some() {
+                            self.live.push(ident.sym.as_ref().to_string());
+                        }
                     }
-                }
+                    _ => {}
+                },
+                Expr::Assign(expr) => match &expr.left {
+                    PatOrExpr::Pat(pat) => match &**pat {
+                        Pat::Ident(ident) => {
+                            let matched = self
+                                .exports
+                                .iter()
+                                .find(|name| ident.id.sym.as_ref() == *name);
+                            if matched.is_some() {
+                                self.live
+                                    .push(ident.id.sym.as_ref().to_string());
+                            }
+                        }
+                        _ => {}
+                    },
+                    _ => {}
+                },
                 _ => {}
             },
             _ => {}

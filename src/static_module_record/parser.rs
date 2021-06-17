@@ -10,7 +10,7 @@ use crate::analysis::{
     live_exports::LiveExportAnalysis,
 };
 
-use super::{ImportName, ImportKind, StaticModuleRecord};
+use super::{ImportKind, ImportName, StaticModuleRecord};
 
 /// Parses a module to a static module record.
 pub struct Parser {
@@ -90,23 +90,18 @@ impl Parser {
                     let val = key;
                     record.fixed_export_map.insert(key, vec![val]);
                 }
-                ExportRecord::VarDecl { var } => match var.kind {
-                    VarDeclKind::Const => {
-                        for decl in var.decls.iter() {
-                            match &decl.name {
-                                Pat::Ident(ident) => {
-                                    let key = ident.id.sym.as_ref();
-                                    let val = key;
-                                    record
-                                        .fixed_export_map
-                                        .insert(key, vec![val]);
-                                }
-                                _ => {}
+                ExportRecord::VarDecl { var } => {
+                    for decl in var.decls.iter() {
+                        match &decl.name {
+                            Pat::Ident(ident) => {
+                                let key = ident.id.sym.as_ref();
+                                let val = key;
+                                record.fixed_export_map.insert(key, vec![val]);
                             }
+                            _ => {}
                         }
                     }
-                    _ => {}
-                },
+                }
                 ExportRecord::DefaultExpr { expr: _ } => {
                     record.fixed_export_map.insert("default", vec!["default"]);
                 }

@@ -79,7 +79,11 @@ fn call_stmt(prop_target: JsWord, prop_name: &str, arg: JsWord) -> Stmt {
     })
 }
 
-fn default_stmt(prop_target: JsWord, prop_arg: JsWord, value: Box<Expr>) -> (Stmt, Stmt) {
+fn default_stmt(
+    prop_target: JsWord,
+    prop_arg: JsWord,
+    value: Box<Expr>,
+) -> (Stmt, Stmt) {
     let default_stmt = Stmt::Decl(Decl::Var(VarDecl {
         span: DUMMY_SP,
         // Default exports must be constant
@@ -92,38 +96,34 @@ fn default_stmt(prop_target: JsWord, prop_arg: JsWord, value: Box<Expr>) -> (Stm
                 span: DUMMY_SP,
                 optional: false,
                 type_ann: None,
-                props: vec![ObjectPatProp::KeyValue(
-                    KeyValuePatProp {
-                        key: PropName::Ident(Ident {
+                props: vec![ObjectPatProp::KeyValue(KeyValuePatProp {
+                    key: PropName::Ident(Ident {
+                        span: DUMMY_SP,
+                        optional: false,
+                        sym: DEFAULT.into(),
+                    }),
+                    value: Box::new(Pat::Ident(BindingIdent {
+                        id: Ident {
                             span: DUMMY_SP,
                             optional: false,
-                            sym: DEFAULT.into(),
-                        }),
-                        value: Box::new(Pat::Ident(
-                            BindingIdent {
-                                id: Ident {
-                                    span: DUMMY_SP,
-                                    optional: false,
-                                    sym: prop_arg.clone(),
-                                },
-                                type_ann: None,
-                            },
-                        )),
-                    },
-                )],
+                            sym: prop_arg.clone(),
+                        },
+                        type_ann: None,
+                    })),
+                })],
             }),
             init: Some(Box::new(Expr::Object(ObjectLit {
                 span: DUMMY_SP,
-                props: vec![PropOrSpread::Prop(Box::new(
-                    Prop::KeyValue(KeyValueProp {
+                props: vec![PropOrSpread::Prop(Box::new(Prop::KeyValue(
+                    KeyValueProp {
                         key: PropName::Ident(Ident {
                             span: DUMMY_SP,
                             optional: false,
                             sym: DEFAULT.into(),
                         }),
                         value,
-                    }),
-                ))],
+                    },
+                )))],
             }))),
         }],
     }));
@@ -136,6 +136,12 @@ impl<'a> Visitor<'a> {
     fn identity<'b>(&mut self, n: &'b Stmt) -> Option<&'b str> {
         match n {
             Stmt::Expr(expr) => match &*expr.expr {
+                Expr::Update(expr) => match &*expr.arg {
+                    Expr::Ident(ident) => {
+                        return Some(ident.sym.as_ref())
+                    }
+                    _ => {}
+                }
                 Expr::Assign(expr) => match &expr.left {
                     PatOrExpr::Pat(pat) => match &**pat {
                         Pat::Ident(ident) => {
@@ -219,7 +225,8 @@ impl<'a> Visit for Visitor<'a> {
                         }
                         _ => panic!("Typescript interface declarations are not supported")
                     };
-                    let (default_stmt, call) = default_stmt(prop_target, prop_arg, value_expr);
+                    let (default_stmt, call) =
+                        default_stmt(prop_target, prop_arg, value_expr);
                     self.body.push(default_stmt);
                     self.body.push(call);
                 }
@@ -230,7 +237,8 @@ impl<'a> Visit for Visitor<'a> {
                         let prop_target = prefix_hidden(ONCE);
                         let prop_arg = prefix_const(DEFAULT);
                         let value_expr = export.expr.clone();
-                        let (default_stmt, call) = default_stmt(prop_target, prop_arg, value_expr);
+                        let (default_stmt, call) =
+                            default_stmt(prop_target, prop_arg, value_expr);
                         self.body.push(default_stmt);
                         self.body.push(call);
                     }
@@ -471,47 +479,47 @@ impl<'a> Generator<'a> {
     /// The arguments passed to the Map constructor for the first argument
     /// to the call to the imports function.
     fn imports_map_constructor_args(&self) -> Vec<ExprOrSpread> {
-        vec![
-            ExprOrSpread {
-                spread: None,
-                expr: Box::new(Expr::Array(ArrayLit {
-                    span: DUMMY_SP,
-                    elems: {
-                        let mut out = Vec::with_capacity(self.meta.imports.len());
-                        for (key, props) in self.meta.imports.iter() {
-                            let key: &str = &key[..];
-                            let computed_aliases = self.meta.aliases();
-                            let aliases = computed_aliases.get(key).unwrap();
-                            out.push(Some(ExprOrSpread {
-                                spread: None,
-                                expr: Box::new(Expr::Array(ArrayLit {
-                                    span: DUMMY_SP,
-                                    elems: vec![
-                                        Some(ExprOrSpread {
-                                            spread: None,
-                                            expr: Box::new(Expr::Lit(Lit::Str(Str {
+        vec![ExprOrSpread {
+            spread: None,
+            expr: Box::new(Expr::Array(ArrayLit {
+                span: DUMMY_SP,
+                elems: {
+                    let mut out = Vec::with_capacity(self.meta.imports.len());
+                    for (key, props) in self.meta.imports.iter() {
+                        let key: &str = &key[..];
+                        let computed_aliases = self.meta.aliases();
+                        let aliases = computed_aliases.get(key).unwrap();
+                        out.push(Some(ExprOrSpread {
+                            spread: None,
+                            expr: Box::new(Expr::Array(ArrayLit {
+                                span: DUMMY_SP,
+                                elems: vec![
+                                    Some(ExprOrSpread {
+                                        spread: None,
+                                        expr: Box::new(Expr::Lit(Lit::Str(
+                                            Str {
                                                 span: DUMMY_SP,
                                                 kind: StrKind::Normal {
                                                     contains_quote: true,
                                                 },
                                                 value: key.into(),
                                                 has_escape: false,
-                                            }))),
-                                        }),
-                                        Some(
-                                            self.imports_map_constructor_args_map(
-                                                props, aliases,
-                                            ),
+                                            },
+                                        ))),
+                                    }),
+                                    Some(
+                                        self.imports_map_constructor_args_map(
+                                            props, aliases,
                                         ),
-                                    ],
-                                })),
-                            }));
-                        }
-                        out
+                                    ),
+                                ],
+                            })),
+                        }));
                     }
-                })),
-            }
-        ]
+                    out
+                },
+            })),
+        }]
     }
 
     /// The arguments for each nested map.
