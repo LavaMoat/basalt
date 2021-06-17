@@ -22,33 +22,48 @@ pub fn var_symbol_names(var: &VarDecl) -> Vec<(&VarDeclarator, Vec<&str>)> {
             Pat::Object(_) => true,
             _ => false,
         })
-        .map(|decl| match &decl.name {
-            Pat::Ident(binding) => (decl, vec![binding.id.sym.as_ref()]),
-            Pat::Object(obj) => {
-                let mut out = Vec::new();
-                for prop in obj.props.iter() {
-                    //println!("Got object prop {:#?}", prop);
-                    match prop {
-                        ObjectPatProp::Assign(entry) => {
-                            out.push(entry.key.sym.as_ref());
-                        }
-                        ObjectPatProp::KeyValue(entry) => {
-                            println!("Got key value entry {:#?}", entry);
-                            match &entry.key {
-                                PropName::Ident(ident) => {
-                                    out.push(ident.sym.as_ref());
-                                }
-                                _ => {}
-                            }
-                        }
-                        _ => {}
-                    }
-                }
-                (decl, out)
-            }
-            _ => unreachable!(),
+        .map(|decl| {
+            let mut names = Vec::new();
+            pattern_names(&decl.name, &mut names);
+            (decl, names)
         })
         .collect::<Vec<_>>()
+}
+
+fn pattern_names<'a>(pat: &'a Pat, names: &mut Vec<&'a str>) {
+    match pat {
+        Pat::Ident(binding) => names.push(binding.id.sym.as_ref()),
+        Pat::Object(obj) => {
+            for prop in obj.props.iter() {
+                match prop {
+                    ObjectPatProp::Assign(entry) => {
+                        names.push(entry.key.sym.as_ref());
+                    }
+                    ObjectPatProp::KeyValue(entry) => {
+                        pattern_names(&*entry.value, names);
+                        match &entry.key {
+                            PropName::Ident(ident) => {
+                                names.push(ident.sym.as_ref());
+                            }
+                            _ => {}
+                        }
+                    }
+                    _ => {}
+                }
+            }
+        }
+        Pat::Array(arr) => {
+            for elem in arr.elems.iter() {
+                if let Some(ref elem) = elem {
+                    pattern_names(elem, names);
+                }
+            }
+        }
+        Pat::Rest(rest) => {
+            pattern_names(&*rest.arg, names);
+        }
+        _ => {}
+    }
 }
 
 /// Parses a module to a static module record.
