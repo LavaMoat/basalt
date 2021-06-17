@@ -270,7 +270,6 @@ impl<'a> Visit for Visitor<'a> {
                             } else if self.meta.live_export_map.contains_key(name) {
                                 let prop_name = prefix_const(name);
                                 let prop_target = prefix_hidden(LIVE);
-
                                 let decl = Stmt::Decl(Decl::Var(VarDecl {
                                     span: DUMMY_SP,
                                     kind: VarDeclKind::Let,
@@ -285,12 +284,7 @@ impl<'a> Visit for Visitor<'a> {
                                             },
                                             type_ann: None,
                                         }),
-                                        // NOTE: currently we always initialize to null
-                                        // NOTE: an improvement could respect the source
-                                        // NOTE: initialization value
-                                        init: Some(Box::new(Expr::Lit(Lit::Null(Null {
-                                            span: DUMMY_SP,
-                                        })))),
+                                        init: decl.init.clone(),
                                         definite: false,
                                     }],
                                 }));
