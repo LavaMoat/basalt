@@ -42,6 +42,18 @@ fn export_name_3() -> Result<()> {
 }
 
 #[test]
+fn export_name_4() -> Result<()> {
+    let expected =
+        std::fs::read_to_string("tests/transform/export-name-4/output.js")?;
+    let result = transform(TransformSource::File(PathBuf::from(
+        "tests/transform/export-name-4/input.js",
+    )))?;
+    //print!("{}", &result.code);
+    assert_eq!(expected, result.code);
+    Ok(())
+}
+
+#[test]
 fn export_name_12() -> Result<()> {
     let expected =
         std::fs::read_to_string("tests/transform/export-name-12/output.js")?;
