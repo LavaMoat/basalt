@@ -117,65 +117,6 @@ fn default_stmt(
     (default_stmt, call_stmt(prop_target, "default", prop_arg))
 }
 
-impl<'a> Visitor<'a> {
-    /*
-    /// Get a potential symbol identity from a statement.
-    fn identity<'b>(&mut self, n: &'b Stmt) -> Option<&'b str> {
-        match n {
-            Stmt::Expr(expr) => match &*expr.expr {
-                Expr::Update(expr) => match &*expr.arg {
-                    Expr::Ident(ident) => {
-                        return Some(ident.sym.as_ref())
-                    }
-                    _ => {}
-                }
-                Expr::Assign(expr) => match &expr.left {
-                    PatOrExpr::Pat(pat) => match &**pat {
-                        Pat::Ident(ident) => {
-                            return Some(ident.id.sym.as_ref())
-                        }
-                        _ => {}
-                    },
-                    _ => {}
-                },
-                _ => {}
-            },
-            Stmt::Decl(decl) => match decl {
-                Decl::Var(var) => {
-                    // TODO: support multiple var declarations
-                    if !var.decls.is_empty() {
-                        let name = &var.decls.get(0).unwrap().name;
-                        match name {
-                            Pat::Ident(ident) => {
-                                return Some(ident.id.sym.as_ref())
-                            }
-                            _ => {}
-                        }
-                    }
-                }
-                _ => {}
-            },
-            _ => {}
-        }
-        None
-    }
-    */
-
-    /*
-    fn is_live_statement<'b>(
-        &mut self,
-        n: &'b Stmt,
-    ) -> (bool, Option<&'b str>) {
-        if let Some(identity) = self.identity(n) {
-            if self.meta.live_export_map.contains_key(identity) {
-                return (true, Some(identity));
-            }
-        }
-        (false, None)
-    }
-    */
-}
-
 impl<'a> Visit for Visitor<'a> {
     fn visit_module_item(&mut self, n: &ModuleItem, node: &dyn Node) {
         match n {
@@ -303,49 +244,6 @@ impl<'a> Visit for Visitor<'a> {
     }
 
     fn visit_stmt(&mut self, n: &Stmt, _: &dyn Node) {
-        /*
-        let (is_live, live_name) = self.is_live_statement(n);
-        if is_live {
-            let live_name = live_name.unwrap();
-            let prop_name = prefix_const(live_name);
-            let prop_target = prefix_hidden(LIVE);
-
-            let decl = Stmt::Decl(Decl::Var(VarDecl {
-                span: DUMMY_SP,
-                kind: VarDeclKind::Let,
-                declare: false,
-                decls: vec![VarDeclarator {
-                    span: DUMMY_SP,
-                    name: Pat::Ident(BindingIdent {
-                        id: Ident {
-                            span: DUMMY_SP,
-                            sym: prop_name.clone(),
-                            optional: false,
-                        },
-                        type_ann: None,
-                    }),
-                    // NOTE: currently we always initialize to null
-                    // NOTE: an improvement could respect the source
-                    // NOTE: initialization value
-                    init: Some(Box::new(Expr::Lit(Lit::Null(Null {
-                        span: DUMMY_SP,
-                    })))),
-                    definite: false,
-                }],
-            }));
-
-            let call = call_stmt(prop_target, live_name, prop_name);
-
-            self.body.push(decl);
-            self.body.push(call);
-
-            // TODO: Rename the variable on the left hand side of an assignment???
-            self.body.push(n.clone());
-        } else {
-            self.body.push(n.clone());
-        }
-        */
-
         self.body.push(n.clone());
     }
 }
