@@ -8,7 +8,7 @@ use swc_ecma_visit::{Node, Visit, VisitWith};
 
 use indexmap::IndexMap;
 
-use super::{ImportName, StaticModuleRecord};
+use super::{var_symbol_names, ImportName, StaticModuleRecord};
 
 const HIDDEN_PREFIX: &str = "$h\u{200d}_";
 const HIDDEN_CONST_VAR_PREFIX: &str = "$c\u{200d}_";
@@ -31,20 +31,6 @@ fn prefix_const(word: &str) -> JsWord {
 struct Visitor<'a> {
     meta: &'a StaticModuleRecord<'a>,
     body: &'a mut Vec<Stmt>,
-}
-
-fn var_symbol_names(var: &VarDecl) -> Vec<(&str, &VarDeclarator)> {
-    var.decls
-        .iter()
-        .filter(|decl| match &decl.name {
-            Pat::Ident(_binding) => true,
-            _ => false,
-        })
-        .map(|decl| match &decl.name {
-            Pat::Ident(binding) => (binding.id.sym.as_ref(), decl),
-            _ => unreachable!(),
-        })
-        .collect::<Vec<_>>()
 }
 
 fn call_stmt(prop_target: JsWord, prop_name: &str, arg: JsWord) -> Stmt {
@@ -132,7 +118,6 @@ fn default_stmt(
 }
 
 impl<'a> Visitor<'a> {
-
     /*
     /// Get a potential symbol identity from a statement.
     fn identity<'b>(&mut self, n: &'b Stmt) -> Option<&'b str> {
@@ -250,49 +235,62 @@ impl<'a> Visit for Visitor<'a> {
                 }
                 ModuleDecl::ExportDecl(export) => match &export.decl {
                     Decl::Var(var) => {
-                        let names = var_symbol_names(var);
-                        for (name, decl) in names {
-                            if self.meta.fixed_export_map.contains_key(name) {
-                                self.body.push(Stmt::Decl(Decl::Var(
-                                    VarDecl {
-                                        span: DUMMY_SP,
-                                        kind: var.kind.clone(),
-                                        declare: false,
-                                        decls: vec![decl.clone()],
-                                    },
-                                )));
-
-                                let prop_target = prefix_hidden(ONCE);
-                                // TODO: handle alias in fixed exports!
-                                let call =
-                                    call_stmt(prop_target, name, name.into());
-                                self.body.push(call);
-                            } else if self.meta.live_export_map.contains_key(name) {
-                                let prop_name = prefix_const(name);
-                                let prop_target = prefix_hidden(LIVE);
-                                let decl = Stmt::Decl(Decl::Var(VarDecl {
-                                    span: DUMMY_SP,
-                                    kind: VarDeclKind::Let,
-                                    declare: false,
-                                    decls: vec![VarDeclarator {
-                                        span: DUMMY_SP,
-                                        name: Pat::Ident(BindingIdent {
-                                            id: Ident {
+                        let symbols = var_symbol_names(var);
+                        for (decl, names) in symbols {
+                            let mut decl_emitted = false;
+                            for name in names {
+                                if self.meta.fixed_export_map.contains_key(name) {
+                                    if !decl_emitted {
+                                        self.body.push(Stmt::Decl(Decl::Var(
+                                            VarDecl {
                                                 span: DUMMY_SP,
-                                                sym: prop_name.clone(),
-                                                optional: false,
+                                                kind: var.kind.clone(),
+                                                declare: false,
+                                                decls: vec![decl.clone()],
                                             },
-                                            type_ann: None,
-                                        }),
-                                        init: decl.init.clone(),
-                                        definite: false,
-                                    }],
-                                }));
+                                        )));
+                                        decl_emitted = true;
+                                    }
 
-                                let call = call_stmt(prop_target, name, prop_name);
+                                    let prop_target = prefix_hidden(ONCE);
+                                    // TODO: handle alias in fixed exports!
+                                    let call =
+                                        call_stmt(prop_target, name, name.into());
+                                    self.body.push(call);
+                                } else if self
+                                    .meta
+                                    .live_export_map
+                                    .contains_key(name)
+                                {
+                                    let prop_name = prefix_const(name);
+                                    let prop_target = prefix_hidden(LIVE);
+                                    if !decl_emitted {
+                                        self.body.push(Stmt::Decl(Decl::Var(VarDecl {
+                                            span: DUMMY_SP,
+                                            kind: VarDeclKind::Let,
+                                            declare: false,
+                                            decls: vec![VarDeclarator {
+                                                span: DUMMY_SP,
+                                                name: Pat::Ident(BindingIdent {
+                                                    id: Ident {
+                                                        span: DUMMY_SP,
+                                                        sym: prop_name.clone(),
+                                                        optional: false,
+                                                    },
+                                                    type_ann: None,
+                                                }),
+                                                init: decl.init.clone(),
+                                                definite: false,
+                                            }],
+                                        })));
+                                        decl_emitted = true;
+                                    }
 
-                                self.body.push(decl);
-                                self.body.push(call);
+                                    let call =
+                                        call_stmt(prop_target, name, prop_name);
+
+                                    self.body.push(call);
+                                }
                             }
                         }
                     }

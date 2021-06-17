@@ -12,6 +12,45 @@ use crate::analysis::{
 
 use super::{ImportKind, ImportName, StaticModuleRecord};
 
+/// Find the symbol names in a variable declaration so that we can
+/// check for existence in the fixed or live exports map(s).
+pub fn var_symbol_names(var: &VarDecl) -> Vec<(&VarDeclarator, Vec<&str>)> {
+    var.decls
+        .iter()
+        .filter(|decl| match &decl.name {
+            Pat::Ident(_) => true,
+            Pat::Object(_) => true,
+            _ => false,
+        })
+        .map(|decl| match &decl.name {
+            Pat::Ident(binding) => (decl, vec![binding.id.sym.as_ref()]),
+            Pat::Object(obj) => {
+                let mut out = Vec::new();
+                for prop in obj.props.iter() {
+                    //println!("Got object prop {:#?}", prop);
+                    match prop {
+                        ObjectPatProp::Assign(entry) => {
+                            out.push(entry.key.sym.as_ref());
+                        }
+                        ObjectPatProp::KeyValue(entry) => {
+                            println!("Got key value entry {:#?}", entry);
+                            match &entry.key {
+                                PropName::Ident(ident) => {
+                                    out.push(ident.sym.as_ref());
+                                }
+                                _ => {}
+                            }
+                        }
+                        _ => {}
+                    }
+                }
+                (decl, out)
+            }
+            _ => unreachable!(),
+        })
+        .collect::<Vec<_>>()
+}
+
 /// Parses a module to a static module record.
 pub struct Parser {
     importer: ImportAnalysis,
@@ -87,15 +126,13 @@ impl Parser {
                     record.fixed_export_map.insert(key, vec![val]);
                 }
                 ExportRecord::VarDecl { var } => {
-                    for decl in var.decls.iter() {
-                        match &decl.name {
-                            Pat::Ident(ident) => {
-                                let key = ident.id.sym.as_ref();
-                                let val = key;
-                                record.fixed_export_map.insert(key, vec![val]);
-                            }
-                            _ => {}
-                        }
+                    let names = var_symbol_names(var)
+                        .iter()
+                        .map(|v| v.1.clone())
+                        .flatten()
+                        .collect::<Vec<_>>();
+                    for name in names {
+                        record.fixed_export_map.insert(name, vec![name]);
                     }
                 }
                 ExportRecord::DefaultExpr { expr: _ } => {
