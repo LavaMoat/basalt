@@ -53,6 +53,51 @@ fn export_name_4() -> Result<()> {
     Ok(())
 }
 
+// TODO: 5
+// TODO: 6
+// TODO: 7
+// TODO: 8
+
+#[test]
+fn export_name_8() -> Result<()> {
+    let expected =
+        std::fs::read_to_string("tests/transform/export-name-8/output.js")?;
+    let result = transform(TransformSource::File(PathBuf::from(
+        "tests/transform/export-name-8/input.js",
+    )))?;
+    //print!("{}", &result.code);
+    assert_eq!(expected, result.code);
+    Ok(())
+}
+
+#[test]
+fn export_name_9() -> Result<()> {
+    let expected =
+        std::fs::read_to_string("tests/transform/export-name-9/output.js")?;
+    let result = transform(TransformSource::File(PathBuf::from(
+        "tests/transform/export-name-9/input.js",
+    )))?;
+    //print!("{}", &result.code);
+    assert_eq!(expected, result.code);
+    Ok(())
+}
+
+// NOTE: This test keeps the parentheses around the `class` whereas the
+// NOTE: original does not. In practice this shouldn't be a problem.
+#[test]
+fn export_name_10() -> Result<()> {
+    let expected =
+        std::fs::read_to_string("tests/transform/export-name-10/output.js")?;
+    let result = transform(TransformSource::File(PathBuf::from(
+        "tests/transform/export-name-10/input.js",
+    )))?;
+    //print!("{}", &result.code);
+    assert_eq!(expected, result.code);
+    Ok(())
+}
+
+// TODO: 11
+
 #[test]
 fn export_name_12() -> Result<()> {
     let expected =
