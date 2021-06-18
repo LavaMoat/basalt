@@ -53,6 +53,7 @@ fn export_name_4() -> Result<()> {
     Ok(())
 }
 
+// TODO
 #[test]
 fn export_name_5() -> Result<()> {
     let expected =
@@ -65,7 +66,19 @@ fn export_name_5() -> Result<()> {
     Ok(())
 }
 
-// TODO: 6
+// TODO
+#[test]
+fn export_name_6() -> Result<()> {
+    let expected =
+        std::fs::read_to_string("tests/transform/export-name-6/output.js")?;
+    let result = transform(TransformSource::File(PathBuf::from(
+        "tests/transform/export-name-6/input.js",
+    )))?;
+    print!("{}", &result.code);
+    //assert_eq!(expected, result.code);
+    Ok(())
+}
+
 // TODO: 7
 // TODO: 8
 

@@ -331,6 +331,15 @@ impl<'a> Visit for Visitor<'a> {
                             }
                         }
                     }
+                    Decl::Fn(func) => {
+                        self.body.push(Stmt::Expr(ExprStmt {
+                            span: DUMMY_SP,
+                            expr: Box::new(Expr::Fn(FnExpr {
+                                ident: Some(func.ident.clone()),
+                                function: func.function.clone(),
+                            })),
+                        }));
+                    }
                     _ => {}
                 },
                 _ => {}
