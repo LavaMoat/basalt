@@ -243,7 +243,7 @@ fn define_property(target: &str, prop_name: &str, prop_value: &str) -> Stmt {
                         kind: StrKind::Normal {
                             contains_quote: true,
                         },
-                        value: NAME.into(),
+                        value: prop_name.into(),
                         has_escape: false,
                     }))),
                 },
