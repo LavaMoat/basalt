@@ -4,10 +4,9 @@ use anyhow::Result;
 use swc_ecma_ast::*;
 use swc_ecma_visit::VisitWith;
 
-use crate::analysis::{
-    exports::{ExportAnalysis, ExportRecord, ReexportRecord},
-    imports::{ImportAnalysis, ImportRecord},
-    live_exports::LiveExportAnalysis,
+use super::analyzer::{
+    Analyzer, ImportRecord, ExportRecord, ReexportRecord,
+    LiveExportAnalysis,
 };
 
 use super::{ImportKind, ImportName, StaticModuleRecord};
@@ -68,20 +67,17 @@ fn pattern_names<'a>(pat: &'a Pat, names: &mut Vec<&'a str>) {
 
 /// Parses a module to a static module record.
 pub struct Parser {
-    importer: ImportAnalysis,
-    exporter: ExportAnalysis,
+    analyzer: Analyzer,
     live_exports: LiveExportAnalysis,
 }
 
 impl Parser {
     /// Create a new parser.
     pub fn new() -> Self {
-        let importer = ImportAnalysis::new();
-        let exporter = ExportAnalysis::new();
+        let analyzer = Analyzer::new();
         let live_exports = LiveExportAnalysis::new();
         Parser {
-            importer,
-            exporter,
+            analyzer,
             live_exports,
         }
     }
@@ -99,13 +95,12 @@ impl Parser {
             fixed_export_map: Default::default(),
         };
 
-        module.visit_children_with(&mut self.importer);
-        module.visit_children_with(&mut self.exporter);
+        module.visit_children_with(&mut self.analyzer);
 
-        self.live_exports.exports = self.exporter.var_export_names();
+        self.live_exports.exports = self.analyzer.var_export_names();
         module.visit_children_with(&mut self.live_exports);
 
-        for (key, symbols) in self.importer.imports.iter() {
+        for (key, symbols) in self.analyzer.imports.iter() {
             let imports = symbols
                 .iter()
                 .map(|s| match s {
@@ -133,7 +128,7 @@ impl Parser {
             record.imports.insert(&key[..], imports);
         }
 
-        for symbol in self.exporter.exports.iter() {
+        for symbol in self.analyzer.exports.iter() {
             match symbol {
                 ExportRecord::FnDecl { func } => {
                     let key = func.ident.sym.as_ref();
@@ -179,7 +174,7 @@ impl Parser {
             record.fixed_export_map.remove(&name[..]);
         }
 
-        for symbol in self.exporter.reexports.iter() {
+        for symbol in self.analyzer.reexports.iter() {
             match symbol {
                 ReexportRecord::Named {
                     module_path,

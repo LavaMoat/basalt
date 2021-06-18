@@ -7,7 +7,6 @@ use std::path::PathBuf;
 
 use anyhow::{bail, Result};
 
-mod analysis;
 mod module_node;
 pub mod printer;
 pub mod static_module_record;
