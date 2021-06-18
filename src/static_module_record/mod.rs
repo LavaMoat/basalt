@@ -104,5 +104,5 @@ pub mod analyzer;
 pub mod parser;
 pub mod transform;
 
-pub use parser::{var_symbol_names, Parser};
+pub use parser::Parser;
 pub use transform::{transform, TransformSource};

@@ -21,7 +21,7 @@ use swc_ecma_visit::{Node, Visit, VisitWith};
 use anyhow::Result;
 
 use super::{
-    var_symbol_names, ImportName, Parser as StaticModuleRecordParser,
+    parser::var_symbol_names, ImportName, Parser as StaticModuleRecordParser,
     StaticModuleRecord,
 };
 
@@ -34,6 +34,10 @@ const MAP: &str = "Map";
 const LIVE: &str = "live";
 const ONCE: &str = "once";
 const DEFAULT: &str = "default";
+const OBJECT: &str = "Object";
+const DEFINE_PROPERTY: &str = "defineProperty";
+const NAME: &str = "name";
+const VALUE: &str = "value";
 
 fn prefix_hidden(word: &str) -> JsWord {
     format!("{}{}", HIDDEN_PREFIX, word).into()
@@ -204,6 +208,76 @@ fn default_stmt(
     (default_stmt, call_stmt(prop_target, "default", prop_arg))
 }
 
+fn define_property(target: &str, prop_name: &str, prop_value: &str) -> Stmt {
+    Stmt::Expr(ExprStmt {
+        span: DUMMY_SP,
+        expr: Box::new(Expr::Call(
+            CallExpr {
+                span: DUMMY_SP,
+                callee: ExprOrSuper::Expr(Box::new(Expr::Member(MemberExpr {
+                    span: DUMMY_SP,
+                    obj: ExprOrSuper::Expr(Box::new(Expr::Ident(Ident {
+                        span: DUMMY_SP,
+                        sym: OBJECT.into(),
+                        optional: false,
+                    }))),
+                    prop: Box::new(Expr::Ident(Ident {
+                        span: DUMMY_SP,
+                        sym: DEFINE_PROPERTY.into(),
+                        optional: false,
+                    })),
+                    computed: false,
+                }))),
+                args: vec![
+                    ExprOrSpread {
+                        spread: None,
+                        expr: Box::new(Expr::Ident(Ident {
+                            span: DUMMY_SP,
+                            sym: target.into(),
+                            optional: false,
+                        })),
+                    },
+                    ExprOrSpread {
+                        spread: None,
+                        expr: Box::new(Expr::Lit(Lit::Str(Str {
+                            span: DUMMY_SP,
+                            kind: StrKind::Normal {
+                                contains_quote: true,
+                            },
+                            value: NAME.into(),
+                            has_escape: false,
+                        }))),
+                    },
+                    ExprOrSpread {
+                        spread: None,
+                        expr: Box::new(Expr::Object(ObjectLit {
+                            span: DUMMY_SP,
+                            props: vec![
+                                PropOrSpread::Prop(Box::new(Prop::KeyValue(KeyValueProp {
+                                    key: PropName::Ident(Ident {
+                                        span: DUMMY_SP,
+                                        sym: VALUE.into(),
+                                        optional: false,
+                                    }),
+                                    value: Box::new(Expr::Lit(Lit::Str(Str {
+                                        span: DUMMY_SP,
+                                        kind: StrKind::Normal {
+                                            contains_quote: true,
+                                        },
+                                        value: prop_value.into(),
+                                        has_escape: false,
+                                    }))),
+                                }))),
+                            ],
+                        })),
+                    }
+                ],
+                type_args: None,
+            }
+        )),
+    })
+}
+
 impl<'a> Visit for Visitor<'a> {
     fn visit_module_item(&mut self, n: &ModuleItem, node: &dyn Node) {
         match n {
@@ -332,6 +406,13 @@ impl<'a> Visit for Visitor<'a> {
                         }
                     }
                     Decl::Fn(func) => {
+                        let fn_name = func.ident.sym.as_ref();
+                        let const_name = prefix_const(fn_name);
+                        let define = define_property(
+                            const_name.as_ref(), NAME, fn_name);
+
+                        self.body.push(define);
+
                         self.body.push(Stmt::Expr(ExprStmt {
                             span: DUMMY_SP,
                             expr: Box::new(Expr::Fn(FnExpr {
