@@ -12,12 +12,12 @@ pub enum ImportRecord {
     /// Wildcard import.
     All {
         /// A name for the import specifier.
-        name: String
+        name: String,
     },
     /// Default import.
     Default {
         /// A name for the import specifier.
-        name: String
+        name: String,
     },
     /// Import specifier with optional alias.
     ///
@@ -36,22 +36,22 @@ pub enum ExportRecord {
     /// Variable export.
     VarDecl {
         /// The exported variable declaration.
-        var: VarDecl
+        var: VarDecl,
     },
     /// Function export.
     FnDecl {
         /// The exported function declaration.
-        func: FnDecl
+        func: FnDecl,
     },
     /// Named export.
     Named {
         /// The exported specifiers.
-        specifiers: Vec<ExportSpecifier>
+        specifiers: Vec<ExportSpecifier>,
     },
     /// Default export.
     DefaultExpr {
         /// The exported expression.
-        expr: Box<Expr>
+        expr: Box<Expr>,
     },
 }
 

@@ -5,8 +5,7 @@ use swc_ecma_ast::*;
 use swc_ecma_visit::VisitWith;
 
 use super::analyzer::{
-    Analyzer, ImportRecord, ExportRecord, ReexportRecord,
-    LiveExportAnalysis,
+    Analyzer, ExportRecord, ImportRecord, LiveExportAnalysis, ReexportRecord,
 };
 
 use super::{ImportKind, ImportName, StaticModuleRecord};

@@ -21,8 +21,8 @@ use swc_ecma_visit::{Node, Visit, VisitWith};
 use anyhow::Result;
 
 use super::{
-    var_symbol_names, ImportName, StaticModuleRecord,
-    Parser as StaticModuleRecordParser
+    var_symbol_names, ImportName, Parser as StaticModuleRecordParser,
+    StaticModuleRecord,
 };
 
 const HIDDEN_PREFIX: &str = "$h\u{200d}_";
@@ -267,7 +267,8 @@ impl<'a> Visit for Visitor<'a> {
                         for (decl, names) in symbols {
                             let mut decl_emitted = false;
                             for name in names {
-                                if self.meta.fixed_export_map.contains_key(name) {
+                                if self.meta.fixed_export_map.contains_key(name)
+                                {
                                     if !decl_emitted {
                                         self.body.push(Stmt::Decl(Decl::Var(
                                             VarDecl {
@@ -282,8 +283,11 @@ impl<'a> Visit for Visitor<'a> {
 
                                     let prop_target = prefix_hidden(ONCE);
                                     // TODO: handle alias in fixed exports!
-                                    let call =
-                                        call_stmt(prop_target, name, name.into());
+                                    let call = call_stmt(
+                                        prop_target,
+                                        name,
+                                        name.into(),
+                                    );
                                     self.body.push(call);
                                 } else if self
                                     .meta
@@ -293,24 +297,29 @@ impl<'a> Visit for Visitor<'a> {
                                     let prop_name = prefix_const(name);
                                     let prop_target = prefix_hidden(LIVE);
                                     if !decl_emitted {
-                                        self.body.push(Stmt::Decl(Decl::Var(VarDecl {
-                                            span: DUMMY_SP,
-                                            kind: VarDeclKind::Let,
-                                            declare: false,
-                                            decls: vec![VarDeclarator {
+                                        self.body.push(Stmt::Decl(Decl::Var(
+                                            VarDecl {
                                                 span: DUMMY_SP,
-                                                name: Pat::Ident(BindingIdent {
-                                                    id: Ident {
-                                                        span: DUMMY_SP,
-                                                        sym: prop_name.clone(),
-                                                        optional: false,
-                                                    },
-                                                    type_ann: None,
-                                                }),
-                                                init: decl.init.clone(),
-                                                definite: false,
-                                            }],
-                                        })));
+                                                kind: VarDeclKind::Let,
+                                                declare: false,
+                                                decls: vec![VarDeclarator {
+                                                    span: DUMMY_SP,
+                                                    name: Pat::Ident(
+                                                        BindingIdent {
+                                                            id: Ident {
+                                                                span: DUMMY_SP,
+                                                                sym: prop_name
+                                                                    .clone(),
+                                                                optional: false,
+                                                            },
+                                                            type_ann: None,
+                                                        },
+                                                    ),
+                                                    init: decl.init.clone(),
+                                                    definite: false,
+                                                }],
+                                            },
+                                        )));
                                         decl_emitted = true;
                                     }
 

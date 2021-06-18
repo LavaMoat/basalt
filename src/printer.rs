@@ -18,9 +18,11 @@ pub struct PrintOptions {
     pub include_file: bool,
 }
 
-pub(crate) struct Printer;
+/// Prints the module graph as a tree.
+pub struct Printer;
 
 impl Printer {
+    /// Creates a new module graph printer.
     pub fn new() -> Self {
         Printer {}
     }
