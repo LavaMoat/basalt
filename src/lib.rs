@@ -12,7 +12,7 @@ pub mod printer;
 pub mod static_module_record;
 mod swc_utils;
 
-pub use static_module_record::{Generator, Parser, TransformSource};
+pub use static_module_record::{Parser, TransformSource};
 
 /// List all modules.
 pub fn list(file: PathBuf, include_file: bool) -> Result<()> {

@@ -101,10 +101,8 @@ impl<'a> StaticModuleRecord<'a> {
 }
 
 pub mod analyzer;
-pub mod generator;
 pub mod parser;
 pub mod transform;
 
-pub use generator::Generator;
 pub use parser::{var_symbol_names, Parser};
 pub use transform::{transform, TransformSource};

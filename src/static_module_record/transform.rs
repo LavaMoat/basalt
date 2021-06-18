@@ -2,20 +2,46 @@
 use std::path::PathBuf;
 use std::sync::Arc;
 
+use indexmap::IndexMap;
+
 use swc::{
     config::{JscTarget, Options, SourceMapsConfig},
     Compiler, TransformOutput,
 };
 use swc_common::{
     errors::{emitter::ColorConfig, Handler},
-    FileName, SourceMap,
+    FileName, SourceMap, DUMMY_SP,
 };
+
+use swc_atoms::JsWord;
 use swc_ecma_ast::*;
 use swc_ecma_parser::{lexer::Lexer, Parser, StringInput, Syntax};
+use swc_ecma_visit::{Node, Visit, VisitWith};
 
 use anyhow::Result;
 
-use super::{Generator, Parser as StaticModuleRecordParser};
+use super::{
+    var_symbol_names, ImportName, StaticModuleRecord,
+    Parser as StaticModuleRecordParser
+};
+
+const HIDDEN_PREFIX: &str = "$h\u{200d}_";
+const HIDDEN_CONST_VAR_PREFIX: &str = "$c\u{200d}_";
+const IMPORTS: &str = "imports";
+const LIVE_VAR: &str = "liveVar";
+const ONCE_VAR: &str = "onceVar";
+const MAP: &str = "Map";
+const LIVE: &str = "live";
+const ONCE: &str = "once";
+const DEFAULT: &str = "default";
+
+fn prefix_hidden(word: &str) -> JsWord {
+    format!("{}{}", HIDDEN_PREFIX, word).into()
+}
+
+fn prefix_const(word: &str) -> JsWord {
+    format!("{}{}", HIDDEN_CONST_VAR_PREFIX, word).into()
+}
 
 /// Sources that may be transformed
 #[derive(Debug)]
@@ -87,4 +113,622 @@ pub fn transform(source: TransformSource) -> Result<TransformOutput> {
     )?;
 
     Ok(result)
+}
+
+struct Visitor<'a> {
+    meta: &'a StaticModuleRecord<'a>,
+    body: &'a mut Vec<Stmt>,
+}
+
+fn call_stmt(prop_target: JsWord, prop_name: &str, arg: JsWord) -> Stmt {
+    Stmt::Expr(ExprStmt {
+        span: DUMMY_SP,
+        expr: Box::new(Expr::Call(CallExpr {
+            span: DUMMY_SP,
+            callee: ExprOrSuper::Expr(Box::new(Expr::Member(MemberExpr {
+                span: DUMMY_SP,
+                obj: ExprOrSuper::Expr(Box::new(Expr::Ident(Ident {
+                    span: DUMMY_SP,
+                    sym: prop_target,
+                    optional: false,
+                }))),
+                prop: Box::new(Expr::Ident(Ident {
+                    span: DUMMY_SP,
+                    sym: prop_name.into(),
+                    optional: false,
+                })),
+                computed: false,
+            }))),
+            args: vec![ExprOrSpread {
+                spread: None,
+                expr: Box::new(Expr::Ident(Ident {
+                    span: DUMMY_SP,
+                    sym: arg,
+                    optional: false,
+                })),
+            }],
+            type_args: None,
+        })),
+    })
+}
+
+fn default_stmt(
+    prop_target: JsWord,
+    prop_arg: JsWord,
+    value: Box<Expr>,
+) -> (Stmt, Stmt) {
+    let default_stmt = Stmt::Decl(Decl::Var(VarDecl {
+        span: DUMMY_SP,
+        // Default exports must be constant
+        kind: VarDeclKind::Const,
+        declare: false,
+        decls: vec![VarDeclarator {
+            span: DUMMY_SP,
+            definite: false,
+            name: Pat::Object(ObjectPat {
+                span: DUMMY_SP,
+                optional: false,
+                type_ann: None,
+                props: vec![ObjectPatProp::KeyValue(KeyValuePatProp {
+                    key: PropName::Ident(Ident {
+                        span: DUMMY_SP,
+                        optional: false,
+                        sym: DEFAULT.into(),
+                    }),
+                    value: Box::new(Pat::Ident(BindingIdent {
+                        id: Ident {
+                            span: DUMMY_SP,
+                            optional: false,
+                            sym: prop_arg.clone(),
+                        },
+                        type_ann: None,
+                    })),
+                })],
+            }),
+            init: Some(Box::new(Expr::Object(ObjectLit {
+                span: DUMMY_SP,
+                props: vec![PropOrSpread::Prop(Box::new(Prop::KeyValue(
+                    KeyValueProp {
+                        key: PropName::Ident(Ident {
+                            span: DUMMY_SP,
+                            optional: false,
+                            sym: DEFAULT.into(),
+                        }),
+                        value,
+                    },
+                )))],
+            }))),
+        }],
+    }));
+
+    (default_stmt, call_stmt(prop_target, "default", prop_arg))
+}
+
+impl<'a> Visit for Visitor<'a> {
+    fn visit_module_item(&mut self, n: &ModuleItem, node: &dyn Node) {
+        match n {
+            ModuleItem::ModuleDecl(decl) => match decl {
+                ModuleDecl::ExportNamed(export) => {
+                    // Not a re-export
+                    if export.src.is_none() {
+                        for spec in export.specifiers.iter() {
+                            if let ExportSpecifier::Named(spec) = spec {
+                                let export_name = spec
+                                    .exported
+                                    .as_ref()
+                                    .unwrap_or(&spec.orig)
+                                    .sym
+                                    .as_ref();
+                                let local_name = spec.orig.sym.as_ref();
+                                let prop_target = prefix_hidden(ONCE);
+                                let call = call_stmt(
+                                    prop_target,
+                                    export_name,
+                                    local_name.into(),
+                                );
+                                self.body.push(call);
+                            }
+                        }
+                    }
+                }
+                ModuleDecl::ExportDefaultDecl(export) => {
+                    let prop_target = prefix_hidden(ONCE);
+                    let prop_arg = prefix_const(DEFAULT);
+                    let value_expr = match &export.decl {
+                        DefaultDecl::Class(class_expr) => {
+                            Box::new(Expr::Class(class_expr.clone()))
+                        }
+                        DefaultDecl::Fn(fn_expr) => {
+                            Box::new(Expr::Fn(fn_expr.clone()))
+                        }
+                        _ => panic!("Typescript interface declarations are not supported")
+                    };
+                    let (default_stmt, call) =
+                        default_stmt(prop_target, prop_arg, value_expr);
+                    self.body.push(default_stmt);
+                    self.body.push(call);
+                }
+                ModuleDecl::ExportDefaultExpr(export) => {
+                    // const { default: $c_default } = { default: 42 };
+                    // $h_once.default($c_default);
+                    if self.meta.fixed_export_map.contains_key(DEFAULT) {
+                        let prop_target = prefix_hidden(ONCE);
+                        let prop_arg = prefix_const(DEFAULT);
+                        let value_expr = export.expr.clone();
+                        let (default_stmt, call) =
+                            default_stmt(prop_target, prop_arg, value_expr);
+                        self.body.push(default_stmt);
+                        self.body.push(call);
+                    }
+                }
+                ModuleDecl::ExportDecl(export) => match &export.decl {
+                    Decl::Var(var) => {
+                        let symbols = var_symbol_names(var);
+                        for (decl, names) in symbols {
+                            let mut decl_emitted = false;
+                            for name in names {
+                                if self.meta.fixed_export_map.contains_key(name) {
+                                    if !decl_emitted {
+                                        self.body.push(Stmt::Decl(Decl::Var(
+                                            VarDecl {
+                                                span: DUMMY_SP,
+                                                kind: var.kind.clone(),
+                                                declare: false,
+                                                decls: vec![decl.clone()],
+                                            },
+                                        )));
+                                        decl_emitted = true;
+                                    }
+
+                                    let prop_target = prefix_hidden(ONCE);
+                                    // TODO: handle alias in fixed exports!
+                                    let call =
+                                        call_stmt(prop_target, name, name.into());
+                                    self.body.push(call);
+                                } else if self
+                                    .meta
+                                    .live_export_map
+                                    .contains_key(name)
+                                {
+                                    let prop_name = prefix_const(name);
+                                    let prop_target = prefix_hidden(LIVE);
+                                    if !decl_emitted {
+                                        self.body.push(Stmt::Decl(Decl::Var(VarDecl {
+                                            span: DUMMY_SP,
+                                            kind: VarDeclKind::Let,
+                                            declare: false,
+                                            decls: vec![VarDeclarator {
+                                                span: DUMMY_SP,
+                                                name: Pat::Ident(BindingIdent {
+                                                    id: Ident {
+                                                        span: DUMMY_SP,
+                                                        sym: prop_name.clone(),
+                                                        optional: false,
+                                                    },
+                                                    type_ann: None,
+                                                }),
+                                                init: decl.init.clone(),
+                                                definite: false,
+                                            }],
+                                        })));
+                                        decl_emitted = true;
+                                    }
+
+                                    let call =
+                                        call_stmt(prop_target, name, prop_name);
+
+                                    self.body.push(call);
+                                }
+                            }
+                        }
+                    }
+                    _ => {}
+                },
+                _ => {}
+            },
+            ModuleItem::Stmt(stmt) => self.visit_stmt(stmt, node),
+        }
+    }
+
+    fn visit_stmt(&mut self, n: &Stmt, _: &dyn Node) {
+        self.body.push(n.clone());
+    }
+}
+
+/// Generate a static module record functor program.
+pub struct Generator<'a> {
+    meta: &'a StaticModuleRecord<'a>,
+}
+
+impl<'a> Generator<'a> {
+    /// Create a new generator.
+    pub fn new(meta: &'a StaticModuleRecord<'a>) -> Self {
+        Generator { meta }
+    }
+
+    /// Create the program script AST node.
+    pub fn create(&self) -> Result<Script> {
+        let mut script = Script {
+            span: DUMMY_SP,
+            body: Vec::with_capacity(1),
+            shebang: None,
+        };
+
+        let stmt = Stmt::Expr(ExprStmt {
+            span: DUMMY_SP,
+            expr: Box::new(Expr::Paren(ParenExpr {
+                span: DUMMY_SP,
+                expr: Box::new(Expr::Arrow(ArrowExpr {
+                    span: DUMMY_SP,
+                    params: self.params(),
+                    body: BlockStmtOrExpr::BlockStmt(self.body()),
+                    is_async: false,
+                    is_generator: false,
+                    type_params: None,
+                    return_type: None,
+                })),
+            })),
+        });
+
+        script.body.push(stmt);
+
+        Ok(script)
+    }
+
+    /// Build up the functor function parameters.
+    fn params(&self) -> Vec<Pat> {
+        let mut props = IndexMap::new();
+        props.insert(IMPORTS, IMPORTS);
+        props.insert(LIVE_VAR, LIVE);
+        props.insert(ONCE_VAR, ONCE);
+        vec![Pat::Object(ObjectPat {
+            span: DUMMY_SP,
+            props: {
+                let mut out = Vec::with_capacity(props.len());
+                for (prop, target) in props {
+                    out.push(ObjectPatProp::KeyValue(KeyValuePatProp {
+                        key: PropName::Ident(Ident {
+                            span: DUMMY_SP,
+                            sym: (*prop).into(),
+                            optional: false,
+                        }),
+                        value: Box::new(Pat::Ident(BindingIdent {
+                            id: Ident {
+                                span: DUMMY_SP,
+                                sym: prefix_hidden(target),
+                                optional: false,
+                            },
+                            type_ann: None,
+                        })),
+                    }));
+                }
+                out
+            },
+            optional: false,
+            type_ann: None,
+        })]
+    }
+
+    /// The function body block.
+    fn body(&self) -> BlockStmt {
+        let mut block = BlockStmt {
+            span: DUMMY_SP,
+            stmts: Vec::new(),
+        };
+
+        let decls = self.meta.decls();
+
+        if !decls.is_empty() {
+            let local_vars = Stmt::Decl(Decl::Var(VarDecl {
+                span: DUMMY_SP,
+                kind: VarDeclKind::Let,
+                declare: false,
+                decls: {
+                    let mut out = Vec::with_capacity(decls.len());
+                    for name in decls.iter() {
+                        let nm: &str = &name[..];
+                        out.push(VarDeclarator {
+                            span: DUMMY_SP,
+                            definite: false,
+                            init: None,
+                            name: Pat::Ident(BindingIdent {
+                                id: Ident {
+                                    span: DUMMY_SP,
+                                    sym: nm.into(),
+                                    optional: false,
+                                },
+                                type_ann: None,
+                            }),
+                        });
+                    }
+                    out
+                },
+            }));
+            block.stmts.push(local_vars);
+        }
+
+        block.stmts.push(self.imports_func_call());
+
+        let mut visitor = Visitor {
+            meta: self.meta,
+            body: &mut block.stmts,
+        };
+        self.meta.module.visit_children_with(&mut visitor);
+
+        //block.stmts.push(self.imports_func_call());
+
+        block
+    }
+
+    fn imports_func_call(&self) -> Stmt {
+        let stmt = Stmt::Expr(ExprStmt {
+            span: DUMMY_SP,
+            expr: Box::new(Expr::Call(CallExpr {
+                span: DUMMY_SP,
+                callee: ExprOrSuper::Expr(Box::new(Expr::Ident(Ident {
+                    span: DUMMY_SP,
+                    sym: prefix_hidden(IMPORTS),
+                    optional: false,
+                }))),
+                args: vec![self.imports_arg_map(), self.imports_arg_all()],
+                type_args: None,
+            })),
+        });
+        stmt
+    }
+
+    /// The arguments passed to the call to orchestrate the imports.
+    fn imports_arg_map(&self) -> ExprOrSpread {
+        ExprOrSpread {
+            spread: None,
+            expr: Box::new(Expr::New(NewExpr {
+                span: DUMMY_SP,
+                callee: Box::new(Expr::Ident(Ident {
+                    span: DUMMY_SP,
+                    sym: MAP.into(),
+                    optional: false,
+                })),
+                args: Some(self.imports_map_constructor_args()),
+                type_args: None,
+            })),
+        }
+    }
+
+    /// The arguments passed to the Map constructor for the first argument
+    /// to the call to the imports function.
+    fn imports_map_constructor_args(&self) -> Vec<ExprOrSpread> {
+        vec![ExprOrSpread {
+            spread: None,
+            expr: Box::new(Expr::Array(ArrayLit {
+                span: DUMMY_SP,
+                elems: {
+                    let mut out = Vec::with_capacity(self.meta.imports.len());
+                    for (key, props) in self.meta.imports.iter() {
+                        let key: &str = &key[..];
+                        let computed_aliases = self.meta.aliases();
+                        let aliases = computed_aliases.get(key).unwrap();
+                        out.push(Some(ExprOrSpread {
+                            spread: None,
+                            expr: Box::new(Expr::Array(ArrayLit {
+                                span: DUMMY_SP,
+                                elems: vec![
+                                    Some(ExprOrSpread {
+                                        spread: None,
+                                        expr: Box::new(Expr::Lit(Lit::Str(
+                                            Str {
+                                                span: DUMMY_SP,
+                                                kind: StrKind::Normal {
+                                                    contains_quote: true,
+                                                },
+                                                value: key.into(),
+                                                has_escape: false,
+                                            },
+                                        ))),
+                                    }),
+                                    Some(
+                                        self.imports_map_constructor_args_map(
+                                            props, aliases,
+                                        ),
+                                    ),
+                                ],
+                            })),
+                        }));
+                    }
+                    out
+                },
+            })),
+        }]
+    }
+
+    /// The arguments for each nested map.
+    fn imports_map_constructor_args_map(
+        &self,
+        props: &Vec<ImportName<'a>>,
+        aliases: &Vec<&str>,
+    ) -> ExprOrSpread {
+        ExprOrSpread {
+            spread: None,
+            expr: Box::new(Expr::New(NewExpr {
+                span: DUMMY_SP,
+                callee: Box::new(Expr::Ident(Ident {
+                    span: DUMMY_SP,
+                    sym: MAP.into(),
+                    optional: false,
+                })),
+                args: Some(vec![ExprOrSpread {
+                    spread: None,
+                    expr: Box::new(Expr::Array(ArrayLit {
+                        span: DUMMY_SP,
+                        elems: {
+                            let mut out = Vec::with_capacity(props.len());
+                            for (prop, alias) in
+                                props.iter().zip(aliases.iter())
+                            {
+                                let prop = prop.raw_name();
+                                let alias: &str = &alias[..];
+                                let live = self
+                                    .meta
+                                    .live_export_map
+                                    .contains_key(prop)
+                                    || {
+                                        // NOTE: This is a bit of a hack :(
+                                        // NOTE: becuase imports doesn't contain the local name
+                                        // NOTE: so `export {gray as grey} from './gray.js'` only
+                                        // NOTE: gives us `grey` and `grey` right now.
+                                        let live_alias = self
+                                            .meta
+                                            .live_export_map
+                                            .iter()
+                                            .find(|(_k, v)| {
+                                                if v.0 == prop {
+                                                    return true;
+                                                }
+                                                false
+                                            });
+
+                                        live_alias.is_some()
+                                    };
+
+                                //println!("is live {:?} {:?} {:?}", live, prop, alias);
+
+                                out.push(Some(ExprOrSpread {
+                                    spread: None,
+                                    expr: Box::new(Expr::Array(ArrayLit {
+                                        span: DUMMY_SP,
+                                        elems: vec![
+                                            Some(ExprOrSpread {
+                                                spread: None,
+                                                expr: Box::new(Expr::Lit(
+                                                    Lit::Str(Str {
+                                                        span: DUMMY_SP,
+                                                        kind: StrKind::Normal {
+                                                            contains_quote:
+                                                                true,
+                                                        },
+                                                        value: prop.into(),
+                                                        has_escape: false,
+                                                    }),
+                                                )),
+                                            }),
+                                            Some(ExprOrSpread {
+                                                spread: None,
+                                                expr: Box::new(Expr::Array(
+                                                    ArrayLit {
+                                                        span: DUMMY_SP,
+                                                        elems: vec![Some(self.imports_prop_func(alias, live))],
+                                                    },
+                                                )),
+                                            }),
+                                        ],
+                                    })),
+                                }));
+                            }
+                            out
+                        },
+                    })),
+                }]),
+                type_args: None,
+            })),
+        }
+    }
+
+    /// The import function which lazily assigns to the locally scoped variable.
+    fn imports_prop_func(&self, alias: &str, live: bool) -> ExprOrSpread {
+        let arg = prefix_hidden("a");
+        if live {
+            ExprOrSpread {
+                spread: None,
+                expr: Box::new(Expr::Member(MemberExpr {
+                    span: DUMMY_SP,
+                    obj: ExprOrSuper::Expr(Box::new(Expr::Ident(Ident {
+                        span: DUMMY_SP,
+                        sym: prefix_hidden(LIVE),
+                        optional: false,
+                    }))),
+                    prop: Box::new(Expr::Lit(Lit::Str(Str {
+                        span: DUMMY_SP,
+                        kind: StrKind::Normal {
+                            contains_quote: true,
+                        },
+                        has_escape: false,
+                        value: alias.into(),
+                    }))),
+                    computed: true,
+                })),
+            }
+        } else {
+            ExprOrSpread {
+                spread: None,
+                expr: Box::new(Expr::Arrow(ArrowExpr {
+                    span: DUMMY_SP,
+                    params: vec![Pat::Ident(BindingIdent {
+                        id: Ident {
+                            span: DUMMY_SP,
+                            sym: arg.clone(),
+                            optional: false,
+                        },
+                        type_ann: None,
+                    })],
+                    body: BlockStmtOrExpr::Expr(Box::new(Expr::Paren(
+                        ParenExpr {
+                            span: DUMMY_SP,
+                            expr: Box::new(Expr::Assign(AssignExpr {
+                                span: DUMMY_SP,
+                                op: AssignOp::Assign,
+                                left: PatOrExpr::Pat(Box::new(Pat::Ident(
+                                    BindingIdent {
+                                        id: Ident {
+                                            span: DUMMY_SP,
+                                            sym: alias.into(),
+                                            optional: false,
+                                        },
+                                        type_ann: None,
+                                    },
+                                ))),
+                                right: Box::new(Expr::Ident(Ident {
+                                    span: DUMMY_SP,
+                                    sym: arg,
+                                    optional: false,
+                                })),
+                            })),
+                        },
+                    ))),
+                    is_async: false,
+                    is_generator: false,
+                    return_type: None,
+                    type_params: None,
+                })),
+            }
+        }
+    }
+
+    /// All imports argument. The second parameter when invoking the
+    /// imports orchestration function.
+    fn imports_arg_all(&self) -> ExprOrSpread {
+        ExprOrSpread {
+            spread: None,
+            expr: Box::new(Expr::Array(ArrayLit {
+                span: DUMMY_SP,
+                elems: {
+                    let mut out =
+                        Vec::with_capacity(self.meta.export_alls.len());
+                    for name in self.meta.export_alls.iter() {
+                        let nm: &str = &name[..];
+                        out.push(Some(ExprOrSpread {
+                            spread: None,
+                            expr: Box::new(Expr::Lit(Lit::Str(Str {
+                                span: DUMMY_SP,
+                                kind: StrKind::Normal {
+                                    contains_quote: true,
+                                },
+                                value: nm.into(),
+                                has_escape: false,
+                            }))),
+                        }));
+                    }
+                    out
+                },
+            })),
+        }
+    }
 }
