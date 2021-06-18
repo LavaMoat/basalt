@@ -18,7 +18,7 @@ use swc_ecma_ast::*;
 use swc_ecma_parser::{lexer::Lexer, Parser, StringInput, Syntax};
 use swc_ecma_visit::{Node, Visit, VisitWith};
 
-use anyhow::Result;
+use anyhow::{Context, Result};
 
 use super::{
     parser::var_symbol_names, ImportName, Parser as StaticModuleRecordParser,
@@ -105,7 +105,7 @@ pub fn transform(source: TransformSource) -> Result<TransformOutput> {
     let compiler = Compiler::new(sm, Arc::new(handler));
     let script = generator
         .create()
-        .expect("failed to generate transformed script");
+        .context("failed to generate transformed script")?;
     let program = Program::Script(script);
 
     let result = compiler.print(
@@ -211,70 +211,68 @@ fn default_stmt(
 fn define_property(target: &str, prop_name: &str, prop_value: &str) -> Stmt {
     Stmt::Expr(ExprStmt {
         span: DUMMY_SP,
-        expr: Box::new(Expr::Call(
-            CallExpr {
+        expr: Box::new(Expr::Call(CallExpr {
+            span: DUMMY_SP,
+            callee: ExprOrSuper::Expr(Box::new(Expr::Member(MemberExpr {
                 span: DUMMY_SP,
-                callee: ExprOrSuper::Expr(Box::new(Expr::Member(MemberExpr {
+                obj: ExprOrSuper::Expr(Box::new(Expr::Ident(Ident {
                     span: DUMMY_SP,
-                    obj: ExprOrSuper::Expr(Box::new(Expr::Ident(Ident {
+                    sym: OBJECT.into(),
+                    optional: false,
+                }))),
+                prop: Box::new(Expr::Ident(Ident {
+                    span: DUMMY_SP,
+                    sym: DEFINE_PROPERTY.into(),
+                    optional: false,
+                })),
+                computed: false,
+            }))),
+            args: vec![
+                ExprOrSpread {
+                    spread: None,
+                    expr: Box::new(Expr::Ident(Ident {
                         span: DUMMY_SP,
-                        sym: OBJECT.into(),
-                        optional: false,
-                    }))),
-                    prop: Box::new(Expr::Ident(Ident {
-                        span: DUMMY_SP,
-                        sym: DEFINE_PROPERTY.into(),
+                        sym: target.into(),
                         optional: false,
                     })),
-                    computed: false,
-                }))),
-                args: vec![
-                    ExprOrSpread {
-                        spread: None,
-                        expr: Box::new(Expr::Ident(Ident {
-                            span: DUMMY_SP,
-                            sym: target.into(),
-                            optional: false,
-                        })),
-                    },
-                    ExprOrSpread {
-                        spread: None,
-                        expr: Box::new(Expr::Lit(Lit::Str(Str {
-                            span: DUMMY_SP,
-                            kind: StrKind::Normal {
-                                contains_quote: true,
-                            },
-                            value: NAME.into(),
-                            has_escape: false,
-                        }))),
-                    },
-                    ExprOrSpread {
-                        spread: None,
-                        expr: Box::new(Expr::Object(ObjectLit {
-                            span: DUMMY_SP,
-                            props: vec![
-                                PropOrSpread::Prop(Box::new(Prop::KeyValue(KeyValueProp {
-                                    key: PropName::Ident(Ident {
-                                        span: DUMMY_SP,
-                                        sym: VALUE.into(),
-                                        optional: false,
-                                    }),
-                                    value: Box::new(Expr::Lit(Lit::Str(Str {
-                                        span: DUMMY_SP,
-                                        kind: StrKind::Normal {
-                                            contains_quote: true,
-                                        },
-                                        value: prop_value.into(),
-                                        has_escape: false,
-                                    }))),
+                },
+                ExprOrSpread {
+                    spread: None,
+                    expr: Box::new(Expr::Lit(Lit::Str(Str {
+                        span: DUMMY_SP,
+                        kind: StrKind::Normal {
+                            contains_quote: true,
+                        },
+                        value: NAME.into(),
+                        has_escape: false,
+                    }))),
+                },
+                ExprOrSpread {
+                    spread: None,
+                    expr: Box::new(Expr::Object(ObjectLit {
+                        span: DUMMY_SP,
+                        props: vec![PropOrSpread::Prop(Box::new(
+                            Prop::KeyValue(KeyValueProp {
+                                key: PropName::Ident(Ident {
+                                    span: DUMMY_SP,
+                                    sym: VALUE.into(),
+                                    optional: false,
+                                }),
+                                value: Box::new(Expr::Lit(Lit::Str(Str {
+                                    span: DUMMY_SP,
+                                    kind: StrKind::Normal {
+                                        contains_quote: true,
+                                    },
+                                    value: prop_value.into(),
+                                    has_escape: false,
                                 }))),
-                            ],
-                        })),
-                    }
-                ],
-                type_args: None,
-            }
-        )),
+                            }),
+                        ))],
+                    })),
+                },
+            ],
+            type_args: None,
+        })),
     })
 }
 
@@ -407,16 +405,28 @@ impl<'a> Visit for Visitor<'a> {
                     }
                     Decl::Fn(func) => {
                         let fn_name = func.ident.sym.as_ref();
-                        let const_name = prefix_const(fn_name);
-                        let define = define_property(
-                            const_name.as_ref(), NAME, fn_name);
+                        let target = prefix_const(fn_name);
 
+                        // Rename the function
+                        let mut ident = func.ident.clone();
+                        ident.sym = JsWord::from(target.clone());
+
+                        // Use original `name` property for the function
+                        let define =
+                            define_property(target.as_ref(), NAME, fn_name);
                         self.body.push(define);
 
+                        // Set up the live export
+                        let prop_target = prefix_hidden(LIVE);
+                        let call =
+                            call_stmt(prop_target, fn_name, target);
+                        self.body.push(call);
+
+                        // Output the function
                         self.body.push(Stmt::Expr(ExprStmt {
                             span: DUMMY_SP,
                             expr: Box::new(Expr::Fn(FnExpr {
-                                ident: Some(func.ident.clone()),
+                                ident: Some(ident),
                                 function: func.function.clone(),
                             })),
                         }));
@@ -553,8 +563,6 @@ impl<'a> Generator<'a> {
             body: &mut block.stmts,
         };
         self.meta.module.visit_children_with(&mut visitor);
-
-        //block.stmts.push(self.imports_func_call());
 
         block
     }

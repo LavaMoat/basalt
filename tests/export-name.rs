@@ -66,7 +66,7 @@ fn export_name_5() -> Result<()> {
     Ok(())
 }
 
-// TODO
+// FIXME: hoist the `Object.defineProperty()` and the `$h_live.fn($c_fn)`
 #[test]
 fn export_name_6() -> Result<()> {
     let expected =
@@ -74,13 +74,12 @@ fn export_name_6() -> Result<()> {
     let result = transform(TransformSource::File(PathBuf::from(
         "tests/transform/export-name-6/input.js",
     )))?;
-    print!("{}", &result.code);
-    //assert_eq!(expected, result.code);
+    //print!("{}", &result.code);
+    assert_eq!(expected, result.code);
     Ok(())
 }
 
 // TODO: 7
-// TODO: 8
 
 #[test]
 fn export_name_8() -> Result<()> {
