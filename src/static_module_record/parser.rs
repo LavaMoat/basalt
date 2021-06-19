@@ -18,6 +18,8 @@ pub fn var_symbol_names(var: &VarDecl) -> Vec<(&VarDeclarator, Vec<&str>)> {
         .filter(|decl| match &decl.name {
             Pat::Ident(_) => true,
             Pat::Object(_) => true,
+            Pat::Array(_) => true,
+            Pat::Rest(_) => true,
             _ => false,
         })
         .map(|decl| {
@@ -38,15 +40,24 @@ fn pattern_names<'a>(pat: &'a Pat, names: &mut Vec<&'a str>) {
                         names.push(entry.key.sym.as_ref());
                     }
                     ObjectPatProp::KeyValue(entry) => {
+                        let will_recurse = match &*entry.value {
+                            Pat::Object(_) => true,
+                            Pat::Array(_) => true,
+                            _ => false,
+                        };
                         pattern_names(&*entry.value, names);
-                        match &entry.key {
-                            PropName::Ident(ident) => {
-                                names.push(ident.sym.as_ref());
+                        if !will_recurse {
+                            match &entry.key {
+                                PropName::Ident(ident) => {
+                                    names.push(ident.sym.as_ref());
+                                }
+                                _ => {}
                             }
-                            _ => {}
                         }
                     }
-                    _ => {}
+                    ObjectPatProp::Rest(entry) => {
+                        pattern_names(&*entry.arg, names);
+                    }
                 }
             }
         }

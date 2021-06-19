@@ -16,5 +16,5 @@
     $h‍_once.def(def);
     $h‍_once.ghi(ghi);
     $h‍_once.nestrest(nestrest);
-    $h‍_once.nest(nest);
+    $h‍_once.rest(rest);
 });

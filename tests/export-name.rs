@@ -15,8 +15,6 @@ fn export_name_1() -> Result<()> {
     Ok(())
 }
 
-// FIXME: `nest` is not rendered in the source test spec but we render it?
-// FIXME: `rest` is not being rendered but exists in the source test spec?
 #[test]
 fn export_name_2() -> Result<()> {
     let expected =
