@@ -151,7 +151,8 @@ impl Visit for Analyzer {
                     }
                     // export function foo() {}
                     Decl::Fn(func) => {
-                        self.hoisted_funcs.push(func.ident.sym.as_ref().to_string());
+                        self.hoisted_funcs
+                            .push(func.ident.sym.as_ref().to_string());
                         self.exports
                             .push(ExportRecord::FnDecl { func: func.clone() });
                     }

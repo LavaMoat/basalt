@@ -404,23 +404,10 @@ impl<'a> Visit for Visitor<'a> {
                         }
                     }
                     Decl::Fn(func) => {
-                        let fn_name = func.ident.sym.as_ref();
-                        let target = prefix_const(fn_name);
-
-                        // Rename the function
+                        // Rename the function so it matches the hoisted function statements
+                        let target = prefix_const(func.ident.sym.as_ref());
                         let mut ident = func.ident.clone();
                         ident.sym = JsWord::from(target.clone());
-
-                        // Use original `name` property for the function
-                        let define =
-                            define_property(target.as_ref(), NAME, fn_name);
-                        self.body.push(define);
-
-                        // Set up the live export
-                        let prop_target = prefix_hidden(LIVE);
-                        let call =
-                            call_stmt(prop_target, fn_name, target);
-                        self.body.push(call);
 
                         // Output the function
                         self.body.push(Stmt::Expr(ExprStmt {
@@ -557,6 +544,7 @@ impl<'a> Generator<'a> {
         }
 
         block.stmts.push(self.imports_func_call());
+        self.hoist_exported_funcs(&mut block.stmts);
 
         let mut visitor = Visitor {
             meta: self.meta,
@@ -565,6 +553,23 @@ impl<'a> Generator<'a> {
         self.meta.module.visit_children_with(&mut visitor);
 
         block
+    }
+
+    fn hoist_exported_funcs(&self, stmts: &mut Vec<Stmt>) {
+        for fn_name in self.meta.hoisted_funcs.iter() {
+            let target = prefix_const(fn_name);
+
+            // Use original `name` property for the function
+            let define =
+                define_property(target.as_ref(), NAME, fn_name);
+            stmts.push(define);
+
+            // Set up the live export
+            let prop_target = prefix_hidden(LIVE);
+            let call =
+                call_stmt(prop_target, fn_name, target);
+            stmts.push(call);
+        }
     }
 
     fn imports_func_call(&self) -> Stmt {
