@@ -103,12 +103,15 @@ impl Parser {
             imports: Default::default(),
             live_export_map: Default::default(),
             fixed_export_map: Default::default(),
+            hoisted_funcs: Default::default(),
         };
 
         module.visit_children_with(&mut self.analyzer);
 
         self.live_exports.exports = self.analyzer.var_export_names();
         module.visit_children_with(&mut self.live_exports);
+
+        record.hoisted_funcs = self.analyzer.hoisted_funcs.iter().map(|s| &s[..]).collect::<Vec<_>>();
 
         for (key, symbols) in self.analyzer.imports.iter() {
             let imports = symbols

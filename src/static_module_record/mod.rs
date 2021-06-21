@@ -66,6 +66,10 @@ pub struct StaticModuleRecord<'a> {
     /// The source module AST node.
     #[serde(skip)]
     pub module: &'a Module,
+
+    /// Exported functions that need some transforms hoisted.
+    #[serde(skip)]
+    pub hoisted_funcs: Vec<&'a str>,
 }
 
 impl<'a> StaticModuleRecord<'a> {

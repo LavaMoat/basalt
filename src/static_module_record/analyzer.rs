@@ -81,6 +81,8 @@ pub struct Analyzer {
     pub exports: Vec<ExportRecord>,
     /// List of computed re-exports.
     pub reexports: Vec<ReexportRecord>,
+    /// Functions that need some transforms hoisted.
+    pub hoisted_funcs: Vec<String>,
 }
 
 impl Analyzer {
@@ -90,6 +92,7 @@ impl Analyzer {
             imports: Default::default(),
             exports: Default::default(),
             reexports: Default::default(),
+            hoisted_funcs: Default::default(),
         }
     }
 
@@ -148,6 +151,7 @@ impl Visit for Analyzer {
                     }
                     // export function foo() {}
                     Decl::Fn(func) => {
+                        self.hoisted_funcs.push(func.ident.sym.as_ref().to_string());
                         self.exports
                             .push(ExportRecord::FnDecl { func: func.clone() });
                     }
