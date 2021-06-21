@@ -244,42 +244,52 @@ impl LiveExportAnalysis {
 }
 
 impl Visit for LiveExportAnalysis {
-    fn visit_stmt(&mut self, n: &Stmt, _: &dyn Node) {
+
+    fn visit_expr(&mut self, n: &Expr, _: &dyn Node) {
         match n {
-            // Track assignments for live export map.
-            Stmt::Expr(expr) => match &*expr.expr {
-                // ++i, i++, --i, i--
-                Expr::Update(expr) => match &*expr.arg {
+            // ++i, i++, --i, i--
+            Expr::Update(expr) => match &*expr.arg {
+                Expr::Ident(ident) => {
+                    let matched = self
+                        .exports
+                        .iter()
+                        .find(|name| ident.sym.as_ref() == *name);
+                    if matched.is_some() {
+                        self.live.push(ident.sym.as_ref().to_string());
+                    }
+                }
+                _ => {}
+            },
+            Expr::Assign(expr) => match &expr.left {
+                PatOrExpr::Pat(pat) => match &**pat {
+                    Pat::Ident(ident) => {
+                        let matched = self
+                            .exports
+                            .iter()
+                            .find(|name| ident.id.sym.as_ref() == *name);
+                        if matched.is_some() {
+                            self.live
+                                .push(ident.id.sym.as_ref().to_string());
+                        }
+                    }
+                    _ => {}
+                },
+                PatOrExpr::Expr(expr) => match &**expr {
                     Expr::Ident(ident) => {
                         let matched = self
                             .exports
                             .iter()
                             .find(|name| ident.sym.as_ref() == *name);
                         if matched.is_some() {
-                            self.live.push(ident.sym.as_ref().to_string());
+                            self.live
+                                .push(ident.sym.as_ref().to_string());
                         }
                     }
                     _ => {}
                 },
-                Expr::Assign(expr) => match &expr.left {
-                    PatOrExpr::Pat(pat) => match &**pat {
-                        Pat::Ident(ident) => {
-                            let matched = self
-                                .exports
-                                .iter()
-                                .find(|name| ident.id.sym.as_ref() == *name);
-                            if matched.is_some() {
-                                self.live
-                                    .push(ident.id.sym.as_ref().to_string());
-                            }
-                        }
-                        _ => {}
-                    },
-                    _ => {}
-                },
-                _ => {}
             },
             _ => {}
         }
     }
+
 }
