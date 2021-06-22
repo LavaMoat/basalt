@@ -1,7 +1,7 @@
 //! Static module record.
 //!
 //! More information in the [static module record design document](https://github.com/endojs/endo/blob/master/packages/static-module-record/DESIGN.md).
-use indexmap::IndexMap;
+use indexmap::{IndexMap, IndexSet};
 
 use swc_ecma_ast::Module;
 
@@ -69,7 +69,11 @@ pub struct StaticModuleRecord<'a> {
 
     /// Exported functions that need some transforms hoisted.
     #[serde(skip)]
-    pub hoisted_funcs: Vec<&'a str>,
+    pub hoisted_funcs: IndexSet<String>,
+
+    /// Exported references that need some transforms hoisted.
+    #[serde(skip)]
+    pub hoisted_refs: IndexSet<String>,
 }
 
 impl<'a> StaticModuleRecord<'a> {

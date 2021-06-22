@@ -4,6 +4,8 @@ use anyhow::Result;
 use swc_ecma_ast::*;
 use swc_ecma_visit::VisitWith;
 
+use indexmap::IndexSet;
+
 use super::analyzer::{
     Analyzer, ExportRecord, ImportRecord, LiveExportAnalysis, ReexportRecord,
 };
@@ -104,6 +106,7 @@ impl Parser {
             live_export_map: Default::default(),
             fixed_export_map: Default::default(),
             hoisted_funcs: Default::default(),
+            hoisted_refs: Default::default(),
         };
 
         module.visit_children_with(&mut self.analyzer);
@@ -114,9 +117,14 @@ impl Parser {
         record.hoisted_funcs = self
             .analyzer
             .hoisted_funcs
-            .iter()
-            .map(|s| &s[..])
-            .collect::<Vec<_>>();
+            .drain(..)
+            .collect::<IndexSet<_>>();
+
+        record.hoisted_refs = self
+            .live_exports
+            .hoisted_refs
+            .drain(..)
+            .collect::<IndexSet<_>>();
 
         for (key, symbols) in self.analyzer.imports.iter() {
             let imports = symbols

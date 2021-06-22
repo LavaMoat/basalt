@@ -124,7 +124,18 @@ struct Visitor<'a> {
     body: &'a mut Vec<Stmt>,
 }
 
-fn call_stmt(prop_target: JsWord, prop_name: &str, arg: JsWord) -> Stmt {
+fn call_stmt(prop_target: JsWord, prop_name: &str, mut arg: Option<JsWord>) -> Stmt {
+    let args = if let Some(arg) = arg.take() {
+        vec![ExprOrSpread {
+            spread: None,
+            expr: Box::new(Expr::Ident(Ident {
+                span: DUMMY_SP,
+                sym: arg,
+                optional: false,
+            })),
+        }]
+    } else { vec![] };
+
     Stmt::Expr(ExprStmt {
         span: DUMMY_SP,
         expr: Box::new(Expr::Call(CallExpr {
@@ -143,14 +154,7 @@ fn call_stmt(prop_target: JsWord, prop_name: &str, arg: JsWord) -> Stmt {
                 })),
                 computed: false,
             }))),
-            args: vec![ExprOrSpread {
-                spread: None,
-                expr: Box::new(Expr::Ident(Ident {
-                    span: DUMMY_SP,
-                    sym: arg,
-                    optional: false,
-                })),
-            }],
+            args,
             type_args: None,
         })),
     })
@@ -205,7 +209,7 @@ fn default_stmt(
         }],
     }));
 
-    (default_stmt, call_stmt(prop_target, "default", prop_arg))
+    (default_stmt, call_stmt(prop_target, "default", Some(prop_arg)))
 }
 
 fn define_property(target: &str, prop_name: &str, prop_value: &str) -> Stmt {
@@ -296,7 +300,7 @@ impl<'a> Visit for Visitor<'a> {
                                 let call = call_stmt(
                                     prop_target,
                                     export_name,
-                                    local_name.into(),
+                                    Some(local_name.into()),
                                 );
                                 self.body.push(call);
                             }
@@ -358,7 +362,7 @@ impl<'a> Visit for Visitor<'a> {
                                     let call = call_stmt(
                                         prop_target,
                                         name,
-                                        name.into(),
+                                        Some(name.into()),
                                     );
                                     self.body.push(call);
                                 } else if self
@@ -396,7 +400,7 @@ impl<'a> Visit for Visitor<'a> {
                                     }
 
                                     let call =
-                                        call_stmt(prop_target, name, prop_name);
+                                        call_stmt(prop_target, name, Some(prop_name));
 
                                     self.body.push(call);
                                 }
@@ -425,7 +429,7 @@ impl<'a> Visit for Visitor<'a> {
                         let name = class.ident.sym.as_ref();
                         let prop_target = prefix_hidden(LIVE);
                         let call =
-                            call_stmt(prop_target, name, JsWord::from(name));
+                            call_stmt(prop_target, name, Some(JsWord::from(name)));
                         self.body.push(call);
                     }
                     _ => {}
@@ -555,6 +559,7 @@ impl<'a> Generator<'a> {
 
         block.stmts.push(self.imports_func_call());
         self.hoist_exported_funcs(&mut block.stmts);
+        self.hoist_exported_refs(&mut block.stmts);
 
         let mut visitor = Visitor {
             meta: self.meta,
@@ -566,18 +571,28 @@ impl<'a> Generator<'a> {
     }
 
     fn hoist_exported_funcs(&self, stmts: &mut Vec<Stmt>) {
-        for fn_name in self.meta.hoisted_funcs.iter() {
-            let target = prefix_const(fn_name);
+        for name in self.meta.hoisted_funcs.iter() {
+            let target = prefix_const(name);
 
             // Use original `name` property for the function
             let define =
-                define_property(target.as_ref(), NAME, fn_name);
+                define_property(target.as_ref(), NAME, name);
             stmts.push(define);
 
             // Set up the live export
             let prop_target = prefix_hidden(LIVE);
             let call =
-                call_stmt(prop_target, fn_name, target);
+                call_stmt(prop_target, name, Some(target));
+            stmts.push(call);
+        }
+    }
+
+    fn hoist_exported_refs(&self, stmts: &mut Vec<Stmt>) {
+        for name in self.meta.hoisted_refs.iter() {
+            // Set up the live export
+            let prop_target = prefix_hidden(LIVE);
+            let call =
+                call_stmt(prop_target, name, None);
             stmts.push(call);
         }
     }

@@ -2,7 +2,7 @@
 use swc_ecma_ast::*;
 use swc_ecma_visit::{Node, Visit};
 
-use indexmap::IndexMap;
+use indexmap::{IndexMap, IndexSet};
 
 /// Record of an import definition.
 #[derive(Debug)]
@@ -82,7 +82,7 @@ pub struct Analyzer {
     /// List of computed re-exports.
     pub reexports: Vec<ReexportRecord>,
     /// Functions that need some transforms hoisted.
-    pub hoisted_funcs: Vec<String>,
+    pub hoisted_funcs: IndexSet<String>,
 }
 
 impl Analyzer {
@@ -152,7 +152,7 @@ impl Visit for Analyzer {
                     // export function foo() {}
                     Decl::Fn(func) => {
                         self.hoisted_funcs
-                            .push(func.ident.sym.as_ref().to_string());
+                            .insert(func.ident.sym.as_ref().to_string());
                         self.exports
                             .push(ExportRecord::FnDecl { func: func.clone() });
                     }
@@ -231,15 +231,31 @@ pub struct LiveExportAnalysis {
     pub exports: Vec<String>,
     /// List of exported symbol names that are considered live exports.
     pub live: Vec<String>,
+    /// List of export references that should be hoisted during transformation.
+    pub hoisted_refs: IndexSet<String>,
 }
 
 impl LiveExportAnalysis {
     /// Create a new live export analyzer.
     pub fn new() -> Self {
         Self {
-            exports: Vec::new(),
+            exports: Default::default(),
             live: Default::default(),
+            hoisted_refs: Default::default(),
         }
+    }
+}
+
+impl LiveExportAnalysis {
+    fn detect_match(&mut self, sym: &str) -> Option<String> {
+        let matched = self
+            .exports
+            .iter()
+            .find(|name| sym == *name);
+        if matched.is_some() {
+            self.live.push(sym.to_string());
+        }
+        matched.map(|m| m.to_string())
     }
 }
 
@@ -250,45 +266,35 @@ impl Visit for LiveExportAnalysis {
             // ++i, i++, --i, i--
             Expr::Update(expr) => match &*expr.arg {
                 Expr::Ident(ident) => {
-                    let matched = self
-                        .exports
-                        .iter()
-                        .find(|name| ident.sym.as_ref() == *name);
-                    if matched.is_some() {
-                        self.live.push(ident.sym.as_ref().to_string());
-                    }
+                    self.detect_match(ident.sym.as_ref());
                 }
                 _ => {}
             },
-            Expr::Assign(expr) => match &expr.left {
-                PatOrExpr::Pat(pat) => match &**pat {
-                    Pat::Ident(ident) => {
-                        let matched = self
-                            .exports
-                            .iter()
-                            .find(|name| ident.id.sym.as_ref() == *name);
-                        if matched.is_some() {
-                            self.live
-                                .push(ident.id.sym.as_ref().to_string());
+            // count = 1
+            Expr::Assign(expr) => {
+                match &expr.left {
+                    PatOrExpr::Pat(pat) => match &**pat {
+                        Pat::Ident(ident) => {
+                            self.detect_match(ident.id.sym.as_ref());
                         }
-                    }
-                    _ => {}
-                },
-                PatOrExpr::Expr(expr) => match &**expr {
-                    Expr::Ident(ident) => {
-                        let matched = self
-                            .exports
-                            .iter()
-                            .find(|name| ident.sym.as_ref() == *name);
-                        if matched.is_some() {
-                            self.live
-                                .push(ident.sym.as_ref().to_string());
+                        _ => {}
+                    },
+                    PatOrExpr::Expr(expr) => match &**expr {
+                        Expr::Ident(ident) => {
+                            self.detect_match(ident.sym.as_ref());
                         }
-                    }
-                    _ => {}
-                },
-            },
-            _ => {}
+                        _ => {}
+                    },
+                }
+            }
+            // export const abc2 = abc;
+            Expr::Ident(ident) => {
+                let mut matched = self.detect_match(ident.sym.as_ref());
+                if let Some(matched) = matched.take() {
+                    self.hoisted_refs.insert(matched);
+                }
+            }
+            _ => {},
         }
     }
 
