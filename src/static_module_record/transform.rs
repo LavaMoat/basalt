@@ -399,10 +399,39 @@ impl<'a> Visit for Visitor<'a> {
                                         decl_emitted = true;
                                     }
 
-                                    let call =
-                                        call_stmt(prop_target, name, Some(prop_name));
+                                    //println!("Is hoisted reference {:#?}", name);
+                                    //println!("Is hoisted reference {:#?}", self.meta.hoisted_refs.contains(name));
 
-                                    self.body.push(call);
+                                    // Hoisted references are an assignment
+                                    if self.meta.hoisted_refs.contains(name) {
+                                        self.body.push(
+                                            Stmt::Expr(ExprStmt {
+                                                span: DUMMY_SP,
+                                                expr: Box::new(Expr::Assign(AssignExpr {
+                                                    span: DUMMY_SP,
+                                                    op: AssignOp::Assign,
+                                                    left: PatOrExpr::Pat(Box::new(Pat::Ident(BindingIdent {
+                                                        id: Ident {
+                                                            span: DUMMY_SP,
+                                                            optional: false,
+                                                            sym: name.into(),
+                                                        },
+                                                        type_ann: None,
+                                                    }))),
+                                                    right: Box::new(Expr::Ident(Ident {
+                                                        span: DUMMY_SP,
+                                                        optional: false,
+                                                        sym: prop_name.clone(),
+                                                    }))
+                                                })),
+                                            })
+                                        );
+                                    // Otherwise a function call
+                                    } else {
+                                        let call =
+                                            call_stmt(prop_target, name, Some(prop_name));
+                                        self.body.push(call);
+                                    }
                                 }
                             }
                         }
