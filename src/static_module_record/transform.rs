@@ -418,6 +418,10 @@ impl<'a> Visit for Visitor<'a> {
                             })),
                         }));
                     }
+                    Decl::Class(class) => {
+                        self.body.push(Stmt::Decl(Decl::Class(class.clone())));
+
+                    }
                     _ => {}
                 },
                 _ => {}
