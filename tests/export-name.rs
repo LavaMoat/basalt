@@ -10,8 +10,8 @@ fn export_name_1() -> Result<()> {
     let result = transform(TransformSource::File(PathBuf::from(
         "tests/transform/export-name-1/input.js",
     )))?;
-    print!("{}", &result.code);
-    //assert_eq!(expected, result.code);
+    //print!("{}", &result.code);
+    assert_eq!(expected, result.code);
     Ok(())
 }
 
@@ -46,7 +46,7 @@ fn export_name_4() -> Result<()> {
     let result = transform(TransformSource::File(PathBuf::from(
         "tests/transform/export-name-4/input.js",
     )))?;
-    //print!("{}", &result.code);
+    print!("{}", &result.code);
     assert_eq!(expected, result.code);
     Ok(())
 }
@@ -58,8 +58,8 @@ fn export_name_5() -> Result<()> {
     let result = transform(TransformSource::File(PathBuf::from(
         "tests/transform/export-name-5/input.js",
     )))?;
-    print!("{}", &result.code);
-    //assert_eq!(expected, result.code);
+    //print!("{}", &result.code);
+    assert_eq!(expected, result.code);
     Ok(())
 }
 

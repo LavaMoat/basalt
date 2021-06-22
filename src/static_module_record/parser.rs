@@ -2,7 +2,7 @@
 use anyhow::Result;
 
 use swc_ecma_ast::*;
-use swc_ecma_visit::VisitWith;
+use swc_ecma_visit::{VisitWith, VisitAllWith};
 
 use indexmap::IndexSet;
 
@@ -112,7 +112,7 @@ impl Parser {
         module.visit_children_with(&mut self.analyzer);
 
         self.live_exports.exports = self.analyzer.var_export_names();
-        module.visit_children_with(&mut self.live_exports);
+        module.visit_all_children_with(&mut self.live_exports);
 
         record.hoisted_funcs = self
             .analyzer

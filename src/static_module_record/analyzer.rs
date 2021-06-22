@@ -1,6 +1,7 @@
 //! Helpers to analyze modules.
+use swc_common::Span;
 use swc_ecma_ast::*;
-use swc_ecma_visit::{Node, Visit};
+use swc_ecma_visit::{Node, Visit, VisitAll};
 
 use indexmap::{IndexMap, IndexSet};
 
@@ -98,7 +99,7 @@ impl Analyzer {
 
     /// Get the names of exported symbols so that the live export
     /// analysis can detect which exports have assignment.
-    pub fn var_export_names(&self) -> Vec<String> {
+    pub fn var_export_names(&self) -> Vec<(String, Span)> {
         let mut out = Vec::new();
         for rec in self.exports.iter() {
             match rec {
@@ -106,7 +107,10 @@ impl Analyzer {
                     for decl in var.decls.iter() {
                         match &decl.name {
                             Pat::Ident(ident) => {
-                                out.push(ident.id.sym.as_ref().to_string());
+                                out.push((
+                                    ident.id.sym.as_ref().to_string(),
+                                    decl.span.clone(),
+                                ));
                             }
                             _ => {}
                         }
@@ -228,7 +232,7 @@ impl Visit for Analyzer {
 #[derive(Default, Debug)]
 pub struct LiveExportAnalysis {
     /// List of exported symbol names.
-    pub exports: Vec<String>,
+    pub exports: Vec<(String, Span)>,
     /// List of exported symbol names that are considered live exports.
     pub live: Vec<String>,
     /// List of export references that should be hoisted during transformation.
@@ -247,19 +251,47 @@ impl LiveExportAnalysis {
 }
 
 impl LiveExportAnalysis {
-    fn detect_match(&mut self, sym: &str) -> Option<String> {
-        let matched = self
-            .exports
-            .iter()
-            .find(|name| sym == *name);
+    fn detect_match(&mut self, sym: &str) -> Option<&(String, Span)> {
+        let matched = self.exports.iter().find(|(name, _)| sym == *name);
         if matched.is_some() {
             self.live.push(sym.to_string());
         }
-        matched.map(|m| m.to_string())
+        matched
     }
 }
 
-impl Visit for LiveExportAnalysis {
+impl VisitAll for LiveExportAnalysis {
+
+    // export const abc2 = abc;
+    // export var abc = 123;
+    fn visit_export_decl(&mut self, n: &ExportDecl, _parent: &dyn Node) {
+        match &n.decl {
+            Decl::Var(var) => {
+                for decl in var.decls.iter() {
+                    if let Some(ref init) = decl.init {
+                        match &**init {
+                            Expr::Ident(ident) => {
+                                let mut matched = self
+                                    .exports
+                                    .iter()
+                                    .find(|(name, _)| ident.sym.as_ref() == *name);
+                                if let Some(matched) = matched.take() {
+                                    // Must compare the spans to check that the
+                                    // target symbol has not yet been declared
+                                    if ident.span < matched.1 {
+                                        self.hoisted_refs.insert(matched.0.to_string());
+                                        self.live.push(matched.0.to_string());
+                                    }
+                                }
+                            }
+                            _ => {}
+                        }
+                    }
+                }
+            }
+            _ => {}
+        }
+    }
 
     fn visit_expr(&mut self, n: &Expr, _: &dyn Node) {
         match n {
@@ -286,16 +318,8 @@ impl Visit for LiveExportAnalysis {
                         _ => {}
                     },
                 }
-            }
-            // export const abc2 = abc;
-            Expr::Ident(ident) => {
-                let mut matched = self.detect_match(ident.sym.as_ref());
-                if let Some(matched) = matched.take() {
-                    self.hoisted_refs.insert(matched);
-                }
-            }
-            _ => {},
+            },
+            _ => {}
         }
     }
-
 }

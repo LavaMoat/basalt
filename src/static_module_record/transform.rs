@@ -124,7 +124,11 @@ struct Visitor<'a> {
     body: &'a mut Vec<Stmt>,
 }
 
-fn call_stmt(prop_target: JsWord, prop_name: &str, mut arg: Option<JsWord>) -> Stmt {
+fn call_stmt(
+    prop_target: JsWord,
+    prop_name: &str,
+    mut arg: Option<JsWord>,
+) -> Stmt {
     let args = if let Some(arg) = arg.take() {
         vec![ExprOrSpread {
             spread: None,
@@ -134,7 +138,9 @@ fn call_stmt(prop_target: JsWord, prop_name: &str, mut arg: Option<JsWord>) -> S
                 optional: false,
             })),
         }]
-    } else { vec![] };
+    } else {
+        vec![]
+    };
 
     Stmt::Expr(ExprStmt {
         span: DUMMY_SP,
@@ -209,7 +215,10 @@ fn default_stmt(
         }],
     }));
 
-    (default_stmt, call_stmt(prop_target, "default", Some(prop_arg)))
+    (
+        default_stmt,
+        call_stmt(prop_target, "default", Some(prop_arg)),
+    )
 }
 
 fn define_property(target: &str, prop_name: &str, prop_value: &str) -> Stmt {
@@ -399,9 +408,6 @@ impl<'a> Visit for Visitor<'a> {
                                         decl_emitted = true;
                                     }
 
-                                    //println!("Is hoisted reference {:#?}", name);
-                                    //println!("Is hoisted reference {:#?}", self.meta.hoisted_refs.contains(name));
-
                                     // Hoisted references are an assignment
                                     if self.meta.hoisted_refs.contains(name) {
                                         self.body.push(
@@ -428,8 +434,11 @@ impl<'a> Visit for Visitor<'a> {
                                         );
                                     // Otherwise a function call
                                     } else {
-                                        let call =
-                                            call_stmt(prop_target, name, Some(prop_name));
+                                        let call = call_stmt(
+                                            prop_target,
+                                            name,
+                                            Some(prop_name),
+                                        );
                                         self.body.push(call);
                                     }
                                 }
@@ -457,8 +466,11 @@ impl<'a> Visit for Visitor<'a> {
                         // Set up the live export
                         let name = class.ident.sym.as_ref();
                         let prop_target = prefix_hidden(LIVE);
-                        let call =
-                            call_stmt(prop_target, name, Some(JsWord::from(name)));
+                        let call = call_stmt(
+                            prop_target,
+                            name,
+                            Some(JsWord::from(name)),
+                        );
                         self.body.push(call);
                     }
                     _ => {}
@@ -604,14 +616,12 @@ impl<'a> Generator<'a> {
             let target = prefix_const(name);
 
             // Use original `name` property for the function
-            let define =
-                define_property(target.as_ref(), NAME, name);
+            let define = define_property(target.as_ref(), NAME, name);
             stmts.push(define);
 
             // Set up the live export
             let prop_target = prefix_hidden(LIVE);
-            let call =
-                call_stmt(prop_target, name, Some(target));
+            let call = call_stmt(prop_target, name, Some(target));
             stmts.push(call);
         }
     }
@@ -620,8 +630,7 @@ impl<'a> Generator<'a> {
         for name in self.meta.hoisted_refs.iter() {
             // Set up the live export
             let prop_target = prefix_hidden(LIVE);
-            let call =
-                call_stmt(prop_target, name, None);
+            let call = call_stmt(prop_target, name, None);
             stmts.push(call);
         }
     }
