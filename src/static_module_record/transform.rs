@@ -421,6 +421,12 @@ impl<'a> Visit for Visitor<'a> {
                     Decl::Class(class) => {
                         self.body.push(Stmt::Decl(Decl::Class(class.clone())));
 
+                        // Set up the live export
+                        let name = class.ident.sym.as_ref();
+                        let prop_target = prefix_hidden(LIVE);
+                        let call =
+                            call_stmt(prop_target, name, JsWord::from(name));
+                        self.body.push(call);
                     }
                     _ => {}
                 },
