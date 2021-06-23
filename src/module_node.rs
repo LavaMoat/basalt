@@ -2,11 +2,12 @@ use std::path::Path;
 use std::sync::Arc;
 
 use anyhow::{anyhow, Context, Result};
-use spack::resolvers::NodeResolver;
 use swc_bundler::Resolve;
 use swc_common::{comments::SingleThreadedComments, FileName, SourceMap};
 use swc_ecma_ast::Module;
 use swc_ecma_dep_graph::{analyze_dependencies, DependencyDescriptor};
+
+use crate::resolvers::NodeResolver;
 
 pub type ParsedModule = (FileName, Arc<SourceMap>, ModuleNode);
 

@@ -12,16 +12,20 @@ log = "0.4"
 pretty_env_logger = "0.4"
 serde = "1"
 serde_json = "1"
-indexmap = { version = "1.6", features = ["serde-1"] }
+indexmap = {version = "1.6", features = ["serde-1"]}
 
-swc = { version = "0.20", path = "../swc" }
-swc_bundler = { version = "0.37", path = "../swc/bundler" }
-swc_bundler_analysis = { version = "0.1", path = "../swc/bundler/analysis" }
-swc_common = {version = "0.10", features = ["tty-emitter"], path = "../swc/common"}
-swc_ecma_parser = {version = "0.57", path = "../swc/ecmascript/parser"}
-swc_atoms = {version = "0.2.6", path = "../swc/atoms"}
-swc_ecma_ast = {version = "0.45", path = "../swc/ecmascript/ast"}
-swc_ecma_loader = {version = "0.6", path = "../swc/ecmascript/loader"}
-swc_ecma_visit = {version = "0.31", path = "../swc/ecmascript/visit"}
-swc_ecma_dep_graph = {version = "0.25", path = "../swc/ecmascript/dep-graph"}
-spack = { version = "*", path = "../swc/spack" }
+swc = {version = "0.24"}
+swc_bundler = {version = "0.41"}
+swc_common = {version = "0.10", features = ["tty-emitter"]}
+swc_ecma_parser = {version = "0.60"}
+swc_atoms = {version = "0.2.6"}
+swc_ecma_ast = {version = "0.46"}
+swc_ecma_loader = {version = "0.7"}
+swc_ecma_visit = {version = "0.32"}
+swc_ecma_dep_graph = {version = "0.28"}
+
+# For node resolver
+lru = "0.6.1"
+
+[target.'cfg(windows)'.dependencies]
+normpath = "0.2"

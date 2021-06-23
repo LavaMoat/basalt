@@ -2,7 +2,13 @@
 
 LavaMoat analyzer, linter and bundler.
 
-Currently the `swc` project should be checked out in the parent directory as we are building from source; later we will build against the packages in the cargo repository.
+To get started [install Rust][rust-install] then add the `nightly` toolchain:
+
+```
+rustup toolchain install nightly
+```
+
+Now you can compile and test using `cargo`.
 
 ## Test
 
@@ -39,3 +45,5 @@ cargo +nightly run -- transform tests/fixtures/static-module-record/main.js
 ```
 cargo +nightly doc --open --no-deps
 ```
+
+[rust-install]: https://www.rust-lang.org/tools/install

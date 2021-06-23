@@ -2,9 +2,9 @@
 use std::path::Path;
 
 use anyhow::Result;
-use spack::resolvers::NodeResolver;
 use swc_bundler::Resolve;
 
+use crate::resolvers::NodeResolver;
 use crate::module_node::{parse_file, VisitedDependency};
 
 const TREE_BAR: &str = "│";
