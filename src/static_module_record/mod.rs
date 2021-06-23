@@ -76,6 +76,68 @@ pub struct StaticModuleRecord<'a> {
     pub hoisted_refs: IndexSet<String>,
 }
 
+/// Owned static module record meta data.
+#[derive(Serialize, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct StaticModuleRecordMeta {
+    /// All exports, eg: `export * from './foo.js';`
+    pub export_alls: Vec<String>,
+    /// All the imports for the module.
+    pub imports: IndexMap<String, Vec<String>>,
+    /// Map of live exports.
+    pub live_export_map: IndexMap<String, (String, bool)>,
+    /// Map of fixed exports.
+    pub fixed_export_map: IndexMap<String, Vec<String>>,
+}
+
+/// Meta data and transformed program combined.
+#[derive(Serialize, Debug)]
+pub struct StaticModuleRecordProgram {
+    /// The meta data.
+    pub meta: StaticModuleRecordMeta,
+    /// The module transformed to a program functor.
+    pub program: String,
+}
+
+impl Into<StaticModuleRecordMeta> for StaticModuleRecord<'_> {
+    fn into(self) -> StaticModuleRecordMeta {
+        StaticModuleRecordMeta {
+            export_alls: self
+                .export_alls
+                .iter()
+                .map(|s| s.to_string())
+                .collect::<Vec<_>>(),
+            imports: self
+                .imports
+                .iter()
+                .map(|(k, v)| {
+                    (
+                        k.to_string(),
+                        v.iter()
+                            .map(|s| s.raw_name().to_string())
+                            .collect::<Vec<_>>(),
+                    )
+                })
+                .collect::<IndexMap<_, _>>(),
+            live_export_map: self
+                .live_export_map
+                .iter()
+                .map(|(k, v)| (k.to_string(), (v.0.to_string(), v.1)))
+                .collect::<IndexMap<_, _>>(),
+            fixed_export_map: self
+                .fixed_export_map
+                .iter()
+                .map(|(k, v)| {
+                    (
+                        k.to_string(),
+                        v.iter().map(|s| s.to_string()).collect::<Vec<_>>(),
+                    )
+                })
+                .collect::<IndexMap<_, _>>(),
+        }
+    }
+}
+
 impl<'a> StaticModuleRecord<'a> {
     /// Get the list of import declarations.
     ///

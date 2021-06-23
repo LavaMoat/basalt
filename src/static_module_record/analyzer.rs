@@ -261,7 +261,6 @@ impl LiveExportAnalysis {
 }
 
 impl VisitAll for LiveExportAnalysis {
-
     // export const abc2 = abc;
     // export var abc = 123;
     fn visit_export_decl(&mut self, n: &ExportDecl, _parent: &dyn Node) {
@@ -271,15 +270,16 @@ impl VisitAll for LiveExportAnalysis {
                     if let Some(ref init) = decl.init {
                         match &**init {
                             Expr::Ident(ident) => {
-                                let mut matched = self
-                                    .exports
-                                    .iter()
-                                    .find(|(name, _)| ident.sym.as_ref() == *name);
+                                let mut matched =
+                                    self.exports.iter().find(|(name, _)| {
+                                        ident.sym.as_ref() == *name
+                                    });
                                 if let Some(matched) = matched.take() {
                                     // Must compare the spans to check that the
                                     // target symbol has not yet been declared
                                     if ident.span < matched.1 {
-                                        self.hoisted_refs.insert(matched.0.to_string());
+                                        self.hoisted_refs
+                                            .insert(matched.0.to_string());
                                         self.live.push(matched.0.to_string());
                                     }
                                 }
@@ -303,21 +303,19 @@ impl VisitAll for LiveExportAnalysis {
                 _ => {}
             },
             // count = 1
-            Expr::Assign(expr) => {
-                match &expr.left {
-                    PatOrExpr::Pat(pat) => match &**pat {
-                        Pat::Ident(ident) => {
-                            self.detect_match(ident.id.sym.as_ref());
-                        }
-                        _ => {}
-                    },
-                    PatOrExpr::Expr(expr) => match &**expr {
-                        Expr::Ident(ident) => {
-                            self.detect_match(ident.sym.as_ref());
-                        }
-                        _ => {}
-                    },
-                }
+            Expr::Assign(expr) => match &expr.left {
+                PatOrExpr::Pat(pat) => match &**pat {
+                    Pat::Ident(ident) => {
+                        self.detect_match(ident.id.sym.as_ref());
+                    }
+                    _ => {}
+                },
+                PatOrExpr::Expr(expr) => match &**expr {
+                    Expr::Ident(ident) => {
+                        self.detect_match(ident.sym.as_ref());
+                    }
+                    _ => {}
+                },
             },
             _ => {}
         }

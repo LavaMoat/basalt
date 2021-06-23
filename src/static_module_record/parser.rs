@@ -2,7 +2,7 @@
 use anyhow::Result;
 
 use swc_ecma_ast::*;
-use swc_ecma_visit::{VisitWith, VisitAllWith};
+use swc_ecma_visit::{VisitAllWith, VisitWith};
 
 use indexmap::IndexSet;
 

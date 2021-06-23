@@ -14,7 +14,9 @@ pub mod resolvers;
 pub mod static_module_record;
 mod swc_utils;
 
-pub use static_module_record::{Parser, TransformSource};
+pub use static_module_record::{
+    Parser, StaticModuleRecordProgram, TransformSource,
+};
 
 /// List all modules.
 pub fn list(file: PathBuf, include_file: bool) -> Result<()> {
@@ -41,11 +43,20 @@ pub fn meta(file: PathBuf) -> Result<()> {
 }
 
 /// Transform a module to a static module record program.
-pub fn transform(file: PathBuf) -> Result<()> {
+pub fn transform(file: PathBuf, json: bool) -> Result<()> {
     if !file.is_file() {
         bail!("Module {} does not exist or is not a file", file.display());
     }
-    let result = static_module_record::transform(TransformSource::File(file))?;
-    print!("{}", result.code);
+    let (meta, result) =
+        static_module_record::transform(TransformSource::File(file))?;
+    if json {
+        let output = StaticModuleRecordProgram {
+            meta,
+            program: result.code,
+        };
+        print!("{}", serde_json::to_string_pretty(&output)?);
+    } else {
+        print!("{}", result.code);
+    }
     Ok(())
 }

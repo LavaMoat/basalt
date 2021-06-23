@@ -107,7 +107,6 @@ pub struct NodeResolver {
 static EXTENSIONS: &[&str] = &["ts", "tsx", "js", "jsx", "json", "node"];
 
 impl NodeResolver {
-
     /// Create a node resolver.
     pub fn new() -> Self {
         Self {
@@ -115,7 +114,12 @@ impl NodeResolver {
         }
     }
 
-    fn wrap(&self, base: &PathBuf, target: &str, path: PathBuf) -> Result<FileName, Error> {
+    fn wrap(
+        &self,
+        base: &PathBuf,
+        target: &str,
+        path: PathBuf,
+    ) -> Result<FileName, Error> {
         let path = path.canonicalize().context("failed to canonicalize")?;
         self.store(base, target, path.clone());
         Ok(FileName::Real(path))
@@ -160,12 +164,15 @@ impl NodeResolver {
     }
 
     /// Resolve using the package.json "main" key.
-    fn resolve_package_main(&self, pkg_path: &PathBuf) -> Result<PathBuf, Error> {
+    fn resolve_package_main(
+        &self,
+        pkg_path: &PathBuf,
+    ) -> Result<PathBuf, Error> {
         let pkg_dir = pkg_path.parent().unwrap_or_else(|| Path::new("/"));
         let file = File::open(pkg_path)?;
         let reader = BufReader::new(file);
-        let pkg: PackageJson =
-            serde_json::from_reader(reader).context("failed to deserialize package.json")?;
+        let pkg: PackageJson = serde_json::from_reader(reader)
+            .context("failed to deserialize package.json")?;
 
         for main in &[&pkg.swc_main, &pkg.esnext, &pkg.main] {
             if let Some(target) = main {
@@ -195,7 +202,11 @@ impl NodeResolver {
     }
 
     /// Resolve by walking up node_modules folders.
-    fn resolve_node_modules(&self, base_dir: &Path, target: &str) -> Result<PathBuf, Error> {
+    fn resolve_node_modules(
+        &self,
+        base_dir: &Path,
+        target: &str,
+    ) -> Result<PathBuf, Error> {
         let node_modules = base_dir.join("node_modules");
         if node_modules.is_dir() {
             let path = node_modules.join(target);
@@ -217,7 +228,10 @@ impl NodeResolver {
         let lock = self.cache.lock();
         match lock {
             Ok(mut lock) => {
-                lock.put((base.clone(), target.to_string()), result.to_path_buf());
+                lock.put(
+                    (base.clone(), target.to_string()),
+                    result.to_path_buf(),
+                );
             }
             Err(_) => {}
         }
@@ -225,7 +239,11 @@ impl NodeResolver {
 }
 
 impl Resolve for NodeResolver {
-    fn resolve(&self, base: &FileName, target: &str) -> Result<FileName, Error> {
+    fn resolve(
+        &self,
+        base: &FileName,
+        target: &str,
+    ) -> Result<FileName, Error> {
         if is_core_module(target) {
             return Ok(FileName::Custom(target.to_string()));
         }
@@ -240,7 +258,9 @@ impl Resolve for NodeResolver {
             match lock {
                 Ok(mut lock) => {
                     //
-                    if let Some(v) = lock.get(&(base.clone(), target.to_string())) {
+                    if let Some(v) =
+                        lock.get(&(base.clone(), target.to_string()))
+                    {
                         return Ok(FileName::Real(v.clone()));
                     }
                 }
@@ -261,7 +281,9 @@ impl Resolve for NodeResolver {
         let base_dir = base.parent().unwrap_or(&cwd);
         let mut components = target_path.components();
 
-        if let Some(Component::CurDir | Component::ParentDir) = components.next() {
+        if let Some(Component::CurDir | Component::ParentDir) =
+            components.next()
+        {
             #[cfg(windows)]
             let path = {
                 let base_dir = BasePath::new(base_dir).unwrap();

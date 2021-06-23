@@ -28,6 +28,10 @@ enum BasaltCommands {
 
     /// Transform a module to a functor program
     Transform {
+        /// Print the meta data and program as JSON
+        #[structopt(short, long)]
+        json: bool,
+
         /// Module entry point
         #[structopt(parse(from_os_str))]
         module: PathBuf,
@@ -51,8 +55,8 @@ fn main() -> Result<()> {
         BasaltCommands::Meta { module } => {
             meta(module)?;
         }
-        BasaltCommands::Transform { module } => {
-            transform(module)?;
+        BasaltCommands::Transform { module, json } => {
+            transform(module, json)?;
         }
     }
     Ok(())

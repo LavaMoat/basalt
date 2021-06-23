@@ -22,7 +22,7 @@ use anyhow::{Context, Result};
 
 use super::{
     parser::var_symbol_names, ImportName, Parser as StaticModuleRecordParser,
-    StaticModuleRecord,
+    StaticModuleRecord, StaticModuleRecordMeta,
 };
 
 const HIDDEN_PREFIX: &str = "$h\u{200d}_";
@@ -61,8 +61,23 @@ pub enum TransformSource {
     },
 }
 
+/// Result of parsing a source module.
+pub struct ParseOutput<'a> {
+    /// The source map.
+    pub source_map: Arc<SourceMap>,
+    /// The parser stores the analyzer and underlying
+    /// references.
+    pub parser: StaticModuleRecordParser,
+    /// The parsed source module AST.
+    pub module: Module,
+    /// The computed static module record meta data.
+    pub meta: StaticModuleRecord<'a>,
+}
+
 /// Transform the module file to a program script.
-pub fn transform(source: TransformSource) -> Result<TransformOutput> {
+pub fn transform(
+    source: TransformSource,
+) -> Result<(StaticModuleRecordMeta, TransformOutput)> {
     let sm: Arc<SourceMap> = Arc::new(Default::default());
     let handler = Handler::with_tty_emitter(
         ColorConfig::Auto,
@@ -101,6 +116,7 @@ pub fn transform(source: TransformSource) -> Result<TransformOutput> {
 
     let mut parser = StaticModuleRecordParser::new();
     let meta = parser.parse(&module)?;
+
     let generator = Generator::new(&meta);
     let compiler = Compiler::new(sm, Arc::new(handler));
     let script = generator
@@ -116,7 +132,7 @@ pub fn transform(source: TransformSource) -> Result<TransformOutput> {
         false,
     )?;
 
-    Ok(result)
+    Ok((meta.into(), result))
 }
 
 struct Visitor<'a> {

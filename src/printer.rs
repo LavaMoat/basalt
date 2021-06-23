@@ -4,8 +4,8 @@ use std::path::Path;
 use anyhow::Result;
 use swc_bundler::Resolve;
 
-use crate::resolvers::NodeResolver;
 use crate::module_node::{parse_file, VisitedDependency};
+use crate::resolvers::NodeResolver;
 
 const TREE_BAR: &str = "│";
 const TREE_BRANCH: &str = "├──";
