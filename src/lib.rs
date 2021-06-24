@@ -4,6 +4,7 @@
 #![feature(or_patterns)]
 #![deny(missing_docs)]
 
+use std::io::{self, Read};
 use std::path::PathBuf;
 
 use anyhow::{bail, Result};
@@ -44,11 +45,22 @@ pub fn meta(file: PathBuf) -> Result<()> {
 
 /// Transform a module to a static module record program.
 pub fn transform(file: PathBuf, json: bool) -> Result<()> {
-    if !file.is_file() {
+    let is_stdin = PathBuf::from("-") == file;
+    if !file.is_file() && !is_stdin {
         bail!("Module {} does not exist or is not a file", file.display());
     }
+
+    let source = if is_stdin {
+        let mut buffer = String::new();
+        let mut stdin = io::stdin();
+        stdin.read_to_string(&mut buffer)?;
+        TransformSource::Str {content: buffer, file_name: String::from("stdin")}
+    } else {
+        TransformSource::File(file)
+    };
+
     let (meta, result) =
-        static_module_record::transform(TransformSource::File(file))?;
+        static_module_record::transform(source)?;
     if json {
         let output = StaticModuleRecordProgram {
             meta,
