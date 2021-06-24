@@ -47,3 +47,15 @@ cargo +nightly doc --open --no-deps
 ```
 
 [rust-install]: https://www.rust-lang.org/tools/install
+
+## Release Build
+
+```
+cargo +nightly build --release
+```
+
+Then copy the executable into `PATH`, for example:
+
+```
+cp -r target/release/basalt ~/bin
+```

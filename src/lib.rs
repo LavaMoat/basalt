@@ -64,11 +64,16 @@ pub fn transform(file: PathBuf, json: bool) -> Result<()> {
     if json {
         let output = StaticModuleRecordProgram {
             meta,
-            program: result.code,
+            program: trim_code(result.code),
         };
         print!("{}", serde_json::to_string_pretty(&output)?);
     } else {
         print!("{}", result.code);
     }
     Ok(())
+}
+
+fn trim_code(code: String) -> String {
+    let out = code.trim_end();
+    out.trim_end_matches(";").to_string()
 }

@@ -11,7 +11,6 @@ const args = ["transform", "-j", "-"];
  *  to stdin and parsing the response JSON payload from stdout.
  */
 function analyzeModule({source}) {
-
   return new Promise((resolve, reject) => {
     let child = spawn(command, args);
     let buf = Buffer.from([]);
@@ -24,7 +23,7 @@ function analyzeModule({source}) {
 
     child.on('error', (e) => reject(e));
 
-    child.on('exit', function(code) {
+    child.on('close', function(code) {
       if (code === 0) {
         return resolve(JSON.parse(buf.toString()));
       }
@@ -32,7 +31,6 @@ function analyzeModule({source}) {
     })
 
   })
-
 }
 
 export async function parseModule(source, url) {
@@ -55,5 +53,6 @@ export async function parseModule(source, url) {
 
 // node packages/static-module-record/index.mjs
 //let source = readFileSync("tests/fixtures/static-module-record/main.js");
+//let source = "export const avery = 'Avery'";
 //let record = await parseModule(source);
 //console.log(record);
