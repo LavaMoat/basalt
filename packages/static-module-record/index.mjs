@@ -25,9 +25,15 @@ function analyzeModule({source}) {
 
     child.on('close', function(code) {
       if (code === 0) {
-        return resolve(JSON.parse(buf.toString()));
+        try {
+          resolve(JSON.parse(buf.toString()));
+        } catch (e) {
+          reject(e);
+        }
+      } else {
+        reject(
+            new Error("Static module record program basalt(1) did not exit successfully"));
       }
-      reject(new Error("Static module record program basalt(1) did not exit successfully"));
     })
 
   })
@@ -38,7 +44,7 @@ export async function parseModule(source, url) {
     meta,
     program,
   } = await analyzeModule({ source, url });
-
+  // Mimic the original StaticModuleRecord data structure
   return freeze({
     imports: freeze([...keys(meta.imports)].sort()),
     exports: freeze(
