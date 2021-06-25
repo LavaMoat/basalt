@@ -1,8 +1,8 @@
 (({ imports: $h‍_imports , liveVar: $h‍_live , onceVar: $h‍_once  })=>{
-    let gray;
+    let grey;
     $h‍_imports(new Map([
         [
-            "./grey.js",
+            "./reexport-name-and-rename.js",
             new Map([
                 [
                     "grey",
