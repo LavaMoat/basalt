@@ -54,13 +54,15 @@ pub fn transform(file: PathBuf, json: bool) -> Result<()> {
         let mut buffer = String::new();
         let mut stdin = io::stdin();
         stdin.read_to_string(&mut buffer)?;
-        TransformSource::Str {content: buffer, file_name: String::from("stdin")}
+        TransformSource::Str {
+            content: buffer,
+            file_name: String::from("stdin"),
+        }
     } else {
         TransformSource::File(file)
     };
 
-    let (meta, result) =
-        static_module_record::transform(source)?;
+    let (meta, result) = static_module_record::transform(source)?;
     if json {
         let output = StaticModuleRecordProgram {
             meta,

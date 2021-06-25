@@ -825,14 +825,14 @@ impl<'a> Generator<'a> {
     }
 
     /// The import function which lazily assigns to the locally scoped variable.
-    fn imports_prop_func(&self, name: &str, alias: &str, live: bool) -> ExprOrSpread {
+    fn imports_prop_func(
+        &self,
+        name: &str,
+        alias: &str,
+        live: bool,
+    ) -> ExprOrSpread {
         let arg = prefix_hidden("a");
         if live {
-            // Special case for re-export as default
-            let prop_name = if alias == "default" {
-                name
-            } else { alias };
-
             ExprOrSpread {
                 spread: None,
                 expr: Box::new(Expr::Member(MemberExpr {
@@ -848,7 +848,7 @@ impl<'a> Generator<'a> {
                             contains_quote: true,
                         },
                         has_escape: false,
-                        value: prop_name.into(),
+                        value: name.into(),
                     }))),
                     computed: true,
                 })),

@@ -143,27 +143,22 @@ impl<'a> StaticModuleRecord<'a> {
     ///
     /// This is used by the transform to set up the locally
     /// scoped variable names.
+
+    /// FIXME: do not declare re-exports???
     pub fn decls(&self) -> Vec<&str> {
         self.imports
             .iter()
             .map(|(_k, v)| v)
             .flatten()
             .map(|i| {
-
-                if let Some(entry) = self.live_export_map.get(i.alias.as_deref().unwrap_or(i.name)) {
-                    return entry.0
-                }
-
                 if let Some(alias) = i.alias {
-
-
                     // Special case when re-exporting as default
                     //
                     // export { meaning as default } from './meaning.js';
                     if alias == "default" {
                         return i.name;
                     }
-                    return alias
+                    return alias;
                 }
                 i.name
             })

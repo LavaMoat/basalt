@@ -2,10 +2,10 @@
     let grey;
     $h‍_imports(new Map([
         [
-            "./reexport-name-and-rename.js",
+            "./import-and-reexport-name-as-from-me.js",
             new Map([
                 [
-                    "grey",
+                    "gray",
                     [
                         $h‍_live["gray"]
                     ]
