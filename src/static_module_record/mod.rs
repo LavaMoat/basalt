@@ -148,7 +148,18 @@ impl<'a> StaticModuleRecord<'a> {
             .iter()
             .map(|(_k, v)| v)
             .flatten()
-            .map(|i| i.alias.as_deref().unwrap_or(i.name))
+            .map(|i| {
+                if let Some(alias) = i.alias {
+                    // Special case when re-exporting as default
+                    //
+                    // export { meaning as default } from './meaning.js';
+                    if alias == "default" {
+                        return i.name;
+                    }
+                    return alias
+                }
+                i.name
+            })
             .collect::<Vec<_>>()
     }
 
