@@ -755,6 +755,7 @@ impl<'a> Generator<'a> {
                             for (prop, alias) in
                                 props.iter().zip(aliases.iter())
                             {
+                                let name = prop.name;
                                 let prop = prop.raw_name();
                                 let alias: &str = &alias[..];
                                 let live = self
@@ -806,7 +807,7 @@ impl<'a> Generator<'a> {
                                                 expr: Box::new(Expr::Array(
                                                     ArrayLit {
                                                         span: DUMMY_SP,
-                                                        elems: vec![Some(self.imports_prop_func(alias, live))],
+                                                        elems: vec![Some(self.imports_prop_func(name, alias, live))],
                                                     },
                                                 )),
                                             }),
@@ -824,9 +825,14 @@ impl<'a> Generator<'a> {
     }
 
     /// The import function which lazily assigns to the locally scoped variable.
-    fn imports_prop_func(&self, alias: &str, live: bool) -> ExprOrSpread {
+    fn imports_prop_func(&self, name: &str, alias: &str, live: bool) -> ExprOrSpread {
         let arg = prefix_hidden("a");
         if live {
+            // Special case for re-export as default
+            let prop_name = if alias == "default" {
+                name
+            } else { alias };
+
             ExprOrSpread {
                 spread: None,
                 expr: Box::new(Expr::Member(MemberExpr {
@@ -842,7 +848,7 @@ impl<'a> Generator<'a> {
                             contains_quote: true,
                         },
                         has_escape: false,
-                        value: alias.into(),
+                        value: prop_name.into(),
                     }))),
                     computed: true,
                 })),
