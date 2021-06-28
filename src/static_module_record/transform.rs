@@ -694,10 +694,11 @@ impl<'a> Generator<'a> {
                 span: DUMMY_SP,
                 elems: {
                     let mut out = Vec::with_capacity(self.meta.imports.len());
+                    let computed_aliases = self.meta.aliases();
                     for (key, props) in self.meta.imports.iter() {
                         let key: &str = &key[..];
-                        let computed_aliases = self.meta.aliases();
                         let aliases = computed_aliases.get(key).unwrap();
+                        let groups = self.group_duplicates(props, aliases);
                         out.push(Some(ExprOrSpread {
                             spread: None,
                             expr: Box::new(Expr::Array(ArrayLit {
@@ -718,7 +719,7 @@ impl<'a> Generator<'a> {
                                     }),
                                     Some(
                                         self.imports_map_constructor_args_map(
-                                            props, aliases,
+                                            groups
                                         ),
                                     ),
                                 ],
@@ -731,11 +732,37 @@ impl<'a> Generator<'a> {
         }]
     }
 
+    /// Group by raw name so that duplicates are rendered in the Map
+    /// using the same key, eg: the wildcard `*` does not create multiple
+    /// entries but the body instead assigns to multiple local variables.
+    ///
+    /// [
+    ///     "./import-all-from-me.js",
+    ///     new Map([["*",
+    ///         [$h‍_a => (bar = $h‍_a),
+    ///         $h‍_a => (baz = $h‍_a)]]])
+    /// ]
+    ///
+    fn group_duplicates<'p, 's>(
+        &self,
+        props: &'p Vec<ImportName<'a>>,
+        aliases: &'s Vec<&str>,
+    ) -> IndexMap<&'p str, Vec<(&'p ImportName<'_>, &&'s str)>> {
+        let mut out = IndexMap::new();
+        for (prop, alias) in
+            props.iter().zip(aliases.iter())
+        {
+            let name = prop.raw_name();
+            let list = out.entry(name).or_insert(Vec::new());
+            list.push((prop, alias));
+        }
+        out
+    }
+
     /// The arguments for each nested map.
     fn imports_map_constructor_args_map(
         &self,
-        props: &Vec<ImportName<'a>>,
-        aliases: &Vec<&str>,
+        groups: IndexMap<&str, Vec<(&ImportName<'_>, &&str)>>,
     ) -> ExprOrSpread {
         ExprOrSpread {
             spread: None,
@@ -751,12 +778,91 @@ impl<'a> Generator<'a> {
                     expr: Box::new(Expr::Array(ArrayLit {
                         span: DUMMY_SP,
                         elems: {
+                            let mut out = Vec::with_capacity(groups.len());
+                            for (key, list) in groups {
+                                out.push(Some(ExprOrSpread {
+                                    spread: None,
+                                    expr: Box::new(Expr::Array(ArrayLit {
+                                        span: DUMMY_SP,
+                                        elems: vec![
+                                            Some(ExprOrSpread {
+                                                spread: None,
+                                                expr: Box::new(Expr::Lit(
+                                                    Lit::Str(Str {
+                                                        span: DUMMY_SP,
+                                                        kind: StrKind::Normal {
+                                                            contains_quote:
+                                                                true,
+                                                        },
+                                                        value: key.into(),
+                                                        has_escape: false,
+                                                    }),
+                                                )),
+                                            }),
+                                            Some(ExprOrSpread {
+                                                spread: None,
+                                                expr: Box::new(Expr::Array(
+                                                    ArrayLit {
+                                                        span: DUMMY_SP,
+                                                        elems: {
+                                                            let mut items = Vec::with_capacity(list.len());
+                                                            for (prop, alias) in list {
+                                                                let name = prop.name;
+
+                                                                let live = self
+                                                                    .meta
+                                                                    .live_export_map
+                                                                    .contains_key(key)
+                                                                    || {
+                                                                        // NOTE: This is a bit of a hack :(
+                                                                        // NOTE: becuase imports doesn't contain the local name
+                                                                        // NOTE: so `export {gray as grey} from './gray.js'` only
+                                                                        // NOTE: gives us `grey` and `grey` right now.
+                                                                        let live_alias = self
+                                                                            .meta
+                                                                            .live_export_map
+                                                                            .iter()
+                                                                            .find(|(_k, v)| {
+                                                                                if v.0 == key {
+                                                                                    return true;
+                                                                                }
+                                                                                false
+                                                                            });
+
+                                                                        live_alias.is_some()
+                                                                    };
+
+                                                                items.push(Some(
+                                                                    self.imports_prop_func(name, alias, live)
+                                                                ));
+                                                            }
+                                                            items
+                                                        },
+                                                    },
+                                                )),
+                                            }),
+                                        ],
+                                    })),
+                                }));
+
+                            }
+                            out
+
+                            //vec![]
+
+                            /*
+                            println!("Rendering with props {:#?}", props);
+                            println!("Rendering with aliases {:#?}", aliases);
+
                             let mut out = Vec::with_capacity(props.len());
                             for (prop, alias) in
                                 props.iter().zip(aliases.iter())
                             {
                                 let name = prop.name;
                                 let prop = prop.raw_name();
+
+                                //println!("Key field is: {:#?}", prop);
+
                                 let alias: &str = &alias[..];
                                 let live = self
                                     .meta
@@ -783,39 +889,9 @@ impl<'a> Generator<'a> {
 
                                 //println!("is live {:?} {:?} {:?}", live, prop, alias);
 
-                                out.push(Some(ExprOrSpread {
-                                    spread: None,
-                                    expr: Box::new(Expr::Array(ArrayLit {
-                                        span: DUMMY_SP,
-                                        elems: vec![
-                                            Some(ExprOrSpread {
-                                                spread: None,
-                                                expr: Box::new(Expr::Lit(
-                                                    Lit::Str(Str {
-                                                        span: DUMMY_SP,
-                                                        kind: StrKind::Normal {
-                                                            contains_quote:
-                                                                true,
-                                                        },
-                                                        value: prop.into(),
-                                                        has_escape: false,
-                                                    }),
-                                                )),
-                                            }),
-                                            Some(ExprOrSpread {
-                                                spread: None,
-                                                expr: Box::new(Expr::Array(
-                                                    ArrayLit {
-                                                        span: DUMMY_SP,
-                                                        elems: vec![Some(self.imports_prop_func(name, alias, live))],
-                                                    },
-                                                )),
-                                            }),
-                                        ],
-                                    })),
-                                }));
                             }
                             out
+                            */
                         },
                     })),
                 }]),
@@ -831,7 +907,6 @@ impl<'a> Generator<'a> {
         alias: &str,
         live: bool,
     ) -> ExprOrSpread {
-        let arg = prefix_hidden("a");
         if live {
             ExprOrSpread {
                 spread: None,
@@ -854,6 +929,7 @@ impl<'a> Generator<'a> {
                 })),
             }
         } else {
+            let arg = prefix_hidden("a");
             ExprOrSpread {
                 spread: None,
                 expr: Box::new(Expr::Arrow(ArrowExpr {

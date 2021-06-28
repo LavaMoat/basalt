@@ -1,16 +1,17 @@
-import {spawn} from 'child_process';
+// @ts-check
+
+import {spawn, execSync} from 'child_process';
 import {readFileSync} from 'fs';
 
 const {freeze, keys} = Object;
-
-const command = "basalt";
-const args = ["transform", "-j", "-"];
 
 /*
  *  Analyze a module calling out to basalt(1) writing the source
  *  to stdin and parsing the response JSON payload from stdout.
  */
 function analyzeModule({source}) {
+  const command = "basalt";
+  const args = ["transform", "-j", "-"];
   return new Promise((resolve, reject) => {
     let child = spawn(command, args);
     let buf = Buffer.from([]);
@@ -20,10 +21,8 @@ function analyzeModule({source}) {
     child.stdin.setEncoding('utf-8');
     child.stdin.write(source);
     child.stdin.end();
-
-    child.on('error', (e) => reject(e));
-
-    child.on('close', function(code) {
+    child.once('error', (e) => reject(e));
+    child.once('close', function(code) {
       if (code === 0) {
         try {
           resolve(JSON.parse(buf.toString()));
@@ -32,10 +31,10 @@ function analyzeModule({source}) {
         }
       } else {
         reject(
-            new Error("Static module record program basalt(1) did not exit successfully"));
+            new Error(
+              "Static module record program basalt(1) did not exit successfully"));
       }
     })
-
   })
 }
 
@@ -44,7 +43,7 @@ export async function parseModule(source, url) {
     meta,
     program,
   } = await analyzeModule({ source, url });
-  // Mimic the original StaticModuleRecord data structure
+
   return freeze({
     imports: freeze([...keys(meta.imports)].sort()),
     exports: freeze(
@@ -57,8 +56,22 @@ export async function parseModule(source, url) {
   })
 }
 
-// node packages/static-module-record/index.mjs
-//let source = readFileSync("tests/fixtures/static-module-record/main.js");
-//let source = "export const avery = 'Avery'";
-//let record = await parseModule(source);
-//console.log(record);
+const textEncoder = new TextEncoder();
+const textDecoder = new TextDecoder();
+
+/** @type {import('./types.js').ParseFn} */
+export const parseArchiveMjs = async (
+  bytes,
+  _specifier,
+  _location,
+  _packageLocation,
+) => {
+  const source = textDecoder.decode(bytes);
+  const record = await parseModule(bytes);
+  const pre = textEncoder.encode(JSON.stringify(record));
+  return {
+    parser: 'pre-mjs-json',
+    bytes: pre,
+    record,
+  };
+};
