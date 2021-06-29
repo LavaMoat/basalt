@@ -10,7 +10,7 @@ use swc_common::{
     FileName, SourceFile, SourceMap,
 };
 use swc_ecma_ast::Module;
-use swc_ecma_parser::{lexer::Lexer, Parser, StringInput, Syntax, EsConfig};
+use swc_ecma_parser::{lexer::Lexer, Parser, StringInput, Syntax, EsConfig, JscTarget};
 
 pub(crate) fn get_handler() -> (Arc<SourceMap>, Handler) {
     let sm: Arc<SourceMap> = Arc::new(Default::default());
@@ -33,10 +33,8 @@ pub(crate) fn get_parser<'a>(
     };
 
     let lexer = Lexer::new(
-        // We want to parse ecmascript
         Syntax::Es(es_config),
-        // JscTarget defaults to es5
-        Default::default(),
+        JscTarget::Es2020,
         StringInput::from(fm),
         None,
     );
