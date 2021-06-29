@@ -8,17 +8,17 @@ use swc_ecma_dep_graph::{analyze_dependencies, DependencyDescriptor};
 
 use swc_ecma_loader::{resolve::Resolve, resolvers::node::NodeResolver};
 
-//use swc_bundler::Resolve;
-//use crate::resolvers::NodeResolver;
-
-pub type ParsedModule = (FileName, Arc<SourceMap>, ModuleNode);
+pub enum VisitedModule {
+    Module(FileName, Arc<SourceMap>, ModuleNode),
+    Json(FileName),
+}
 
 #[derive(Debug)]
 pub struct VisitedDependency<'a> {
     pub spec: String,
     pub file_name: FileName,
     pub last: bool,
-    pub node: &'a ModuleNode,
+    pub node: &'a Option<ModuleNode>,
     pub state: &'a VisitState,
     pub cycles: Option<&'a FileName>,
 }
@@ -34,17 +34,38 @@ pub struct VisitState {
     pub parents: Vec<FileName>,
 }
 
-/// Parse a file, analyze dependencies and resolve dependency file paths.
-pub fn parse_file<P: AsRef<Path>>(
+fn parse_module<P: AsRef<Path>>(
     file: P,
     resolver: &Box<dyn Resolve>,
-) -> Result<ParsedModule> {
+) -> Result<VisitedModule> {
     let (file_name, source_map, module) = crate::swc_utils::load_file(file)?;
     let comments: SingleThreadedComments = Default::default();
     let mut node = ModuleNode::from(module);
     node.analyze(&source_map, &comments);
     node.resolve(resolver, &file_name)?;
-    Ok((file_name, source_map, node))
+    Ok(VisitedModule::Module(file_name, source_map, node))
+}
+
+/// Parse a file, analyze dependencies and resolve dependency file paths.
+pub fn parse_file<P: AsRef<Path>>(
+    file: P,
+    resolver: &Box<dyn Resolve>,
+) -> Result<VisitedModule> {
+    let extension = file
+        .as_ref()
+        .extension()
+        .map(|s| s.to_string_lossy().to_string());
+    if let Some(ref extension) = extension {
+        let extension = &extension[..];
+        match extension {
+            "json" => Ok(VisitedModule::Json(FileName::Real(
+                file.as_ref().to_path_buf(),
+            ))),
+            _ => parse_module(file, resolver),
+        }
+    } else {
+        parse_module(file, resolver)
+    }
 }
 
 #[derive(Debug)]
@@ -113,10 +134,18 @@ impl ModuleNode {
         state.open.push(BranchState { last: false });
 
         for res in node.iter() {
-            let (i, spec, (file_name, _, dep)) = res?;
+            let (i, spec, parsed) = res?;
             let last = i == (node.resolved.len() - 1);
-            let cycles = state.parents.iter().find(|p| *p == &file_name);
             state.open.last_mut().unwrap().last = last;
+
+            let (file_name, dep) = match parsed {
+                VisitedModule::Module(file_name, _, dep) => {
+                    (file_name, Some(dep))
+                }
+                VisitedModule::Json(file_name) => (file_name, None),
+            };
+
+            let cycles = state.parents.iter().find(|p| *p == &file_name);
 
             let dependency = VisitedDependency {
                 spec,
@@ -133,10 +162,12 @@ impl ModuleNode {
                 continue;
             }
 
-            if !dep.resolved.is_empty() {
-                state.parents.push(file_name);
-                self.visit_all(&dep, state, callback)?;
-                state.parents.pop();
+            if let Some(dep) = dep {
+                if !dep.resolved.is_empty() {
+                    state.parents.push(file_name);
+                    self.visit_all(&dep, state, callback)?;
+                    state.parents.pop();
+                }
             }
         }
 
@@ -163,7 +194,7 @@ pub struct NodeIterator<'a> {
 }
 
 impl<'a> Iterator for NodeIterator<'a> {
-    type Item = Result<(usize, String, ParsedModule)>;
+    type Item = Result<(usize, String, VisitedModule)>;
     fn next(&mut self) -> Option<Self::Item> {
         if self.index >= self.node.resolved.len() {
             return None;

@@ -3,12 +3,9 @@ use std::path::Path;
 
 use anyhow::Result;
 
-use crate::module_node::{parse_file, VisitedDependency};
+use crate::module_node::{parse_file, VisitedDependency, VisitedModule};
 
 use swc_ecma_loader::{resolve::Resolve, resolvers::node::NodeResolver};
-
-//use swc_bundler::Resolve;
-//use crate::resolvers::NodeResolver;
 
 const TREE_BAR: &str = "│";
 const TREE_BRANCH: &str = "├──";
@@ -37,7 +34,10 @@ impl Printer {
         options: &PrintOptions,
     ) -> Result<()> {
         let resolver: Box<dyn Resolve> = Box::new(NodeResolver::default());
-        let (_, _, node) = parse_file(file.as_ref(), &resolver)?;
+        let node = match parse_file(file.as_ref(), &resolver)? {
+            VisitedModule::Module(_, _, node) => Some(node),
+            VisitedModule::Json(_) => None,
+        };
         println!("{}", file.as_ref().display());
 
         let visitor = |dep: VisitedDependency| {
@@ -67,7 +67,10 @@ impl Printer {
 
             print!("\n");
         };
-        node.visit(&visitor)?;
+
+        if let Some(node) = node {
+            node.visit(&visitor)?;
+        }
 
         Ok(())
     }
