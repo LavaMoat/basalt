@@ -719,7 +719,7 @@ impl<'a> Generator<'a> {
                                     }),
                                     Some(
                                         self.imports_map_constructor_args_map(
-                                            groups
+                                            groups,
                                         ),
                                     ),
                                 ],
@@ -749,9 +749,7 @@ impl<'a> Generator<'a> {
         aliases: &'s Vec<&str>,
     ) -> IndexMap<&'p str, Vec<(&'p ImportName<'_>, &&'s str)>> {
         let mut out = IndexMap::new();
-        for (prop, alias) in
-            props.iter().zip(aliases.iter())
-        {
+        for (prop, alias) in props.iter().zip(aliases.iter()) {
             let name = prop.raw_name();
             let list = out.entry(name).or_insert(Vec::new());
             list.push((prop, alias));
@@ -844,7 +842,6 @@ impl<'a> Generator<'a> {
                                         ],
                                     })),
                                 }));
-
                             }
                             out
 

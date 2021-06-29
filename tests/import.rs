@@ -69,9 +69,8 @@ fn import_side_effect() -> Result<()> {
 
 #[test]
 fn import_duplicate() -> Result<()> {
-    let expected = std::fs::read_to_string(
-        "tests/transform/import-duplicate/output.js",
-    )?;
+    let expected =
+        std::fs::read_to_string("tests/transform/import-duplicate/output.js")?;
     let (_, result) = transform(TransformSource::File(PathBuf::from(
         "tests/transform/import-duplicate/input.js",
     )))?;

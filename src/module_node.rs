@@ -2,12 +2,14 @@ use std::path::Path;
 use std::sync::Arc;
 
 use anyhow::{anyhow, Context, Result};
-use swc_bundler::Resolve;
 use swc_common::{comments::SingleThreadedComments, FileName, SourceMap};
 use swc_ecma_ast::Module;
 use swc_ecma_dep_graph::{analyze_dependencies, DependencyDescriptor};
 
-use crate::resolvers::NodeResolver;
+use swc_ecma_loader::{resolve::Resolve, resolvers::node::NodeResolver};
+
+//use swc_bundler::Resolve;
+//use crate::resolvers::NodeResolver;
 
 pub type ParsedModule = (FileName, Arc<SourceMap>, ModuleNode);
 
@@ -83,7 +85,7 @@ impl ModuleNode {
         NodeIterator {
             node: self,
             index: 0,
-            resolver: Box::new(NodeResolver::new()),
+            resolver: Box::new(NodeResolver::default()),
         }
     }
 

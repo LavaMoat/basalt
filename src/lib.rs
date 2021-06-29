@@ -1,7 +1,6 @@
 //! Analyzer, linter and bundler for LavaMoat.
 #![feature(unboxed_closures)]
 #![feature(fn_traits)]
-#![feature(or_patterns)]
 #![deny(missing_docs)]
 
 use std::io::{self, Read};
@@ -11,7 +10,7 @@ use anyhow::{bail, Result};
 
 mod module_node;
 pub mod printer;
-pub mod resolvers;
+//pub mod resolvers;
 pub mod static_module_record;
 mod swc_utils;
 

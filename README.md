@@ -10,6 +10,18 @@ rustup toolchain install nightly
 
 Now you can compile and test using `cargo`.
 
+If you want to avoid passing `+nightly` to `cargo` run this command in the project directory:
+
+```
+rustup override add nightly
+```
+
+To revert to `stable`:
+
+```
+rustup override unset
+```
+
 ## Test
 
 To run the tests:

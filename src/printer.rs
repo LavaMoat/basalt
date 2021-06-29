@@ -2,10 +2,13 @@
 use std::path::Path;
 
 use anyhow::Result;
-use swc_bundler::Resolve;
 
 use crate::module_node::{parse_file, VisitedDependency};
-use crate::resolvers::NodeResolver;
+
+use swc_ecma_loader::{resolve::Resolve, resolvers::node::NodeResolver};
+
+//use swc_bundler::Resolve;
+//use crate::resolvers::NodeResolver;
 
 const TREE_BAR: &str = "│";
 const TREE_BRANCH: &str = "├──";
@@ -33,7 +36,7 @@ impl Printer {
         file: P,
         options: &PrintOptions,
     ) -> Result<()> {
-        let resolver: Box<dyn Resolve> = Box::new(NodeResolver::new());
+        let resolver: Box<dyn Resolve> = Box::new(NodeResolver::default());
         let (_, _, node) = parse_file(file.as_ref(), &resolver)?;
         println!("{}", file.as_ref().display());
 
