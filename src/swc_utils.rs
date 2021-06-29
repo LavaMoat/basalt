@@ -10,7 +10,7 @@ use swc_common::{
     FileName, SourceFile, SourceMap,
 };
 use swc_ecma_ast::Module;
-use swc_ecma_parser::{lexer::Lexer, Parser, StringInput, Syntax};
+use swc_ecma_parser::{lexer::Lexer, Parser, StringInput, Syntax, EsConfig};
 
 pub(crate) fn get_handler() -> (Arc<SourceMap>, Handler) {
     let sm: Arc<SourceMap> = Arc::new(Default::default());
@@ -26,9 +26,15 @@ pub(crate) fn get_handler() -> (Arc<SourceMap>, Handler) {
 pub(crate) fn get_parser<'a>(
     fm: &'a SourceFile,
 ) -> Parser<Lexer<'a, StringInput<'a>>> {
+
+    let es_config = EsConfig {
+        jsx: true,
+        ..Default::default()
+    };
+
     let lexer = Lexer::new(
         // We want to parse ecmascript
-        Syntax::Es(Default::default()),
+        Syntax::Es(es_config),
         // JscTarget defaults to es5
         Default::default(),
         StringInput::from(fm),
@@ -59,7 +65,7 @@ pub(crate) fn load_file<P: AsRef<Path>>(
                 // Unrecoverable fatal error occurred
                 e.into_diagnostic(&handler).emit()
             })
-            .expect("Failed to parse module"),
+            .expect("Failed to parse module")
     ))
 }
 
