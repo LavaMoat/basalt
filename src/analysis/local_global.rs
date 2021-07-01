@@ -23,6 +23,8 @@ use crate::static_module_record::parser::var_symbol_words;
 pub enum LocalSymbol {
     /// Represents a named import.
     ImportNamed(ImportNamedSpecifier),
+    /// Represents a wildcard import with a local alias name.
+    ImportStarAs(ImportStarAsSpecifier),
     /// Represents a function declaration.
     FnDecl(FnDecl),
     /// Represents a class declaration.
@@ -64,6 +66,17 @@ impl LocalGlobalAnalysis {
 }
 
 impl VisitAll for LocalGlobalAnalysis {
+
+    fn visit_import_star_as_specifier(
+        &mut self,
+        n: &ImportStarAsSpecifier,
+        _: &dyn Node
+    ) {
+        let locals =
+            self.locals.entry(n.local.sym.clone()).or_insert(Vec::new());
+        locals.push(LocalSymbol::ImportStarAs(n.clone()));
+    }
+
     fn visit_decl(&mut self, n: &Decl, _: &dyn Node) {
         match n {
             Decl::Fn(func) => {

@@ -42,8 +42,8 @@ pub(crate) fn get_parser<'a>(
     Parser::new_from(lexer)
 }
 
-// Parse a module from a file.
-pub(crate) fn load_file<P: AsRef<Path>>(
+/// Parse a module from a file.
+pub fn load_file<P: AsRef<Path>>(
     file: P,
 ) -> Result<(FileName, Arc<SourceMap>, Module)> {
     let (sm, handler) = get_handler();

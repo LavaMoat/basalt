@@ -14,7 +14,7 @@ pub mod analysis;
 mod module_node;
 pub mod printer;
 pub mod static_module_record;
-mod swc_utils;
+pub mod swc_utils;
 
 pub use static_module_record::{
     Parser, StaticModuleRecordProgram, TransformSource,
