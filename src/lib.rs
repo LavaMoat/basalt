@@ -8,6 +8,7 @@ use std::path::PathBuf;
 
 use anyhow::{bail, Result};
 
+pub mod analysis;
 mod module_node;
 pub mod printer;
 //pub mod resolvers;
