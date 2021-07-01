@@ -8,16 +8,19 @@ use std::path::PathBuf;
 
 use anyhow::{bail, Result};
 
+use swc_ecma_visit::VisitAllWith;
+
 pub mod analysis;
 mod module_node;
 pub mod printer;
-//pub mod resolvers;
 pub mod static_module_record;
 mod swc_utils;
 
 pub use static_module_record::{
     Parser, StaticModuleRecordProgram, TransformSource,
 };
+
+use analysis::local_global::LocalGlobalAnalysis;
 
 /// List all modules.
 pub fn list(file: PathBuf, include_file: bool) -> Result<()> {
@@ -40,6 +43,21 @@ pub fn meta(file: PathBuf) -> Result<()> {
     let smr = parser.parse(&module)?;
     let contents = serde_json::to_string_pretty(&smr)?;
     println!("{}", contents);
+    Ok(())
+}
+
+/// Print the symbols in a module.
+pub fn symbols(file: PathBuf) -> Result<()> {
+    if !file.is_file() {
+        bail!("Module {} does not exist or is not a file", file.display());
+    }
+
+    let mut local_global: LocalGlobalAnalysis = Default::default();
+    let (_, _, module) = crate::swc_utils::load_file(file)?;
+    module.visit_all_children_with(&mut local_global);
+
+    println!("{:#?}", local_global.globals());
+
     Ok(())
 }
 

@@ -3,7 +3,7 @@ use std::path::PathBuf;
 use anyhow::Result;
 use structopt::StructOpt;
 
-use basalt::{list, meta, transform};
+use basalt::{list, meta, symbols, transform};
 
 #[derive(StructOpt)]
 #[structopt(about = "Lavamoat analyzer and bundler")]
@@ -14,6 +14,13 @@ enum BasaltCommands {
         #[structopt(short = "f", long)]
         include_file: bool,
 
+        /// Module entry point
+        #[structopt(parse(from_os_str))]
+        module: PathBuf,
+    },
+
+    /// Print the symbols for a module
+    Symbols {
         /// Module entry point
         #[structopt(parse(from_os_str))]
         module: PathBuf,
@@ -52,12 +59,9 @@ fn main() -> Result<()> {
         } => {
             list(module, include_file)?;
         }
-        BasaltCommands::Meta { module } => {
-            meta(module)?;
-        }
-        BasaltCommands::Transform { module, json } => {
-            transform(module, json)?;
-        }
+        BasaltCommands::Symbols { module } => symbols(module)?,
+        BasaltCommands::Meta { module } => meta(module)?,
+        BasaltCommands::Transform { module, json } => transform(module, json)?,
     }
     Ok(())
 }
