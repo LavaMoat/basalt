@@ -21,6 +21,11 @@ enum BasaltCommands {
 
     /// Print the symbols for a module
     Symbols {
+
+        /// Print only global symbols
+        #[structopt(short, long)]
+        globals: bool,
+
         /// Module entry point
         #[structopt(parse(from_os_str))]
         module: PathBuf,
@@ -59,7 +64,7 @@ fn main() -> Result<()> {
         } => {
             list(module, include_file)?;
         }
-        BasaltCommands::Symbols { module } => symbols(module)?,
+        BasaltCommands::Symbols { module, globals } => symbols(module, globals)?,
         BasaltCommands::Meta { module } => meta(module)?,
         BasaltCommands::Transform { module, json } => transform(module, json)?,
     }

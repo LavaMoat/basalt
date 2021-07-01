@@ -47,16 +47,32 @@ pub fn meta(file: PathBuf) -> Result<()> {
 }
 
 /// Print the symbols in a module.
-pub fn symbols(file: PathBuf) -> Result<()> {
+pub fn symbols(file: PathBuf, globals_only: bool) -> Result<()> {
     if !file.is_file() {
         bail!("Module {} does not exist or is not a file", file.display());
     }
 
     let mut local_global: LocalGlobalAnalysis = Default::default();
-    let (_, _, module) = crate::swc_utils::load_file(file)?;
+    let (_, _, module) = crate::swc_utils::load_file(&file)?;
     module.visit_all_children_with(&mut local_global);
 
-    println!("{:#?}", local_global.globals());
+    println!("{}", file.display());
+
+    let globals = local_global.globals();
+    if globals_only {
+        for key in globals {
+            println!("{}", key);
+        }
+    } else {
+        for (key, _ident) in local_global.idents() {
+            let meta = if globals.contains(key) {
+                "global"
+            } else {
+                "local"
+            };
+            println!("{} ({})", key, meta);
+        }
+    }
 
     Ok(())
 }

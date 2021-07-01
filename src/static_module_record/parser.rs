@@ -1,6 +1,7 @@
 //! Parse static module record meta data.
 use anyhow::Result;
 
+use swc_atoms::JsWord;
 use swc_ecma_ast::*;
 use swc_ecma_visit::{VisitAllWith, VisitWith};
 
@@ -14,7 +15,7 @@ use super::{ImportKind, ImportName, StaticModuleRecord};
 
 /// Find the symbol names in a variable declaration so that we can
 /// check for existence in the fixed or live exports map(s).
-pub fn var_symbol_names(var: &VarDecl) -> Vec<(&VarDeclarator, Vec<&str>)> {
+pub fn var_symbol_words(var: &VarDecl) -> Vec<(&VarDeclarator, Vec<&JsWord>)> {
     var.decls
         .iter()
         .filter(|decl| match &decl.name {
@@ -26,20 +27,20 @@ pub fn var_symbol_names(var: &VarDecl) -> Vec<(&VarDeclarator, Vec<&str>)> {
         })
         .map(|decl| {
             let mut names = Vec::new();
-            pattern_names(&decl.name, &mut names);
+            pattern_words(&decl.name, &mut names);
             (decl, names)
         })
         .collect::<Vec<_>>()
 }
 
-fn pattern_names<'a>(pat: &'a Pat, names: &mut Vec<&'a str>) {
+fn pattern_words<'a>(pat: &'a Pat, names: &mut Vec<&'a JsWord>) {
     match pat {
-        Pat::Ident(binding) => names.push(binding.id.sym.as_ref()),
+        Pat::Ident(binding) => names.push(&binding.id.sym),
         Pat::Object(obj) => {
             for prop in obj.props.iter() {
                 match prop {
                     ObjectPatProp::Assign(entry) => {
-                        names.push(entry.key.sym.as_ref());
+                        names.push(&entry.key.sym);
                     }
                     ObjectPatProp::KeyValue(entry) => {
                         let will_recurse = match &*entry.value {
@@ -47,18 +48,18 @@ fn pattern_names<'a>(pat: &'a Pat, names: &mut Vec<&'a str>) {
                             Pat::Array(_) => true,
                             _ => false,
                         };
-                        pattern_names(&*entry.value, names);
+                        pattern_words(&*entry.value, names);
                         if !will_recurse {
                             match &entry.key {
                                 PropName::Ident(ident) => {
-                                    names.push(ident.sym.as_ref());
+                                    names.push(&ident.sym);
                                 }
                                 _ => {}
                             }
                         }
                     }
                     ObjectPatProp::Rest(entry) => {
-                        pattern_names(&*entry.arg, names);
+                        pattern_words(&*entry.arg, names);
                     }
                 }
             }
@@ -66,15 +67,25 @@ fn pattern_names<'a>(pat: &'a Pat, names: &mut Vec<&'a str>) {
         Pat::Array(arr) => {
             for elem in arr.elems.iter() {
                 if let Some(ref elem) = elem {
-                    pattern_names(elem, names);
+                    pattern_words(elem, names);
                 }
             }
         }
         Pat::Rest(rest) => {
-            pattern_names(&*rest.arg, names);
+            pattern_words(&*rest.arg, names);
         }
         _ => {}
     }
+}
+
+/// Variant of `var_symbol_words()` that maps symbol names to `&str`.
+pub fn var_symbol_names(var: &VarDecl) -> Vec<(&VarDeclarator, Vec<&str>)> {
+    var_symbol_words(var)
+        .into_iter()
+        .map(|(decl, words)| {
+            (decl, words.into_iter().map(|w| w.as_ref()).collect())
+        })
+        .collect()
 }
 
 /// Parses a module to a static module record.
