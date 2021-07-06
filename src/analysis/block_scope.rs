@@ -43,6 +43,12 @@ pub enum ScopeKind {
     While,
     /// Do while scope.
     DoWhile,
+    /// For scope.
+    For,
+    /// For in scope.
+    ForIn,
+    /// For of scope.
+    ForOf,
 }
 
 /// Lexical scope.
@@ -167,6 +173,21 @@ fn visit_stmt(n: &Stmt, scope: &mut Scope) {
         }
         Stmt::DoWhile(n) => {
             let mut next_scope = Scope::new(ScopeKind::DoWhile);
+            visit_stmt(&*n.body, &mut next_scope);
+            scope.scopes.push(next_scope);
+        }
+        Stmt::For(n) => {
+            let mut next_scope = Scope::new(ScopeKind::For);
+            visit_stmt(&*n.body, &mut next_scope);
+            scope.scopes.push(next_scope);
+        }
+        Stmt::ForIn(n) => {
+            let mut next_scope = Scope::new(ScopeKind::ForIn);
+            visit_stmt(&*n.body, &mut next_scope);
+            scope.scopes.push(next_scope);
+        }
+        Stmt::ForOf(n) => {
+            let mut next_scope = Scope::new(ScopeKind::ForOf);
             visit_stmt(&*n.body, &mut next_scope);
             scope.scopes.push(next_scope);
         }

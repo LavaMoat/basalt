@@ -19,6 +19,18 @@ class Qux {}
   do {
     const do_while_foo, do_while_qux;
   } while(false);
+
+  for (;;) {
+    const for_foo, for_qux;
+  }
+
+  for (let z in {a: 'a', b: 'b'}) {
+    const for_in_foo, for_in_qux;
+  }
+
+  for (let i of [1,2,3]) {
+    const for_of_foo, for_of_qux;
+  }
 }
 
 with (p) {
