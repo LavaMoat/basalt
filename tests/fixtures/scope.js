@@ -8,7 +8,7 @@ class Qux {}
 
 {
   const block_foo, block_qux;
-  {
+  nested: {
     const nested_foo, nested_qux;
   }
 
@@ -31,6 +31,7 @@ class Qux {}
   for (let i of [1,2,3]) {
     const for_of_foo, for_of_qux;
   }
+
 }
 
 with (p) {

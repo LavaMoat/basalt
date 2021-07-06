@@ -49,6 +49,8 @@ pub enum ScopeKind {
     ForIn,
     /// For of scope.
     ForOf,
+    /// Labeled scope.
+    Labeled,
 }
 
 /// Lexical scope.
@@ -188,6 +190,11 @@ fn visit_stmt(n: &Stmt, scope: &mut Scope) {
         }
         Stmt::ForOf(n) => {
             let mut next_scope = Scope::new(ScopeKind::ForOf);
+            visit_stmt(&*n.body, &mut next_scope);
+            scope.scopes.push(next_scope);
+        }
+        Stmt::Labeled(n) => {
+            let mut next_scope = Scope::new(ScopeKind::Labeled);
             visit_stmt(&*n.body, &mut next_scope);
             scope.scopes.push(next_scope);
         }
