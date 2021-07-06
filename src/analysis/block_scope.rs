@@ -51,6 +51,8 @@ pub enum ScopeKind {
     ForOf,
     /// Labeled scope.
     Labeled,
+    /// If scope.
+    If,
 }
 
 /// Lexical scope.
@@ -197,6 +199,18 @@ fn visit_stmt(n: &Stmt, scope: &mut Scope) {
             let mut next_scope = Scope::new(ScopeKind::Labeled);
             visit_stmt(&*n.body, &mut next_scope);
             scope.scopes.push(next_scope);
+        }
+        Stmt::If(n) => {
+            let mut next_scope = Scope::new(ScopeKind::If);
+            visit_stmt(&*n.cons, &mut next_scope);
+            scope.scopes.push(next_scope);
+
+            if let Some(ref alt) = n.alt {
+                let mut next_scope = Scope::new(ScopeKind::If);
+                visit_stmt(&*alt, &mut next_scope);
+                scope.scopes.push(next_scope);
+            }
+
         }
         Stmt::Block(n) => {
             let mut next_scope = Scope::new(ScopeKind::Block);

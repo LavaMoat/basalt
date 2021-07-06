@@ -1,5 +1,13 @@
 import foo from './foo.js';
 
+if (1) {
+  const if_foo;
+} else if (2) {
+  const else_if_foo;
+} else {
+  const else_foo;
+}
+
 function baz() {
   const local_qux = document;
 }
