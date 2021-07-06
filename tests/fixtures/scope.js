@@ -11,6 +11,14 @@ class Qux {}
   {
     const nested_foo, nested_qux;
   }
+
+  while(true) {
+    const while_foo, while_qux;
+  }
+
+  do {
+    const do_while_foo, do_while_qux;
+  } while(false);
 }
 
 with (p) {

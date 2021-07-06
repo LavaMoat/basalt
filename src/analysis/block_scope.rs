@@ -39,6 +39,10 @@ pub enum ScopeKind {
     Block,
     /// With scope.
     With,
+    /// While scope.
+    While,
+    /// Do while scope.
+    DoWhile,
 }
 
 /// Lexical scope.
@@ -58,6 +62,17 @@ pub struct Scope {
     idents: IndexSet<JsWord>,
 }
 
+impl Scope {
+    fn new(kind: ScopeKind) -> Self {
+        Self {
+            kind,
+            scopes: Default::default(),
+            locals: Default::default(),
+            idents: Default::default(),
+        }
+    }
+}
+
 /// Analyze the scopes for a module.
 #[derive(Debug)]
 pub struct ScopeAnalysis {
@@ -68,12 +83,7 @@ impl ScopeAnalysis {
     /// Create a scope analysis.
     pub fn new() -> Self {
         Self {
-            root: Scope {
-                kind: ScopeKind::Module,
-                scopes: Default::default(),
-                locals: Default::default(),
-                idents: Default::default(),
-            },
+            root: Scope::new(ScopeKind::Module),
         }
     }
 }
@@ -145,30 +155,26 @@ fn visit_stmt(n: &Stmt, scope: &mut Scope) {
                 }
             }
         }
-        Stmt::With(with) => {
-            println!("Got with statement!");
-            let mut next_scope = Scope {
-                kind: ScopeKind::With,
-                scopes: Default::default(),
-                locals: Default::default(),
-                idents: Default::default(),
-            };
-            visit_stmt(&*with.body, &mut next_scope);
-
+        Stmt::With(n) => {
+            let mut next_scope = Scope::new(ScopeKind::With);
+            visit_stmt(&*n.body, &mut next_scope);
             scope.scopes.push(next_scope);
         }
-        Stmt::Block(block) => {
-            let mut next_scope = Scope {
-                kind: ScopeKind::Block,
-                scopes: Default::default(),
-                locals: Default::default(),
-                idents: Default::default(),
-            };
-
-            for stmt in block.stmts.iter() {
+        Stmt::While(n) => {
+            let mut next_scope = Scope::new(ScopeKind::While);
+            visit_stmt(&*n.body, &mut next_scope);
+            scope.scopes.push(next_scope);
+        }
+        Stmt::DoWhile(n) => {
+            let mut next_scope = Scope::new(ScopeKind::DoWhile);
+            visit_stmt(&*n.body, &mut next_scope);
+            scope.scopes.push(next_scope);
+        }
+        Stmt::Block(n) => {
+            let mut next_scope = Scope::new(ScopeKind::Block);
+            for stmt in n.stmts.iter() {
                 visit_stmt(stmt, &mut next_scope);
             }
-
             scope.scopes.push(next_scope);
         }
         _ => {}
