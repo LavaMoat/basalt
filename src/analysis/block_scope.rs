@@ -48,6 +48,12 @@ pub struct Scope {
     scopes: Vec<Scope>,
     /// Identifiers local to this scope.
     locals: IndexMap<JsWord, Vec<LocalSymbol>>,
+    /// Identifiers that are references.
+    ///
+    /// These could be local or global symbols and we need
+    /// to walk all parent scopes to detect if a symbol should
+    /// be considered global.
+    idents: IndexSet<JsWord>,
 }
 
 /// Analyze the scopes for a module.
@@ -64,9 +70,13 @@ impl ScopeAnalysis {
                 kind: ScopeKind::Module,
                 scopes: Default::default(),
                 locals: Default::default(),
+                idents: Default::default(),
             },
         }
     }
+}
+
+impl ScopeAnalysis {
 }
 
 impl Visit for ScopeAnalysis {
@@ -96,42 +106,57 @@ impl Visit for ScopeAnalysis {
                 }
                 _ => {}
             },
-            ModuleItem::Stmt(stmt) => {
-                match stmt {
-                    Stmt::Decl(decl) => {
-                        let result = match decl {
-                            Decl::Fn(n) => {
-                                Some(vec![(&n.ident.sym, LocalSymbol::FnDecl)])
-                            }
-                            Decl::Class(n) => {
-                                Some(vec![(&n.ident.sym, LocalSymbol::ClassDecl)])
-                            }
-                            Decl::Var(n) => {
-                                let word_list = var_symbol_words(n);
-                                let mut out = Vec::new();
-                                for (decl, words) in word_list.iter() {
-                                    for word in words {
-                                        out.push((*word, LocalSymbol::VarDecl));
-                                    }
-                                }
-                                Some(out)
-                            }
-                            _ => None
-                        };
+            ModuleItem::Stmt(stmt) => visit_stmt(stmt, scope),
+        }
+    }
+}
 
-                        if let Some(result) = result {
-                            for (ident, symbol) in result.into_iter() {
-                                let locals = scope
-                                    .locals
-                                    .entry(ident.clone())
-                                    .or_insert(Vec::new());
-                                locals.push(symbol);
-                            }
+fn visit_stmt(n: &Stmt, scope: &mut Scope) {
+    match n {
+        Stmt::Decl(decl) => {
+            let result = match decl {
+                Decl::Fn(n) => {
+                    Some(vec![(&n.ident.sym, LocalSymbol::FnDecl)])
+                }
+                Decl::Class(n) => {
+                    Some(vec![(&n.ident.sym, LocalSymbol::ClassDecl)])
+                }
+                Decl::Var(n) => {
+                    let word_list = var_symbol_words(n);
+                    let mut out = Vec::new();
+                    for (decl, words) in word_list.iter() {
+                        for word in words {
+                            out.push((*word, LocalSymbol::VarDecl));
                         }
                     }
-                    _ => {}
+                    Some(out)
+                }
+                _ => None,
+            };
+            if let Some(result) = result {
+                for (ident, symbol) in result.into_iter() {
+                    let locals = scope
+                        .locals
+                        .entry(ident.clone())
+                        .or_insert(Vec::new());
+                    locals.push(symbol);
                 }
             }
         }
+        Stmt::Block(block) => {
+            let mut next_scope = Scope {
+                kind: ScopeKind::Block,
+                scopes: Default::default(),
+                locals: Default::default(),
+                idents: Default::default(),
+            };
+
+            for stmt in block.stmts.iter() {
+                visit_stmt(stmt, &mut next_scope);
+            }
+
+            scope.scopes.push(next_scope);
+        }
+        _ => {}
     }
 }

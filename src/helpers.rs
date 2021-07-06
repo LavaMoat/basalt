@@ -76,4 +76,3 @@ fn pattern_words<'a>(pat: &'a Pat, names: &mut Vec<&'a JsWord>) {
         _ => {}
     }
 }
-

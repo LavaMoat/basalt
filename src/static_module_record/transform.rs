@@ -21,8 +21,8 @@ use swc_ecma_visit::{Node, Visit, VisitWith};
 use anyhow::{Context, Result};
 
 use super::{
-    ImportName, Parser as StaticModuleRecordParser,
-    StaticModuleRecord, StaticModuleRecordMeta,
+    ImportName, Parser as StaticModuleRecordParser, StaticModuleRecord,
+    StaticModuleRecordMeta,
 };
 
 use crate::helpers::var_symbol_names;

@@ -1,6 +1,8 @@
 import foo from './foo.js';
 
-function baz() {}
+function baz() {
+  const local_qux = document;
+}
 
 class Qux {}
 
