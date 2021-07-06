@@ -14,10 +14,10 @@ fn analyze(file: PathBuf) -> Result<LocalGlobalAnalysis> {
 
 #[test]
 fn globals_import_named() -> Result<()> {
-    let expected = std::fs::read_to_string(
-        "tests/globals/import-named/output.json",
-    )?;
-    let analysis = analyze(PathBuf::from("tests/globals/import-named/input.js"))?;
+    let expected =
+        std::fs::read_to_string("tests/globals/import-named/output.json")?;
+    let analysis =
+        analyze(PathBuf::from("tests/globals/import-named/input.js"))?;
     let globals = analysis.globals();
     let result = serde_json::to_string_pretty(&globals)?;
     //println!("{}", result);
@@ -27,10 +27,10 @@ fn globals_import_named() -> Result<()> {
 
 #[test]
 fn globals_import_star_as() -> Result<()> {
-    let expected = std::fs::read_to_string(
-        "tests/globals/import-star-as/output.json",
-    )?;
-    let analysis = analyze(PathBuf::from("tests/globals/import-star-as/input.js"))?;
+    let expected =
+        std::fs::read_to_string("tests/globals/import-star-as/output.json")?;
+    let analysis =
+        analyze(PathBuf::from("tests/globals/import-star-as/input.js"))?;
     let globals = analysis.globals();
     let result = serde_json::to_string_pretty(&globals)?;
     //println!("{}", result);
@@ -40,10 +40,10 @@ fn globals_import_star_as() -> Result<()> {
 
 #[test]
 fn globals_function_decl() -> Result<()> {
-    let expected = std::fs::read_to_string(
-        "tests/globals/function-decl/output.json",
-    )?;
-    let analysis = analyze(PathBuf::from("tests/globals/function-decl/input.js"))?;
+    let expected =
+        std::fs::read_to_string("tests/globals/function-decl/output.json")?;
+    let analysis =
+        analyze(PathBuf::from("tests/globals/function-decl/input.js"))?;
     let globals = analysis.globals();
     let result = serde_json::to_string_pretty(&globals)?;
     //println!("{}", result);
@@ -53,9 +53,8 @@ fn globals_function_decl() -> Result<()> {
 
 #[test]
 fn globals_class_decl() -> Result<()> {
-    let expected = std::fs::read_to_string(
-        "tests/globals/class-decl/output.json",
-    )?;
+    let expected =
+        std::fs::read_to_string("tests/globals/class-decl/output.json")?;
     let analysis = analyze(PathBuf::from("tests/globals/class-decl/input.js"))?;
     let globals = analysis.globals();
     let result = serde_json::to_string_pretty(&globals)?;
@@ -66,9 +65,8 @@ fn globals_class_decl() -> Result<()> {
 
 #[test]
 fn globals_var_decl() -> Result<()> {
-    let expected = std::fs::read_to_string(
-        "tests/globals/var-decl/output.json",
-    )?;
+    let expected =
+        std::fs::read_to_string("tests/globals/var-decl/output.json")?;
     let analysis = analyze(PathBuf::from("tests/globals/var-decl/input.js"))?;
     let globals = analysis.globals();
     let result = serde_json::to_string_pretty(&globals)?;

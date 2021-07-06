@@ -66,11 +66,10 @@ impl LocalGlobalAnalysis {
 }
 
 impl VisitAll for LocalGlobalAnalysis {
-
     fn visit_import_star_as_specifier(
         &mut self,
         n: &ImportStarAsSpecifier,
-        _: &dyn Node
+        _: &dyn Node,
     ) {
         let locals =
             self.locals.entry(n.local.sym.clone()).or_insert(Vec::new());
