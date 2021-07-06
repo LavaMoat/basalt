@@ -21,9 +21,11 @@ use swc_ecma_visit::{Node, Visit, VisitWith};
 use anyhow::{Context, Result};
 
 use super::{
-    parser::var_symbol_names, ImportName, Parser as StaticModuleRecordParser,
+    ImportName, Parser as StaticModuleRecordParser,
     StaticModuleRecord, StaticModuleRecordMeta,
 };
+
+use crate::helpers::var_symbol_names;
 
 const HIDDEN_PREFIX: &str = "$h\u{200d}_";
 const HIDDEN_CONST_VAR_PREFIX: &str = "$c\u{200d}_";

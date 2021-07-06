@@ -7,6 +7,8 @@ use swc_ecma_visit::{Node, Visit};
 
 use indexmap::{IndexMap, IndexSet};
 
+use crate::helpers::var_symbol_words;
+
 /// Symbol local to a scope.
 #[derive(Debug)]
 pub enum LocalSymbol {
@@ -99,26 +101,33 @@ impl Visit for ScopeAnalysis {
                     Stmt::Decl(decl) => {
                         let result = match decl {
                             Decl::Fn(n) => {
-                                Some((&n.ident.sym, LocalSymbol::FnDecl))
+                                Some(vec![(&n.ident.sym, LocalSymbol::FnDecl)])
                             }
                             Decl::Class(n) => {
-                                Some((&n.ident.sym, LocalSymbol::ClassDecl))
+                                Some(vec![(&n.ident.sym, LocalSymbol::ClassDecl)])
                             }
                             Decl::Var(n) => {
-                                // TODO: call var_symbol_words() and build locals
-                                None
+                                let word_list = var_symbol_words(n);
+                                let mut out = Vec::new();
+                                for (decl, words) in word_list.iter() {
+                                    for word in words {
+                                        out.push((*word, LocalSymbol::VarDecl));
+                                    }
+                                }
+                                Some(out)
                             }
                             _ => None
                         };
 
-                        if let Some((ident, symbol)) = result {
-                            let locals = scope
-                                .locals
-                                .entry(ident.clone())
-                                .or_insert(Vec::new());
-                            locals.push(symbol);
+                        if let Some(result) = result {
+                            for (ident, symbol) in result.into_iter() {
+                                let locals = scope
+                                    .locals
+                                    .entry(ident.clone())
+                                    .or_insert(Vec::new());
+                                locals.push(symbol);
+                            }
                         }
-
                     }
                     _ => {}
                 }

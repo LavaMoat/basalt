@@ -12,7 +12,7 @@ use swc_ecma_visit::{Node, VisitAll};
 
 use indexmap::{IndexMap, IndexSet};
 
-use crate::static_module_record::parser::var_symbol_words;
+use crate::helpers::var_symbol_words;
 
 /// Represents a local symbol in the module.
 ///
