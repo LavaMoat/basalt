@@ -37,6 +37,8 @@ pub enum ScopeKind {
     Function,
     /// Block scope.
     Block,
+    /// With scope.
+    With,
 }
 
 /// Lexical scope.
@@ -142,6 +144,18 @@ fn visit_stmt(n: &Stmt, scope: &mut Scope) {
                     locals.push(symbol);
                 }
             }
+        }
+        Stmt::With(with) => {
+            println!("Got with statement!");
+            let mut next_scope = Scope {
+                kind: ScopeKind::With,
+                scopes: Default::default(),
+                locals: Default::default(),
+                idents: Default::default(),
+            };
+            visit_stmt(&*with.body, &mut next_scope);
+
+            scope.scopes.push(next_scope);
         }
         Stmt::Block(block) => {
             let mut next_scope = Scope {
