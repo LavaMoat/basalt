@@ -94,7 +94,35 @@ impl Visit for ScopeAnalysis {
                 }
                 _ => {}
             },
-            ModuleItem::Stmt(_) => {}
+            ModuleItem::Stmt(stmt) => {
+                match stmt {
+                    Stmt::Decl(decl) => {
+                        let result = match decl {
+                            Decl::Fn(n) => {
+                                Some((&n.ident.sym, LocalSymbol::FnDecl))
+                            }
+                            Decl::Class(n) => {
+                                Some((&n.ident.sym, LocalSymbol::ClassDecl))
+                            }
+                            Decl::Var(n) => {
+                                // TODO: call var_symbol_words() and build locals
+                                None
+                            }
+                            _ => None
+                        };
+
+                        if let Some((ident, symbol)) = result {
+                            let locals = scope
+                                .locals
+                                .entry(ident.clone())
+                                .or_insert(Vec::new());
+                            locals.push(symbol);
+                        }
+
+                    }
+                    _ => {}
+                }
+            }
         }
     }
 }
