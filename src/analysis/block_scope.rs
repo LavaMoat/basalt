@@ -9,23 +9,6 @@ use indexmap::{IndexMap, IndexSet};
 
 use crate::helpers::var_symbol_words;
 
-/// Symbol local to a scope.
-#[derive(Debug)]
-pub enum LocalSymbol {
-    /// Represents a named import.
-    ImportNamed,
-    /// Represents a default import.
-    ImportDefault,
-    /// Represents a wildcard import with a local alias name.
-    ImportStarAs,
-    /// Represents a function declaration.
-    FnDecl,
-    /// Represents a class declaration.
-    ClassDecl,
-    /// Represents a variable declaration.
-    VarDecl,
-}
-
 /// Enumerates the kinds of scopes.
 #[derive(Debug)]
 pub enum ScopeKind {
@@ -71,7 +54,7 @@ pub struct Scope {
     /// Scopes contained by this scope.
     scopes: Vec<Scope>,
     /// Identifiers local to this scope.
-    locals: IndexMap<JsWord, Vec<LocalSymbol>>,
+    locals: IndexSet<JsWord>,
     /// Identifiers that are references.
     ///
     /// These could be local or global symbols and we need
@@ -116,22 +99,18 @@ impl Visit for ScopeAnalysis {
             ModuleItem::ModuleDecl(decl) => match decl {
                 ModuleDecl::Import(import) => {
                     for spec in import.specifiers.iter() {
-                        let (ident, symbol) = match spec {
+                        let ident = match spec {
                             ImportSpecifier::Named(n) => {
-                                (&n.local.sym, LocalSymbol::ImportNamed)
+                                &n.local.sym
                             }
                             ImportSpecifier::Default(n) => {
-                                (&n.local.sym, LocalSymbol::ImportDefault)
+                                &n.local.sym
                             }
                             ImportSpecifier::Namespace(n) => {
-                                (&n.local.sym, LocalSymbol::ImportStarAs)
+                                &n.local.sym
                             }
                         };
-                        let locals = scope
-                            .locals
-                            .entry(ident.clone())
-                            .or_insert(Vec::new());
-                        locals.push(symbol);
+                        scope.locals.insert(ident.clone());
                     }
                 }
                 _ => {}
@@ -146,17 +125,17 @@ fn visit_stmt(n: &Stmt, scope: &mut Scope) {
         Stmt::Decl(decl) => {
             let result = match decl {
                 Decl::Fn(n) => {
-                    Some(vec![(&n.ident.sym, LocalSymbol::FnDecl)])
+                    Some(vec![&n.ident.sym])
                 }
                 Decl::Class(n) => {
-                    Some(vec![(&n.ident.sym, LocalSymbol::ClassDecl)])
+                    Some(vec![&n.ident.sym])
                 }
                 Decl::Var(n) => {
                     let word_list = var_symbol_words(n);
                     let mut out = Vec::new();
                     for (_, words) in word_list.iter() {
                         for word in words {
-                            out.push((*word, LocalSymbol::VarDecl));
+                            out.push(*word);
                         }
                     }
                     Some(out)
@@ -164,12 +143,8 @@ fn visit_stmt(n: &Stmt, scope: &mut Scope) {
                 _ => None,
             };
             if let Some(result) = result {
-                for (ident, symbol) in result.into_iter() {
-                    let locals = scope
-                        .locals
-                        .entry(ident.clone())
-                        .or_insert(Vec::new());
-                    locals.push(symbol);
+                for ident in result.into_iter() {
+                    scope.locals.insert(ident.clone());
                 }
             }
 
