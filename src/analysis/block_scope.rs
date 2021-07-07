@@ -4,6 +4,7 @@
 use swc_atoms::JsWord;
 use swc_ecma_ast::*;
 use swc_ecma_visit::{Node, Visit};
+use swc_common::DUMMY_SP;
 
 use indexmap::{IndexMap, IndexSet};
 
@@ -78,6 +79,9 @@ impl Visit for ScopeAnalysis {
 }
 
 fn visit_stmt(n: &Stmt, scope: &mut Scope) {
+
+    //println!("{:#?}", n);
+
     match n {
         Stmt::Decl(decl) => {
             let result = match decl {
@@ -90,9 +94,18 @@ fn visit_stmt(n: &Stmt, scope: &mut Scope) {
                 Decl::Var(n) => {
                     let word_list = var_symbol_words(n);
                     let mut out = Vec::new();
-                    for (_, words) in word_list.iter() {
+                    for (decl, words) in word_list.iter() {
                         for word in words {
                             out.push(*word);
+                        }
+
+                        // Recurse on variable declarations with initializers
+                        if let Some(ref init) = decl.init {
+                            let expr_stmt = Stmt::Expr(ExprStmt {
+                                span: DUMMY_SP,
+                                expr: init.clone(),
+                            });
+                            visit_stmt(&expr_stmt, scope);
                         }
                     }
                     Some(out)
@@ -218,8 +231,15 @@ fn visit_stmt(n: &Stmt, scope: &mut Scope) {
         // Find ident references which is the list of candidates
         // that may be global variables.
         Stmt::Expr(n) => match &*n.expr {
-            Expr::Update(_) => {
-                todo!()
+            Expr::Ident(n) => {
+                scope.idents.insert(n.sym.clone());
+            }
+            Expr::Update(n) => {
+                let expr_stmt = Stmt::Expr(ExprStmt {
+                    span: DUMMY_SP,
+                    expr: n.arg.clone(),
+                });
+                visit_stmt(&expr_stmt, scope);
             }
             Expr::Assign(assign) => {
                 match &assign.left {
@@ -244,8 +264,11 @@ fn visit_stmt(n: &Stmt, scope: &mut Scope) {
                     _ => {}
                 }
             }
-            Expr::New(_) => {
-                todo!()
+            Expr::New(n) => match &*n.callee {
+                Expr::Ident(ident) => {
+                    scope.idents.insert(ident.sym.clone());
+                }
+                _ => {}
             }
             _ => {}
         }

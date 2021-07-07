@@ -1,5 +1,9 @@
 import foo from './foo.js';
 
+++globalInt;
+
+const xhr = new XMLHttpRequest();
+
 switch(1) {
   case 1:
     const case_foo;
