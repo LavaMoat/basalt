@@ -53,6 +53,12 @@ pub enum ScopeKind {
     Labeled,
     /// If scope.
     If,
+    /// Try scope.
+    Try,
+    /// Catch scope.
+    Catch,
+    /// Finally scope.
+    Finally,
 }
 
 /// Lexical scope.
@@ -146,7 +152,7 @@ fn visit_stmt(n: &Stmt, scope: &mut Scope) {
                 Decl::Var(n) => {
                     let word_list = var_symbol_words(n);
                     let mut out = Vec::new();
-                    for (decl, words) in word_list.iter() {
+                    for (_, words) in word_list.iter() {
                         for word in words {
                             out.push((*word, LocalSymbol::VarDecl));
                         }
@@ -208,6 +214,27 @@ fn visit_stmt(n: &Stmt, scope: &mut Scope) {
             if let Some(ref alt) = n.alt {
                 let mut next_scope = Scope::new(ScopeKind::If);
                 visit_stmt(&*alt, &mut next_scope);
+                scope.scopes.push(next_scope);
+            }
+
+        }
+        Stmt::Try(n) => {
+            let block_stmt = Stmt::Block(n.block.clone());
+            let mut next_scope = Scope::new(ScopeKind::Try);
+            visit_stmt(&block_stmt, &mut next_scope);
+            scope.scopes.push(next_scope);
+
+            if let Some(ref catch_clause) = n.handler {
+                let block_stmt = Stmt::Block(catch_clause.body.clone());
+                let mut next_scope = Scope::new(ScopeKind::Catch);
+                visit_stmt(&block_stmt, &mut next_scope);
+                scope.scopes.push(next_scope);
+            }
+
+            if let Some(ref finalizer) = n.finalizer {
+                let block_stmt = Stmt::Block(finalizer.clone());
+                let mut next_scope = Scope::new(ScopeKind::Finally);
+                visit_stmt(&block_stmt, &mut next_scope);
                 scope.scopes.push(next_scope);
             }
 

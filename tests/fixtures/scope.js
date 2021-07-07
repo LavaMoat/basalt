@@ -1,5 +1,13 @@
 import foo from './foo.js';
 
+try {
+  const try_foo;
+} catch(e) {
+  const catch_foo;
+} finally {
+  const finally_foo;
+}
+
 if (1) {
   const if_foo;
 } else if (2) {
