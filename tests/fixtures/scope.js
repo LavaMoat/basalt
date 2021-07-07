@@ -1,5 +1,10 @@
 import foo from './foo.js';
 
+switch(1) {
+  case 1:
+    const case_foo;
+}
+
 try {
   const try_foo;
 } catch(e) {

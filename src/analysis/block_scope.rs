@@ -59,6 +59,8 @@ pub enum ScopeKind {
     Catch,
     /// Finally scope.
     Finally,
+    /// Case scope (in a switch block).
+    Case,
 }
 
 /// Lexical scope.
@@ -238,6 +240,15 @@ fn visit_stmt(n: &Stmt, scope: &mut Scope) {
                 scope.scopes.push(next_scope);
             }
 
+        }
+        Stmt::Switch(n) => {
+            for case in n.cases.iter() {
+                for stmt in case.cons.iter() {
+                    let mut next_scope = Scope::new(ScopeKind::Case);
+                    visit_stmt(stmt, &mut next_scope);
+                    scope.scopes.push(next_scope);
+                }
+            }
         }
         Stmt::Block(n) => {
             let mut next_scope = Scope::new(ScopeKind::Block);
