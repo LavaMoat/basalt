@@ -9,48 +9,9 @@ use indexmap::{IndexMap, IndexSet};
 
 use crate::helpers::var_symbol_words;
 
-/// Enumerates the kinds of scopes.
-#[derive(Debug)]
-pub enum ScopeKind {
-    /// Module scope.
-    Module,
-    /// Class scope.
-    Class,
-    /// Function scope.
-    Function,
-    /// Block scope.
-    Block,
-    /// With scope.
-    With,
-    /// While scope.
-    While,
-    /// Do while scope.
-    DoWhile,
-    /// For scope.
-    For,
-    /// For in scope.
-    ForIn,
-    /// For of scope.
-    ForOf,
-    /// Labeled scope.
-    Labeled,
-    /// If scope.
-    If,
-    /// Try scope.
-    Try,
-    /// Catch scope.
-    Catch,
-    /// Finally scope.
-    Finally,
-    /// Case scope (in a switch block).
-    Case,
-}
-
 /// Lexical scope.
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct Scope {
-    /// The kind of scope.
-    kind: ScopeKind,
     /// Scopes contained by this scope.
     scopes: Vec<Scope>,
     /// Identifiers local to this scope.
@@ -64,9 +25,8 @@ pub struct Scope {
 }
 
 impl Scope {
-    fn new(kind: ScopeKind) -> Self {
+    fn new() -> Self {
         Self {
-            kind,
             scopes: Default::default(),
             locals: Default::default(),
             idents: Default::default(),
@@ -84,12 +44,9 @@ impl ScopeAnalysis {
     /// Create a scope analysis.
     pub fn new() -> Self {
         Self {
-            root: Scope::new(ScopeKind::Module),
+            root: Scope::new(),
         }
     }
-}
-
-impl ScopeAnalysis {
 }
 
 impl Visit for ScopeAnalysis {
@@ -150,53 +107,54 @@ fn visit_stmt(n: &Stmt, scope: &mut Scope) {
 
             match decl {
                 Decl::Fn(n) => {
-
+                    // TODO: capture function parameters as locales
+                    // TODO: recurse into function body
                 }
                 _ => {}
             }
         }
         Stmt::With(n) => {
-            let mut next_scope = Scope::new(ScopeKind::With);
+            let mut next_scope = Scope::new();
             visit_stmt(&*n.body, &mut next_scope);
             scope.scopes.push(next_scope);
         }
         Stmt::While(n) => {
-            let mut next_scope = Scope::new(ScopeKind::While);
+            let mut next_scope = Scope::new();
             visit_stmt(&*n.body, &mut next_scope);
             scope.scopes.push(next_scope);
         }
         Stmt::DoWhile(n) => {
-            let mut next_scope = Scope::new(ScopeKind::DoWhile);
+            let mut next_scope = Scope::new();
             visit_stmt(&*n.body, &mut next_scope);
             scope.scopes.push(next_scope);
         }
         Stmt::For(n) => {
-            let mut next_scope = Scope::new(ScopeKind::For);
+            let mut next_scope = Scope::new();
             visit_stmt(&*n.body, &mut next_scope);
             scope.scopes.push(next_scope);
         }
         Stmt::ForIn(n) => {
-            let mut next_scope = Scope::new(ScopeKind::ForIn);
+            let mut next_scope = Scope::new();
             visit_stmt(&*n.body, &mut next_scope);
             scope.scopes.push(next_scope);
         }
         Stmt::ForOf(n) => {
-            let mut next_scope = Scope::new(ScopeKind::ForOf);
+            let mut next_scope = Scope::new();
             visit_stmt(&*n.body, &mut next_scope);
             scope.scopes.push(next_scope);
         }
         Stmt::Labeled(n) => {
-            let mut next_scope = Scope::new(ScopeKind::Labeled);
+            let mut next_scope = Scope::new();
             visit_stmt(&*n.body, &mut next_scope);
             scope.scopes.push(next_scope);
         }
         Stmt::If(n) => {
-            let mut next_scope = Scope::new(ScopeKind::If);
+            let mut next_scope = Scope::new();
             visit_stmt(&*n.cons, &mut next_scope);
             scope.scopes.push(next_scope);
 
             if let Some(ref alt) = n.alt {
-                let mut next_scope = Scope::new(ScopeKind::If);
+                let mut next_scope = Scope::new();
                 visit_stmt(&*alt, &mut next_scope);
                 scope.scopes.push(next_scope);
             }
@@ -204,20 +162,20 @@ fn visit_stmt(n: &Stmt, scope: &mut Scope) {
         }
         Stmt::Try(n) => {
             let block_stmt = Stmt::Block(n.block.clone());
-            let mut next_scope = Scope::new(ScopeKind::Try);
+            let mut next_scope = Scope::new();
             visit_stmt(&block_stmt, &mut next_scope);
             scope.scopes.push(next_scope);
 
             if let Some(ref catch_clause) = n.handler {
                 let block_stmt = Stmt::Block(catch_clause.body.clone());
-                let mut next_scope = Scope::new(ScopeKind::Catch);
+                let mut next_scope = Scope::new();
                 visit_stmt(&block_stmt, &mut next_scope);
                 scope.scopes.push(next_scope);
             }
 
             if let Some(ref finalizer) = n.finalizer {
                 let block_stmt = Stmt::Block(finalizer.clone());
-                let mut next_scope = Scope::new(ScopeKind::Finally);
+                let mut next_scope = Scope::new();
                 visit_stmt(&block_stmt, &mut next_scope);
                 scope.scopes.push(next_scope);
             }
@@ -226,14 +184,14 @@ fn visit_stmt(n: &Stmt, scope: &mut Scope) {
         Stmt::Switch(n) => {
             for case in n.cases.iter() {
                 for stmt in case.cons.iter() {
-                    let mut next_scope = Scope::new(ScopeKind::Case);
+                    let mut next_scope = Scope::new();
                     visit_stmt(stmt, &mut next_scope);
                     scope.scopes.push(next_scope);
                 }
             }
         }
         Stmt::Block(n) => {
-            let mut next_scope = Scope::new(ScopeKind::Block);
+            let mut next_scope = Scope::new();
             for stmt in n.stmts.iter() {
                 visit_stmt(stmt, &mut next_scope);
             }
