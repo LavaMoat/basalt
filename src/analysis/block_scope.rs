@@ -172,6 +172,13 @@ fn visit_stmt(n: &Stmt, scope: &mut Scope) {
                     locals.push(symbol);
                 }
             }
+
+            match decl {
+                Decl::Fn(n) => {
+
+                }
+                _ => {}
+            }
         }
         Stmt::With(n) => {
             let mut next_scope = Scope::new(ScopeKind::With);
@@ -256,6 +263,35 @@ fn visit_stmt(n: &Stmt, scope: &mut Scope) {
                 visit_stmt(stmt, &mut next_scope);
             }
             scope.scopes.push(next_scope);
+        }
+        // Find ident references which is the list of candidates
+        // that may be global variables.
+        Stmt::Expr(n) => match &*n.expr {
+            Expr::Update(_) => {
+
+            }
+            Expr::Assign(assign) => {
+                match &assign.left {
+                    PatOrExpr::Expr(expr) => match &**expr {
+                        Expr::Ident(ident) => {
+                            println!("GOT IDENTITY REFERENCE ON LHS");
+                        }
+                        _ => {}
+                    }
+                    _ => {}
+                }
+
+                match &*assign.right {
+                    Expr::Ident(ident) => {
+                        println!("GOT IDENTITY REFERENCE ON RHS");
+                    }
+                    _ => {}
+                }
+            }
+            Expr::New(_) => {
+
+            }
+            _ => {}
         }
         _ => {}
     }

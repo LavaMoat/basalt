@@ -23,6 +23,7 @@ if (1) {
 
 function baz() {
   const local_qux = document;
+  document = baz;
 }
 
 class Qux {}
