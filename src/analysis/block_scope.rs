@@ -7,7 +7,7 @@ use swc_ecma_visit::{Node, Visit};
 
 use indexmap::{IndexMap, IndexSet};
 
-use crate::helpers::var_symbol_words;
+use crate::helpers::{var_symbol_words, pattern_words};
 
 /// Lexical scope.
 #[derive(Debug, Default)]
@@ -107,8 +107,26 @@ fn visit_stmt(n: &Stmt, scope: &mut Scope) {
 
             match decl {
                 Decl::Fn(n) => {
-                    // TODO: capture function parameters as locales
-                    // TODO: recurse into function body
+                    let mut next_scope = Scope::new();
+
+                    // Function name is considered local
+                    next_scope.locals.insert(n.ident.sym.clone());
+
+                    // Capture function parameters as locals
+                    for param in n.function.params.iter() {
+                        let mut names = Vec::new();
+                        pattern_words(&param.pat, &mut names);
+                        for name in names.drain(..) {
+                            next_scope.locals.insert(name.clone());
+                        }
+                    }
+
+                    if let Some(ref body) = n.function.body {
+                        let block_stmt = Stmt::Block(body.clone());
+                        visit_stmt(&block_stmt, &mut next_scope);
+                    }
+
+                    scope.scopes.push(next_scope);
                 }
                 _ => {}
             }
@@ -201,28 +219,33 @@ fn visit_stmt(n: &Stmt, scope: &mut Scope) {
         // that may be global variables.
         Stmt::Expr(n) => match &*n.expr {
             Expr::Update(_) => {
-
+                todo!()
             }
             Expr::Assign(assign) => {
                 match &assign.left {
                     PatOrExpr::Expr(expr) => match &**expr {
                         Expr::Ident(ident) => {
-                            println!("GOT IDENTITY REFERENCE ON LHS");
+                            scope.idents.insert(ident.sym.clone());
                         }
                         _ => {}
                     }
-                    _ => {}
+                    PatOrExpr::Pat(pat) => match &**pat {
+                        Pat::Ident(ident) => {
+                            scope.idents.insert(ident.id.sym.clone());
+                        }
+                        _ => {}
+                    }
                 }
 
                 match &*assign.right {
                     Expr::Ident(ident) => {
-                        println!("GOT IDENTITY REFERENCE ON RHS");
+                        scope.idents.insert(ident.sym.clone());
                     }
                     _ => {}
                 }
             }
             Expr::New(_) => {
-
+                todo!()
             }
             _ => {}
         }

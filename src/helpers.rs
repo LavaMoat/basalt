@@ -32,7 +32,8 @@ pub fn var_symbol_names(var: &VarDecl) -> Vec<(&VarDeclarator, Vec<&str>)> {
         .collect()
 }
 
-fn pattern_words<'a>(pat: &'a Pat, names: &mut Vec<&'a JsWord>) {
+/// Recursively fill names with all the symbols in a pattern.
+pub fn pattern_words<'a>(pat: &'a Pat, names: &mut Vec<&'a JsWord>) {
     match pat {
         Pat::Ident(binding) => names.push(&binding.id.sym),
         Pat::Object(obj) => {

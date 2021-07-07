@@ -21,7 +21,7 @@ if (1) {
   const else_foo;
 }
 
-function baz() {
+function baz(arg1) {
   const local_qux = document;
   document = baz;
 }
