@@ -74,3 +74,15 @@ fn globals_var_decl() -> Result<()> {
     assert_eq!(expected.trim_end(), result);
     Ok(())
 }
+
+#[test]
+fn globals_var_destructure_decl() -> Result<()> {
+    let expected =
+        std::fs::read_to_string("tests/globals/var-destructure-decl/output.json")?;
+    let analysis = analyze(PathBuf::from("tests/globals/var-destructure-decl/input.js"))?;
+    let globals = analysis.globals();
+    let result = serde_json::to_string_pretty(&globals)?;
+    //println!("{}", result);
+    assert_eq!(expected.trim_end(), result);
+    Ok(())
+}

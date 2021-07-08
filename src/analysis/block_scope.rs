@@ -53,20 +53,34 @@ impl ScopeAnalysis {
     /// Compute the global variables.
     pub fn globals(&self) -> IndexSet<JsWord> {
         let mut global_symbols: IndexSet<JsWord> = Default::default();
-        self.compute_globals(&self.root, &mut global_symbols);
+        self.compute_globals(&self.root, &mut global_symbols, &mut vec![]);
         global_symbols
     }
 
-    fn compute_globals(
+    fn compute_globals<'a>(
         &self,
-        scope: &Scope,
+        scope: &'a Scope,
         global_symbols: &mut IndexSet<JsWord>,
+        locals_stack: &mut Vec<&'a IndexSet<JsWord>>,
     ) {
+        locals_stack.push(&scope.locals);
+
+        let mut combined_locals: IndexSet<JsWord> = Default::default();
+        for locals in locals_stack.iter() {
+            combined_locals = combined_locals.union(locals).cloned().collect();
+        }
+
         let mut diff: IndexSet<JsWord> =
-            scope.idents.difference(&scope.locals).cloned().collect();
+            scope.idents.difference(&combined_locals).cloned().collect();
         for sym in diff.drain(..) {
             global_symbols.insert(sym);
         }
+
+        for scope in scope.scopes.iter() {
+            self.compute_globals(scope, global_symbols, locals_stack);
+        }
+
+        locals_stack.pop();
     }
 }
 
