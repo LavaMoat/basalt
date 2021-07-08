@@ -86,3 +86,39 @@ fn globals_var_destructure_decl() -> Result<()> {
     assert_eq!(expected.trim_end(), result);
     Ok(())
 }
+
+#[test]
+fn globals_scope_block_body() -> Result<()> {
+    let expected =
+        std::fs::read_to_string("tests/globals/scope/block-body/output.json")?;
+    let analysis = analyze(PathBuf::from("tests/globals/scope/block-body/input.js"))?;
+    let globals = analysis.globals();
+    let result = serde_json::to_string_pretty(&globals)?;
+    //println!("{}", result);
+    assert_eq!(expected.trim_end(), result);
+    Ok(())
+}
+
+#[test]
+fn globals_scope_function_body() -> Result<()> {
+    let expected =
+        std::fs::read_to_string("tests/globals/scope/function-body/output.json")?;
+    let analysis = analyze(PathBuf::from("tests/globals/scope/function-body/input.js"))?;
+    let globals = analysis.globals();
+    let result = serde_json::to_string_pretty(&globals)?;
+    //println!("{}", result);
+    assert_eq!(expected.trim_end(), result);
+    Ok(())
+}
+
+#[test]
+fn globals_scope_with_body() -> Result<()> {
+    let expected =
+        std::fs::read_to_string("tests/globals/scope/with-body/output.json")?;
+    let analysis = analyze(PathBuf::from("tests/globals/scope/with-body/input.js"))?;
+    let globals = analysis.globals();
+    let result = serde_json::to_string_pretty(&globals)?;
+    //println!("{}", result);
+    assert_eq!(expected.trim_end(), result);
+    Ok(())
+}

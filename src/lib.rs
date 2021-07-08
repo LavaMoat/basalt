@@ -48,7 +48,10 @@ pub fn meta(file: PathBuf) -> Result<()> {
 }
 
 /// Print the symbols in a module.
-pub fn symbols(file: PathBuf, globals_only: bool) -> Result<()> {
+///
+/// By default it prints the global symbols in a module, if the
+/// debug option is given the scope tree is printed.
+pub fn symbols(file: PathBuf, debug: bool) -> Result<()> {
     if !file.is_file() {
         bail!("Module {} does not exist or is not a file", file.display());
     }
@@ -57,31 +60,12 @@ pub fn symbols(file: PathBuf, globals_only: bool) -> Result<()> {
     let (_, _, module) = crate::swc_utils::load_file(&file)?;
     module.visit_children_with(&mut block_scope);
 
-    println!("{:#?}", block_scope);
-
-    /*
-    let mut local_global: LocalGlobalAnalysis = Default::default();
-    let (_, _, module) = crate::swc_utils::load_file(&file)?;
-    module.visit_all_children_with(&mut local_global);
-
-    println!("{}", file.display());
-
-    let globals = local_global.globals();
-    if globals_only {
-        for key in globals {
-            println!("{}", key);
-        }
+    if debug {
+        println!("{:#?}", block_scope);
     } else {
-        for (key, _ident) in local_global.idents() {
-            let meta = if globals.contains(key) {
-                "global"
-            } else {
-                "local"
-            };
-            println!("{} ({})", key, meta);
-        }
+        let globals = block_scope.globals();
+        println!("{}", serde_json::to_string_pretty(&globals)?);
     }
-    */
 
     Ok(())
 }
