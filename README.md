@@ -52,6 +52,26 @@ To print the static module record functor for a file:
 cargo +nightly run -- transform tests/fixtures/static-module-record/main.js
 ```
 
+Use the `--json` options for a JSON document containing both the `meta` data and functor `program`:
+
+```
+cargo +nightly run -- transform tests/fixtures/static-module-record/main.js -j
+```
+
+## Symbols
+
+To print the global variables for a module:
+
+```
+cargo +nightly run -- symbols tests/fixtures/globals/main.js
+```
+
+To print the scope tree used to compute the globals use the `--debug` option:
+
+```
+cargo +nightly run -- symbols tests/fixtures/globals/main.js -d
+```
+
 ### Compartment Mapper
 
 To test the static module record transform in the context of the [compartment-mapper][] create a release build and copy `target/release/basalt` into `PATH`.
