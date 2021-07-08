@@ -1,7 +1,6 @@
 //! Parse static module record meta data.
 use anyhow::Result;
 
-use swc_atoms::JsWord;
 use swc_ecma_ast::*;
 use swc_ecma_visit::{VisitAllWith, VisitWith};
 

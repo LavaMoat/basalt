@@ -6,7 +6,7 @@ use swc_ecma_ast::*;
 use swc_ecma_visit::{Node, Visit};
 use swc_common::DUMMY_SP;
 
-use indexmap::{IndexMap, IndexSet};
+use indexmap::IndexSet;
 
 use crate::helpers::{var_symbol_words, pattern_words};
 
@@ -233,6 +233,25 @@ fn visit_stmt(n: &Stmt, scope: &mut Scope) {
         Stmt::Expr(n) => match &*n.expr {
             Expr::Ident(n) => {
                 scope.idents.insert(n.sym.clone());
+            }
+            Expr::Await(n) => {
+                let expr_stmt = Stmt::Expr(ExprStmt {
+                    span: DUMMY_SP,
+                    expr: n.arg.clone(),
+                });
+                visit_stmt(&expr_stmt, scope);
+            }
+            Expr::Call(n) => {
+                match &n.callee {
+                    ExprOrSuper::Expr(expr) => {
+                        let expr_stmt = Stmt::Expr(ExprStmt {
+                            span: DUMMY_SP,
+                            expr: expr.clone(),
+                        });
+                        visit_stmt(&expr_stmt, scope);
+                    }
+                    _ => {}
+                }
             }
             Expr::Update(n) => {
                 let expr_stmt = Stmt::Expr(ExprStmt {

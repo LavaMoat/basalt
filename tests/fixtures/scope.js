@@ -4,6 +4,11 @@ import foo from './foo.js';
 
 const xhr = new XMLHttpRequest();
 
+//const load = async () => {
+async function load() {
+  const result = await fetch('https://foo.com/bar');
+}
+
 switch(1) {
   case 1:
     const case_foo;
