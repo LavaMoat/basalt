@@ -1,5 +1,6 @@
-//! Analyze the lexical scopes for a module and generate blocks
-//! containing the local symbols.
+//! Analyze the lexical scopes for a module and generate a tree
+//! containing the local symbols and a list of identities which are
+//! symbol references that maybe global variables.
 
 use swc_atoms::JsWord;
 use swc_common::DUMMY_SP;
@@ -46,6 +47,25 @@ impl ScopeAnalysis {
     pub fn new() -> Self {
         Self {
             root: Scope::new(None),
+        }
+    }
+
+    /// Compute the global variables.
+    pub fn globals(&self) -> IndexSet<JsWord> {
+        let mut global_symbols: IndexSet<JsWord> = Default::default();
+        self.compute_globals(&self.root, &mut global_symbols);
+        global_symbols
+    }
+
+    fn compute_globals(
+        &self,
+        scope: &Scope,
+        global_symbols: &mut IndexSet<JsWord>,
+    ) {
+        let mut diff: IndexSet<JsWord> =
+            scope.idents.difference(&scope.locals).cloned().collect();
+        for sym in diff.drain(..) {
+            global_symbols.insert(sym);
         }
     }
 }

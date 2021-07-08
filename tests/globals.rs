@@ -1,15 +1,15 @@
 use anyhow::Result;
 use std::path::PathBuf;
 
-use basalt::analysis::local_global::LocalGlobalAnalysis;
+use basalt::analysis::block_scope::ScopeAnalysis;
 
-use swc_ecma_visit::VisitAllWith;
+use swc_ecma_visit::VisitWith;
 
-fn analyze(file: PathBuf) -> Result<LocalGlobalAnalysis> {
-    let mut local_global: LocalGlobalAnalysis = Default::default();
+fn analyze(file: PathBuf) -> Result<ScopeAnalysis> {
+    let mut analyzer = ScopeAnalysis::new();
     let (_, _, module) = basalt::swc_utils::load_file(&file)?;
-    module.visit_all_children_with(&mut local_global);
-    Ok(local_global)
+    module.visit_children_with(&mut analyzer);
+    Ok(analyzer)
 }
 
 #[test]

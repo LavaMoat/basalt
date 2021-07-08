@@ -8,7 +8,7 @@ use std::path::PathBuf;
 
 use anyhow::{bail, Result};
 
-use swc_ecma_visit::{VisitAllWith, VisitWith};
+use swc_ecma_visit::VisitWith;
 
 pub mod analysis;
 pub mod helpers;
@@ -22,7 +22,6 @@ pub use static_module_record::{
 };
 
 use analysis::block_scope::ScopeAnalysis;
-use analysis::local_global::LocalGlobalAnalysis;
 
 /// List all modules.
 pub fn list(file: PathBuf, include_file: bool) -> Result<()> {
