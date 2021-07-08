@@ -1,11 +1,11 @@
 //import foo from './foo.js';
 
-//++globalInt;
+++globalInt;
 
-//const xhr = new XMLHttpRequest();
+const xhr = new XMLHttpRequest();
 
 const load = async (arg1) => {
-//async function load() {
+//async function load(arg1) {
   const result = await fetch('https://foo.com/bar');
 }
 

@@ -73,8 +73,6 @@ impl Visit for ScopeAnalysis {
 }
 
 fn visit_stmt(n: &Stmt, scope: &mut Scope, locals: Option<IndexSet<JsWord>>) {
-    //println!("{:#?}", n);
-
     match n {
         Stmt::Decl(decl) => {
             let result = match decl {
@@ -130,8 +128,6 @@ fn visit_stmt(n: &Stmt, scope: &mut Scope, locals: Option<IndexSet<JsWord>>) {
                         let block_stmt = Stmt::Block(body.clone());
                         visit_stmt(&block_stmt, scope, Some(func_param_names));
                     }
-
-                    //scope.scopes.push(next_scope);
                 }
                 _ => {}
             }
@@ -218,94 +214,83 @@ fn visit_stmt(n: &Stmt, scope: &mut Scope, locals: Option<IndexSet<JsWord>>) {
             }
             scope.scopes.push(next_scope);
         }
-        // Find ident references which is the list of candidates
-        // that may be global variables.
-        Stmt::Expr(n) => match &*n.expr {
-            Expr::Ident(n) => {
-                scope.idents.insert(n.sym.clone());
-            }
-            Expr::Await(n) => {
-                let expr_stmt = Stmt::Expr(ExprStmt {
-                    span: DUMMY_SP,
-                    expr: n.arg.clone(),
-                });
-                visit_stmt(&expr_stmt, scope, None);
-            }
-            Expr::Arrow(n) => {
-                let mut func_param_names: IndexSet<JsWord> = Default::default();
+        // Find symbol references which is the list of candidates
+        // that may be global (or local) variable references.
+        Stmt::Expr(n) => visit_expr(&*n.expr, scope),
+        _ => {}
+    }
+}
 
-                // Capture arrow function parameters as locals
-                for pat in n.params.iter() {
-                    let mut names = Vec::new();
-                    pattern_words(pat, &mut names);
-                    let param_names: IndexSet<_> =
-                        names.into_iter().map(|n| n.clone()).collect();
-                    func_param_names =
-                        func_param_names.union(&param_names).cloned().collect();
-                }
+fn visit_expr(n: &Expr, scope: &mut Scope) {
+    match n {
+        Expr::Ident(n) => {
+            scope.idents.insert(n.sym.clone());
+        }
+        Expr::Await(n) => {
+            visit_expr(&n.arg, scope);
+        }
+        Expr::Arrow(n) => {
+            let mut func_param_names: IndexSet<JsWord> = Default::default();
 
-                match &n.body {
-                    BlockStmtOrExpr::BlockStmt(block) => {
-                        let block_stmt = Stmt::Block(block.clone());
-                        visit_stmt(&block_stmt, scope, Some(func_param_names));
-                    }
-                    BlockStmtOrExpr::Expr(expr) => {
-                        let expr_stmt = Stmt::Expr(ExprStmt {
-                            span: DUMMY_SP,
-                            expr: expr.clone(),
-                        });
-                        visit_stmt(&expr_stmt, scope, Some(func_param_names));
-                    }
-                }
+            // Capture arrow function parameters as locals
+            for pat in n.params.iter() {
+                let mut names = Vec::new();
+                pattern_words(pat, &mut names);
+                let param_names: IndexSet<_> =
+                    names.into_iter().map(|n| n.clone()).collect();
+                func_param_names =
+                    func_param_names.union(&param_names).cloned().collect();
             }
-            Expr::Call(n) => match &n.callee {
-                ExprOrSuper::Expr(expr) => {
+
+            match &n.body {
+                BlockStmtOrExpr::BlockStmt(block) => {
+                    let block_stmt = Stmt::Block(block.clone());
+                    visit_stmt(&block_stmt, scope, Some(func_param_names));
+                }
+                BlockStmtOrExpr::Expr(expr) => {
                     let expr_stmt = Stmt::Expr(ExprStmt {
                         span: DUMMY_SP,
                         expr: expr.clone(),
                     });
-                    visit_stmt(&expr_stmt, scope, None);
-                }
-                _ => {}
-            },
-            Expr::Update(n) => {
-                let expr_stmt = Stmt::Expr(ExprStmt {
-                    span: DUMMY_SP,
-                    expr: n.arg.clone(),
-                });
-                visit_stmt(&expr_stmt, scope, None);
-            }
-            Expr::Assign(assign) => {
-                match &assign.left {
-                    PatOrExpr::Expr(expr) => match &**expr {
-                        Expr::Ident(ident) => {
-                            scope.idents.insert(ident.sym.clone());
-                        }
-                        _ => {}
-                    },
-                    PatOrExpr::Pat(pat) => match &**pat {
-                        Pat::Ident(ident) => {
-                            scope.idents.insert(ident.id.sym.clone());
-                        }
-                        _ => {}
-                    },
-                }
-
-                match &*assign.right {
-                    Expr::Ident(ident) => {
-                        scope.idents.insert(ident.sym.clone());
-                    }
-                    _ => {}
+                    visit_stmt(&expr_stmt, scope, Some(func_param_names));
                 }
             }
-            Expr::New(n) => match &*n.callee {
-                Expr::Ident(ident) => {
-                    scope.idents.insert(ident.sym.clone());
-                }
-                _ => {}
-            },
+        }
+        Expr::Call(n) => match &n.callee {
+            ExprOrSuper::Expr(expr) => {
+                visit_expr(expr, scope);
+            }
             _ => {}
         },
+        Expr::Update(n) => {
+            visit_expr(&n.arg, scope);
+        }
+        Expr::Assign(assign) => {
+            match &assign.left {
+                PatOrExpr::Expr(expr) => {
+                    visit_expr(expr, scope);
+                }
+                PatOrExpr::Pat(pat) => match &**pat {
+                    Pat::Ident(ident) => {
+                        scope.idents.insert(ident.id.sym.clone());
+                    }
+                    _ => {}
+                },
+            }
+            visit_expr(&*assign.right, scope);
+        }
+        Expr::Member(n) => {
+            match &n.obj {
+                ExprOrSuper::Expr(expr) => {
+                    visit_expr(expr, scope);
+                }
+                _ => {}
+            }
+            visit_expr(&*n.prop, scope);
+        }
+        Expr::New(n) => {
+            visit_expr(&*n.callee, scope);
+        }
         _ => {}
     }
 }
