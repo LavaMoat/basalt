@@ -186,3 +186,55 @@ fn globals_scope_for_body() -> Result<()> {
     assert_eq!(expected.trim_end(), result);
     Ok(())
 }
+
+#[test]
+fn globals_scope_for_in_body() -> Result<()> {
+    let expected =
+        std::fs::read_to_string("tests/globals/scope/for-in-body/output.json")?;
+    let analysis =
+        analyze(PathBuf::from("tests/globals/scope/for-in-body/input.js"))?;
+    let globals = analysis.globals();
+    let result = serde_json::to_string_pretty(&globals)?;
+    //println!("{}", result);
+    assert_eq!(expected.trim_end(), result);
+    Ok(())
+}
+
+#[test]
+fn globals_scope_for_of_body() -> Result<()> {
+    let expected =
+        std::fs::read_to_string("tests/globals/scope/for-of-body/output.json")?;
+    let analysis =
+        analyze(PathBuf::from("tests/globals/scope/for-of-body/input.js"))?;
+    let globals = analysis.globals();
+    let result = serde_json::to_string_pretty(&globals)?;
+    //println!("{}", result);
+    assert_eq!(expected.trim_end(), result);
+    Ok(())
+}
+
+#[test]
+fn globals_scope_if_else_if_else() -> Result<()> {
+    let expected =
+        std::fs::read_to_string("tests/globals/scope/if-else-if-else/output.json")?;
+    let analysis =
+        analyze(PathBuf::from("tests/globals/scope/if-else-if-else/input.js"))?;
+    let globals = analysis.globals();
+    let result = serde_json::to_string_pretty(&globals)?;
+    //println!("{}", result);
+    assert_eq!(expected.trim_end(), result);
+    Ok(())
+}
+
+#[test]
+fn globals_scope_try_catch_finally() -> Result<()> {
+    let expected =
+        std::fs::read_to_string("tests/globals/scope/try-catch-finally/output.json")?;
+    let analysis =
+        analyze(PathBuf::from("tests/globals/scope/try-catch-finally/input.js"))?;
+    let globals = analysis.globals();
+    let result = serde_json::to_string_pretty(&globals)?;
+    //println!("{}", result);
+    assert_eq!(expected.trim_end(), result);
+    Ok(())
+}
