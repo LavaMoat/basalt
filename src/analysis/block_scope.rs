@@ -163,6 +163,9 @@ fn visit_stmt(n: &Stmt, scope: &mut Scope, locals: Option<IndexSet<JsWord>>) {
                         visit_stmt(&block_stmt, scope, Some(func_param_names));
                     }
                 }
+                Decl::Class(n) => {
+                    visit_class(&n.class, scope, None);
+                }
                 _ => {}
             }
         }
@@ -341,10 +344,66 @@ fn visit_expr(n: &Expr, scope: &mut Scope) {
         Expr::New(n) => {
             visit_expr(&*n.callee, scope);
         }
+        Expr::Class(n) => {
+            // Class expressions with a named identifer like:
+            //
+            // const Foo = class FooNamed {}
+            //
+            // Only expose the class name (FooNamed) to the inner
+            // scope so we pass in the locals.
+            let locals = n.ident.as_ref().map(|id| {
+                let mut set = IndexSet::new();
+                set.insert(id.sym.clone());
+                set
+            });
+            visit_class(&n.class, scope, locals);
+        }
         _ => {}
     }
 }
 
-fn visit_class(n: &Expr, scope: &mut Scope) {
+fn visit_class(n: &Class, scope: &mut Scope, locals: Option<IndexSet<JsWord>>) {
+    let mut next_scope = Scope::new(locals);
 
+    // In case the super class reference is a global
+    if let Some(ref super_class) = n.super_class {
+        visit_expr(&*super_class, scope);
+    }
+
+    for member in n.body.iter() {
+        match member {
+            ClassMember::Constructor(n) => {
+                if let Some(body) = &n.body {
+                    let block_stmt = Stmt::Block(body.clone());
+                    visit_stmt(&block_stmt, &mut next_scope, None);
+                }
+            }
+            ClassMember::ClassProp(n) => {
+                if !n.is_static {
+                    // TODO: Should we handle other types of expressions here?
+                    match &*n.key {
+                        Expr::Ident(ident) => {
+                            scope.locals.insert(ident.sym.clone());
+                        }
+                        _ => {}
+                    }
+                    if let Some(value) = &n.value {
+                        visit_expr(value, &mut next_scope);
+                    }
+                }
+            }
+            ClassMember::PrivateProp(n) => {
+                if !n.is_static {
+                    scope.locals.insert(n.key.id.sym.clone());
+
+                    if let Some(value) = &n.value {
+                        visit_expr(value, &mut next_scope);
+                    }
+                }
+            }
+            _ => {}
+        }
+    }
+
+    scope.scopes.push(next_scope);
 }
