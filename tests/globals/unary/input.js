@@ -1,0 +1,1 @@
+const kind = typeof document;

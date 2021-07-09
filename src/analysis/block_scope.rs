@@ -312,6 +312,9 @@ fn visit_expr(n: &Expr, scope: &mut Scope) {
         Expr::Update(n) => {
             visit_expr(&n.arg, scope);
         }
+        Expr::Unary(n) => {
+            visit_expr(&n.arg, scope);
+        }
         Expr::Assign(assign) => {
             match &assign.left {
                 PatOrExpr::Expr(expr) => {
@@ -340,4 +343,8 @@ fn visit_expr(n: &Expr, scope: &mut Scope) {
         }
         _ => {}
     }
+}
+
+fn visit_class(n: &Expr, scope: &mut Scope) {
+
 }
