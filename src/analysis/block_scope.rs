@@ -260,6 +260,14 @@ fn visit_expr(n: &Expr, scope: &mut Scope) {
         Expr::Ident(n) => {
             scope.idents.insert(n.sym.clone());
         }
+        Expr::Paren(n) => {
+            visit_expr(&n.expr, scope);
+        }
+        Expr::Yield(n) => {
+            if let Some(ref arg) = n.arg {
+                visit_expr(arg, scope);
+            }
+        }
         Expr::Await(n) => {
             visit_expr(&n.arg, scope);
         }
