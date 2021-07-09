@@ -63,9 +63,7 @@ fn main() -> Result<()> {
         } => {
             list(module, include_file)?;
         }
-        BasaltCommands::Symbols { module, debug} => {
-            symbols(module, debug)?
-        }
+        BasaltCommands::Symbols { module, debug } => symbols(module, debug)?,
         BasaltCommands::Meta { module } => meta(module)?,
         BasaltCommands::Transform { module, json } => transform(module, json)?,
     }
