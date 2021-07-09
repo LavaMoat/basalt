@@ -268,6 +268,11 @@ fn visit_expr(n: &Expr, scope: &mut Scope) {
                 visit_expr(arg, scope);
             }
         }
+        Expr::Cond(n) => {
+            visit_expr(&*n.test, scope);
+            visit_expr(&*n.cons, scope);
+            visit_expr(&*n.alt, scope);
+        }
         Expr::Await(n) => {
             visit_expr(&n.arg, scope);
         }
