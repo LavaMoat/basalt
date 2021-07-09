@@ -238,3 +238,55 @@ fn globals_scope_try_catch_finally() -> Result<()> {
     assert_eq!(expected.trim_end(), result);
     Ok(())
 }
+
+#[test]
+fn globals_update() -> Result<()> {
+    let expected =
+        std::fs::read_to_string("tests/globals/update/output.json")?;
+    let analysis =
+        analyze(PathBuf::from("tests/globals/update/input.js"))?;
+    let globals = analysis.globals();
+    let result = serde_json::to_string_pretty(&globals)?;
+    //println!("{}", result);
+    assert_eq!(expected.trim_end(), result);
+    Ok(())
+}
+
+#[test]
+fn globals_new() -> Result<()> {
+    let expected =
+        std::fs::read_to_string("tests/globals/new/output.json")?;
+    let analysis =
+        analyze(PathBuf::from("tests/globals/new/input.js"))?;
+    let globals = analysis.globals();
+    let result = serde_json::to_string_pretty(&globals)?;
+    //println!("{}", result);
+    assert_eq!(expected.trim_end(), result);
+    Ok(())
+}
+
+#[test]
+fn globals_func_expr() -> Result<()> {
+    let expected =
+        std::fs::read_to_string("tests/globals/func-expr/output.json")?;
+    let analysis =
+        analyze(PathBuf::from("tests/globals/func-expr/input.js"))?;
+    let globals = analysis.globals();
+    let result = serde_json::to_string_pretty(&globals)?;
+    //println!("{}", result);
+    assert_eq!(expected.trim_end(), result);
+    Ok(())
+}
+
+#[test]
+fn globals_async_func_expr() -> Result<()> {
+    let expected =
+        std::fs::read_to_string("tests/globals/async-func-expr/output.json")?;
+    let analysis =
+        analyze(PathBuf::from("tests/globals/async-func-expr/input.js"))?;
+    let globals = analysis.globals();
+    let result = serde_json::to_string_pretty(&globals)?;
+    //println!("{}", result);
+    assert_eq!(expected.trim_end(), result);
+    Ok(())
+}
