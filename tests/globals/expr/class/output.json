@@ -1,4 +1,6 @@
 [
   "XMLHttpRequest",
-  "document"
+  "document",
+  "console",
+  "window"
 ]

@@ -6,7 +6,12 @@ const Foo = class FooNamed {
     const doc = document;
   }
 
-  #privateFunc() {
+  someMethod(arg1) {
+    let ref = arg1;
+    const cons = console;
+  }
 
+  #privateFunc() {
+    const win = window;
   }
 }

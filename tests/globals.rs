@@ -163,8 +163,9 @@ fn globals_scope_while_body() -> Result<()> {
 
 #[test]
 fn globals_scope_do_while_body() -> Result<()> {
-    let expected =
-        std::fs::read_to_string("tests/globals/scope/do-while-body/output.json")?;
+    let expected = std::fs::read_to_string(
+        "tests/globals/scope/do-while-body/output.json",
+    )?;
     let analysis =
         analyze(PathBuf::from("tests/globals/scope/do-while-body/input.js"))?;
     let globals = analysis.globals();
@@ -215,10 +216,12 @@ fn globals_scope_for_of_body() -> Result<()> {
 
 #[test]
 fn globals_scope_if_else_if_else() -> Result<()> {
-    let expected =
-        std::fs::read_to_string("tests/globals/scope/if-else-if-else/output.json")?;
-    let analysis =
-        analyze(PathBuf::from("tests/globals/scope/if-else-if-else/input.js"))?;
+    let expected = std::fs::read_to_string(
+        "tests/globals/scope/if-else-if-else/output.json",
+    )?;
+    let analysis = analyze(PathBuf::from(
+        "tests/globals/scope/if-else-if-else/input.js",
+    ))?;
     let globals = analysis.globals();
     let result = serde_json::to_string_pretty(&globals)?;
     //println!("{}", result);
@@ -228,10 +231,12 @@ fn globals_scope_if_else_if_else() -> Result<()> {
 
 #[test]
 fn globals_scope_try_catch_finally() -> Result<()> {
-    let expected =
-        std::fs::read_to_string("tests/globals/scope/try-catch-finally/output.json")?;
-    let analysis =
-        analyze(PathBuf::from("tests/globals/scope/try-catch-finally/input.js"))?;
+    let expected = std::fs::read_to_string(
+        "tests/globals/scope/try-catch-finally/output.json",
+    )?;
+    let analysis = analyze(PathBuf::from(
+        "tests/globals/scope/try-catch-finally/input.js",
+    ))?;
     let globals = analysis.globals();
     let result = serde_json::to_string_pretty(&globals)?;
     //println!("{}", result);
@@ -256,8 +261,7 @@ fn globals_expr_update() -> Result<()> {
 fn globals_expr_new() -> Result<()> {
     let expected =
         std::fs::read_to_string("tests/globals/expr/new/output.json")?;
-    let analysis =
-        analyze(PathBuf::from("tests/globals/expr/new/input.js"))?;
+    let analysis = analyze(PathBuf::from("tests/globals/expr/new/input.js"))?;
     let globals = analysis.globals();
     let result = serde_json::to_string_pretty(&globals)?;
     //println!("{}", result);
@@ -280,10 +284,12 @@ fn globals_expr_arrow_func() -> Result<()> {
 
 #[test]
 fn globals_expr_async_arrow_func() -> Result<()> {
-    let expected =
-        std::fs::read_to_string("tests/globals/expr/async-arrow-func/output.json")?;
-    let analysis =
-        analyze(PathBuf::from("tests/globals/expr/async-arrow-func/input.js"))?;
+    let expected = std::fs::read_to_string(
+        "tests/globals/expr/async-arrow-func/output.json",
+    )?;
+    let analysis = analyze(PathBuf::from(
+        "tests/globals/expr/async-arrow-func/input.js",
+    ))?;
     let globals = analysis.globals();
     let result = serde_json::to_string_pretty(&globals)?;
     //println!("{}", result);
@@ -295,8 +301,7 @@ fn globals_expr_async_arrow_func() -> Result<()> {
 fn globals_expr_paren() -> Result<()> {
     let expected =
         std::fs::read_to_string("tests/globals/expr/paren/output.json")?;
-    let analysis =
-        analyze(PathBuf::from("tests/globals/expr/paren/input.js"))?;
+    let analysis = analyze(PathBuf::from("tests/globals/expr/paren/input.js"))?;
     let globals = analysis.globals();
     let result = serde_json::to_string_pretty(&globals)?;
     //println!("{}", result);
@@ -308,8 +313,7 @@ fn globals_expr_paren() -> Result<()> {
 fn globals_expr_yield() -> Result<()> {
     let expected =
         std::fs::read_to_string("tests/globals/expr/yield/output.json")?;
-    let analysis =
-        analyze(PathBuf::from("tests/globals/expr/yield/input.js"))?;
+    let analysis = analyze(PathBuf::from("tests/globals/expr/yield/input.js"))?;
     let globals = analysis.globals();
     let result = serde_json::to_string_pretty(&globals)?;
     //println!("{}", result);
@@ -347,8 +351,7 @@ fn globals_expr_assign() -> Result<()> {
 fn globals_expr_unary() -> Result<()> {
     let expected =
         std::fs::read_to_string("tests/globals/expr/unary/output.json")?;
-    let analysis =
-        analyze(PathBuf::from("tests/globals/expr/unary/input.js"))?;
+    let analysis = analyze(PathBuf::from("tests/globals/expr/unary/input.js"))?;
     let globals = analysis.globals();
     let result = serde_json::to_string_pretty(&globals)?;
     //println!("{}", result);
@@ -360,8 +363,7 @@ fn globals_expr_unary() -> Result<()> {
 fn globals_expr_class() -> Result<()> {
     let expected =
         std::fs::read_to_string("tests/globals/expr/class/output.json")?;
-    let analysis =
-        analyze(PathBuf::from("tests/globals/expr/class/input.js"))?;
+    let analysis = analyze(PathBuf::from("tests/globals/expr/class/input.js"))?;
     let globals = analysis.globals();
     let result = serde_json::to_string_pretty(&globals)?;
     //println!("{}", result);

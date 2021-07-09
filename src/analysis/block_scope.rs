@@ -141,27 +141,7 @@ fn visit_stmt(n: &Stmt, scope: &mut Scope, locals: Option<IndexSet<JsWord>>) {
 
             match decl {
                 Decl::Fn(n) => {
-                    let mut func_param_names: IndexSet<JsWord> =
-                        Default::default();
-
-                    // Capture function parameters as locals
-                    for param in n.function.params.iter() {
-                        let mut names = Vec::new();
-                        pattern_words(&param.pat, &mut names);
-
-                        let param_names: IndexSet<_> =
-                            names.into_iter().map(|n| n.clone()).collect();
-
-                        func_param_names = func_param_names
-                            .union(&param_names)
-                            .cloned()
-                            .collect();
-                    }
-
-                    if let Some(ref body) = n.function.body {
-                        let block_stmt = Stmt::Block(body.clone());
-                        visit_stmt(&block_stmt, scope, Some(func_param_names));
-                    }
+                    visit_function(&n.function, scope);
                 }
                 Decl::Class(n) => {
                     visit_class(&n.class, scope, None);
@@ -378,6 +358,23 @@ fn visit_class(n: &Class, scope: &mut Scope, locals: Option<IndexSet<JsWord>>) {
                     visit_stmt(&block_stmt, &mut next_scope, None);
                 }
             }
+            ClassMember::Method(n) => {
+                if !n.is_static {
+                    match &n.key {
+                        PropName::Ident(id) => {
+                            scope.locals.insert(id.sym.clone());
+                        }
+                        _ => {}
+                    }
+                    visit_function(&n.function, &mut next_scope);
+                }
+            }
+            ClassMember::PrivateMethod(n) => {
+                if !n.is_static {
+                    scope.locals.insert(n.key.id.sym.clone());
+                    visit_function(&n.function, &mut next_scope);
+                }
+            }
             ClassMember::ClassProp(n) => {
                 if !n.is_static {
                     // TODO: Should we handle other types of expressions here?
@@ -406,4 +403,25 @@ fn visit_class(n: &Class, scope: &mut Scope, locals: Option<IndexSet<JsWord>>) {
     }
 
     scope.scopes.push(next_scope);
+}
+
+fn visit_function(n: &Function, scope: &mut Scope) {
+    let mut func_param_names: IndexSet<JsWord> = Default::default();
+
+    // Capture function parameters as locals
+    for param in n.params.iter() {
+        let mut names = Vec::new();
+        pattern_words(&param.pat, &mut names);
+
+        let param_names: IndexSet<_> =
+            names.into_iter().map(|n| n.clone()).collect();
+
+        func_param_names =
+            func_param_names.union(&param_names).cloned().collect();
+    }
+
+    if let Some(ref body) = n.body {
+        let block_stmt = Stmt::Block(body.clone());
+        visit_stmt(&block_stmt, scope, Some(func_param_names));
+    }
 }
