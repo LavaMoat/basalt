@@ -141,7 +141,7 @@ fn visit_stmt(n: &Stmt, scope: &mut Scope, locals: Option<IndexSet<JsWord>>) {
 
             match decl {
                 Decl::Fn(n) => {
-                    visit_function(&n.function, scope);
+                    visit_function(&n.function, scope, Default::default());
                 }
                 Decl::Class(n) => {
                     visit_class(&n.class, scope, None);
@@ -256,17 +256,15 @@ fn visit_expr(n: &Expr, scope: &mut Scope) {
                     PropOrSpread::Spread(n) => {
                         visit_expr(&*n.expr, scope);
                     }
-                    PropOrSpread::Prop(n) => {
-                        match &**n {
-                            Prop::Shorthand(id) => {
-                                scope.idents.insert(id.sym.clone());
-                            }
-                            Prop::KeyValue(n) => {
-                                visit_expr(&*n.value, scope);
-                            }
-                            _ => {}
+                    PropOrSpread::Prop(n) => match &**n {
+                        Prop::Shorthand(id) => {
+                            scope.idents.insert(id.sym.clone());
                         }
-                    }
+                        Prop::KeyValue(n) => {
+                            visit_expr(&*n.value, scope);
+                        }
+                        _ => {}
+                    },
                 }
             }
         }
@@ -351,6 +349,20 @@ fn visit_expr(n: &Expr, scope: &mut Scope) {
         Expr::New(n) => {
             visit_expr(&*n.callee, scope);
         }
+        Expr::Fn(n) => {
+            // Named function expressions only expose the name
+            // to the inner scope like class expressions.
+            let locals = n
+                .ident
+                .as_ref()
+                .map(|id| {
+                    let mut set = IndexSet::new();
+                    set.insert(id.sym.clone());
+                    set
+                })
+                .unwrap_or_default();
+            visit_function(&n.function, scope, locals);
+        }
         Expr::Class(n) => {
             // Class expressions with a named identifer like:
             //
@@ -393,13 +405,21 @@ fn visit_class(n: &Class, scope: &mut Scope, locals: Option<IndexSet<JsWord>>) {
                         }
                         _ => {}
                     }
-                    visit_function(&n.function, &mut next_scope);
+                    visit_function(
+                        &n.function,
+                        &mut next_scope,
+                        Default::default(),
+                    );
                 }
             }
             ClassMember::PrivateMethod(n) => {
                 if !n.is_static {
                     scope.locals.insert(n.key.id.sym.clone());
-                    visit_function(&n.function, &mut next_scope);
+                    visit_function(
+                        &n.function,
+                        &mut next_scope,
+                        Default::default(),
+                    );
                 }
             }
             ClassMember::ClassProp(n) => {
@@ -419,7 +439,6 @@ fn visit_class(n: &Class, scope: &mut Scope, locals: Option<IndexSet<JsWord>>) {
             ClassMember::PrivateProp(n) => {
                 if !n.is_static {
                     scope.locals.insert(n.key.id.sym.clone());
-
                     if let Some(value) = &n.value {
                         visit_expr(value, &mut next_scope);
                     }
@@ -432,23 +451,22 @@ fn visit_class(n: &Class, scope: &mut Scope, locals: Option<IndexSet<JsWord>>) {
     scope.scopes.push(next_scope);
 }
 
-fn visit_function(n: &Function, scope: &mut Scope) {
-    let mut func_param_names: IndexSet<JsWord> = Default::default();
-
+fn visit_function(
+    n: &Function,
+    scope: &mut Scope,
+    mut locals: IndexSet<JsWord>,
+) {
     // Capture function parameters as locals
     for param in n.params.iter() {
         let mut names = Vec::new();
         pattern_words(&param.pat, &mut names);
-
         let param_names: IndexSet<_> =
             names.into_iter().map(|n| n.clone()).collect();
-
-        func_param_names =
-            func_param_names.union(&param_names).cloned().collect();
+        locals = locals.union(&param_names).cloned().collect();
     }
 
     if let Some(ref body) = n.body {
         let block_stmt = Stmt::Block(body.clone());
-        visit_stmt(&block_stmt, scope, Some(func_param_names));
+        visit_stmt(&block_stmt, scope, Some(locals));
     }
 }

@@ -375,7 +375,8 @@ fn globals_expr_class() -> Result<()> {
 fn globals_expr_array_lit() -> Result<()> {
     let expected =
         std::fs::read_to_string("tests/globals/expr/array-lit/output.json")?;
-    let analysis = analyze(PathBuf::from("tests/globals/expr/array-lit/input.js"))?;
+    let analysis =
+        analyze(PathBuf::from("tests/globals/expr/array-lit/input.js"))?;
     let globals = analysis.globals();
     let result = serde_json::to_string_pretty(&globals)?;
     //println!("{}", result);
@@ -387,7 +388,21 @@ fn globals_expr_array_lit() -> Result<()> {
 fn globals_expr_object_lit() -> Result<()> {
     let expected =
         std::fs::read_to_string("tests/globals/expr/object-lit/output.json")?;
-    let analysis = analyze(PathBuf::from("tests/globals/expr/object-lit/input.js"))?;
+    let analysis =
+        analyze(PathBuf::from("tests/globals/expr/object-lit/input.js"))?;
+    let globals = analysis.globals();
+    let result = serde_json::to_string_pretty(&globals)?;
+    //println!("{}", result);
+    assert_eq!(expected.trim_end(), result);
+    Ok(())
+}
+
+#[test]
+fn globals_expr_function() -> Result<()> {
+    let expected =
+        std::fs::read_to_string("tests/globals/expr/function/output.json")?;
+    let analysis =
+        analyze(PathBuf::from("tests/globals/expr/function/input.js"))?;
     let globals = analysis.globals();
     let result = serde_json::to_string_pretty(&globals)?;
     //println!("{}", result);
