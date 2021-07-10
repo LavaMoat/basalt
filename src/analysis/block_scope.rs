@@ -243,6 +243,13 @@ fn visit_expr(n: &Expr, scope: &mut Scope) {
         Expr::Ident(n) => {
             scope.idents.insert(n.sym.clone());
         }
+        Expr::Array(n) => {
+            for elem in n.elems.iter() {
+                if let Some(elem) = elem {
+                    visit_expr(&elem.expr, scope);
+                }
+            }
+        }
         Expr::Paren(n) => {
             visit_expr(&n.expr, scope);
         }
