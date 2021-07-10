@@ -122,11 +122,7 @@ fn visit_stmt(n: &Stmt, scope: &mut Scope, locals: Option<IndexSet<JsWord>>) {
 
                         // Recurse on variable declarations with initializers
                         if let Some(ref init) = decl.init {
-                            let expr_stmt = Stmt::Expr(ExprStmt {
-                                span: DUMMY_SP,
-                                expr: init.clone(),
-                            });
-                            visit_stmt(&expr_stmt, scope, None);
+                            visit_expr(init, scope);
                         }
                     }
                     Some(out)
