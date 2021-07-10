@@ -242,6 +242,11 @@ fn visit_expr(n: &Expr, scope: &mut Scope) {
         Expr::PrivateName(n) => {
             scope.idents.insert(private_name_prefix(&n.id.sym));
         }
+        Expr::Tpl(n) => {
+            for expr in n.exprs.iter() {
+                visit_expr(&*expr, scope);
+            }
+        }
         Expr::Array(n) => {
             for elem in n.elems.iter() {
                 if let Some(elem) = elem {

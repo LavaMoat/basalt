@@ -435,3 +435,16 @@ fn globals_expr_private_prop() -> Result<()> {
     assert_eq!(expected.trim_end(), result);
     Ok(())
 }
+
+#[test]
+fn globals_expr_template() -> Result<()> {
+    let expected =
+        std::fs::read_to_string("tests/globals/expr/template/output.json")?;
+    let analysis =
+        analyze(PathBuf::from("tests/globals/expr/template/input.js"))?;
+    let globals = analysis.globals();
+    let result = serde_json::to_string_pretty(&globals)?;
+    //println!("{}", result);
+    assert_eq!(expected.trim_end(), result);
+    Ok(())
+}
