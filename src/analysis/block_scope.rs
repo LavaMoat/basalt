@@ -240,13 +240,33 @@ fn visit_stmt(n: &Stmt, scope: &mut Scope, locals: Option<IndexSet<JsWord>>) {
 
 fn visit_expr(n: &Expr, scope: &mut Scope) {
     match n {
-        Expr::Ident(n) => {
-            scope.idents.insert(n.sym.clone());
+        Expr::Ident(id) => {
+            scope.idents.insert(id.sym.clone());
         }
         Expr::Array(n) => {
             for elem in n.elems.iter() {
                 if let Some(elem) = elem {
                     visit_expr(&elem.expr, scope);
+                }
+            }
+        }
+        Expr::Object(n) => {
+            for prop in n.props.iter() {
+                match prop {
+                    PropOrSpread::Spread(n) => {
+                        visit_expr(&*n.expr, scope);
+                    }
+                    PropOrSpread::Prop(n) => {
+                        match &**n {
+                            Prop::Shorthand(id) => {
+                                scope.idents.insert(id.sym.clone());
+                            }
+                            Prop::KeyValue(n) => {
+                                visit_expr(&*n.value, scope);
+                            }
+                            _ => {}
+                        }
+                    }
                 }
             }
         }
