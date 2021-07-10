@@ -243,6 +243,9 @@ fn visit_expr(n: &Expr, scope: &mut Scope) {
         Expr::Ident(id) => {
             scope.idents.insert(id.sym.clone());
         }
+        Expr::PrivateName(n) => {
+            scope.idents.insert(private_name_prefix(&n.id.sym));
+        }
         Expr::Array(n) => {
             for elem in n.elems.iter() {
                 if let Some(elem) = elem {
@@ -337,6 +340,10 @@ fn visit_expr(n: &Expr, scope: &mut Scope) {
             }
             visit_expr(&*assign.right, scope);
         }
+        Expr::OptChain(_) => {
+            todo!("Handle optional chaining operator: ?.");
+        }
+        // TODO: store member expression path!
         Expr::Member(n) => {
             match &n.obj {
                 ExprOrSuper::Expr(expr) => {
@@ -438,7 +445,7 @@ fn visit_class(n: &Class, scope: &mut Scope, locals: Option<IndexSet<JsWord>>) {
             }
             ClassMember::PrivateProp(n) => {
                 if !n.is_static {
-                    scope.locals.insert(n.key.id.sym.clone());
+                    scope.locals.insert(private_name_prefix(&n.key.id.sym));
                     if let Some(value) = &n.value {
                         visit_expr(value, &mut next_scope);
                     }
@@ -469,4 +476,11 @@ fn visit_function(
         let block_stmt = Stmt::Block(body.clone());
         visit_stmt(&block_stmt, scope, Some(locals));
     }
+}
+
+// The JsWord for PrivateName is stripped of the # symbol
+// but that would mean that they would incorrectly shadow
+// so we restore it.
+fn private_name_prefix(word: &JsWord) -> JsWord {
+    JsWord::from(format!("#{}", word.as_ref()))
 }
