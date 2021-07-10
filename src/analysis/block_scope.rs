@@ -109,41 +109,20 @@ impl Visit for ScopeAnalysis {
 fn visit_stmt(n: &Stmt, scope: &mut Scope, locals: Option<IndexSet<JsWord>>) {
     match n {
         Stmt::Decl(decl) => {
-            let result = match decl {
-                Decl::Fn(n) => Some(vec![&n.ident.sym]),
-                Decl::Class(n) => Some(vec![&n.ident.sym]),
-                Decl::Var(n) => {
-                    let word_list = var_symbol_words(n);
-                    let mut out = Vec::new();
-                    for (decl, words) in word_list.iter() {
-                        for word in words {
-                            out.push(*word);
-                        }
-
-                        // Recurse on variable declarations with initializers
-                        if let Some(ref init) = decl.init {
-                            visit_expr(init, scope);
-                        }
-                    }
-                    Some(out)
-                }
-                _ => None,
-            };
-            if let Some(result) = result {
-                for ident in result.into_iter() {
-                    scope.locals.insert(ident.clone());
-                }
-            }
-
             match decl {
                 Decl::Fn(n) => {
+                    scope.locals.insert(n.ident.sym.clone());
                     visit_function(&n.function, scope, Default::default());
                 }
                 Decl::Class(n) => {
+                    scope.locals.insert(n.ident.sym.clone());
                     visit_class(&n.class, scope, None);
                 }
+                Decl::Var(n) => {
+                    visit_var_decl(n, scope);
+                }
                 _ => {}
-            }
+            };
         }
         Stmt::With(n) => {
             let mut next_scope = Scope::new(None);
@@ -162,6 +141,24 @@ fn visit_stmt(n: &Stmt, scope: &mut Scope, locals: Option<IndexSet<JsWord>>) {
         }
         Stmt::For(n) => {
             let mut next_scope = Scope::new(None);
+            if let Some(init) = &n.init {
+                match init {
+                    VarDeclOrExpr::Expr(n) => {
+                        visit_expr(n, &mut next_scope);
+                    }
+                    VarDeclOrExpr::VarDecl(n) => {
+                        visit_var_decl(n, &mut next_scope);
+                    }
+                }
+            }
+
+            if let Some(test) = &n.test {
+                visit_expr(test, &mut next_scope);
+            }
+            if let Some(update) = &n.update {
+                visit_expr(update, &mut next_scope);
+            }
+
             visit_stmt(&*n.body, &mut next_scope, None);
             scope.scopes.push(next_scope);
         }
@@ -250,6 +247,12 @@ fn visit_expr(n: &Expr, scope: &mut Scope) {
         Expr::TaggedTpl(n) => {
             visit_expr(&*n.tag, scope);
             for expr in n.tpl.exprs.iter() {
+                visit_expr(&*expr, scope);
+            }
+        }
+        Expr::Seq(n) => {
+            println!("HANDLING SEQUENCE EXPRESSION...");
+            for expr in n.exprs.iter() {
                 visit_expr(&*expr, scope);
             }
         }
@@ -482,6 +485,20 @@ fn visit_function(
     if let Some(ref body) = n.body {
         let block_stmt = Stmt::Block(body.clone());
         visit_stmt(&block_stmt, scope, Some(locals));
+    }
+}
+
+fn visit_var_decl(n: &VarDecl, scope: &mut Scope) {
+    let word_list = var_symbol_words(n);
+    for (decl, words) in word_list.iter() {
+        for word in words {
+            scope.locals.insert((*word).clone());
+        }
+
+        // Recurse on variable declarations with initializers
+        if let Some(ref init) = decl.init {
+            visit_expr(init, scope);
+        }
     }
 }
 
