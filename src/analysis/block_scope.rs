@@ -247,6 +247,12 @@ fn visit_expr(n: &Expr, scope: &mut Scope) {
                 visit_expr(&*expr, scope);
             }
         }
+        Expr::TaggedTpl(n) => {
+            visit_expr(&*n.tag, scope);
+            for expr in n.tpl.exprs.iter() {
+                visit_expr(&*expr, scope);
+            }
+        }
         Expr::Array(n) => {
             for elem in n.elems.iter() {
                 if let Some(elem) = elem {
