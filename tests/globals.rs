@@ -475,3 +475,55 @@ fn globals_expr_sequence() -> Result<()> {
     assert_eq!(expected.trim_end(), result);
     Ok(())
 }
+
+#[test]
+fn globals_shadow_function_decl() -> Result<()> {
+    let expected =
+        std::fs::read_to_string("tests/globals/shadow/function-decl/output.json")?;
+    let analysis =
+        analyze(PathBuf::from("tests/globals/shadow/function-decl/input.js"))?;
+    let globals = analysis.globals();
+    let result = serde_json::to_string_pretty(&globals)?;
+    //println!("{}", result);
+    assert_eq!(expected.trim_end(), result);
+    Ok(())
+}
+
+#[test]
+fn globals_shadow_function_expr() -> Result<()> {
+    let expected =
+        std::fs::read_to_string("tests/globals/shadow/function-expr/output.json")?;
+    let analysis =
+        analyze(PathBuf::from("tests/globals/shadow/function-expr/input.js"))?;
+    let globals = analysis.globals();
+    let result = serde_json::to_string_pretty(&globals)?;
+    //println!("{}", result);
+    assert_eq!(expected.trim_end(), result);
+    Ok(())
+}
+
+#[test]
+fn globals_shadow_class_method() -> Result<()> {
+    let expected =
+        std::fs::read_to_string("tests/globals/shadow/class-method/output.json")?;
+    let analysis =
+        analyze(PathBuf::from("tests/globals/shadow/class-method/input.js"))?;
+    let globals = analysis.globals();
+    let result = serde_json::to_string_pretty(&globals)?;
+    //println!("{}", result);
+    assert_eq!(expected.trim_end(), result);
+    Ok(())
+}
+
+#[test]
+fn globals_shadow_arrow_function() -> Result<()> {
+    let expected =
+        std::fs::read_to_string("tests/globals/shadow/arrow-function/output.json")?;
+    let analysis =
+        analyze(PathBuf::from("tests/globals/shadow/arrow-function/input.js"))?;
+    let globals = analysis.globals();
+    let result = serde_json::to_string_pretty(&globals)?;
+    //println!("{}", result);
+    assert_eq!(expected.trim_end(), result);
+    Ok(())
+}
