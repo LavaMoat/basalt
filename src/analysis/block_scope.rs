@@ -229,6 +229,9 @@ fn visit_stmt(n: &Stmt, scope: &mut Scope, locals: Option<IndexSet<JsWord>>) {
                 visit_expr(arg, scope);
             }
         }
+        Stmt::Throw(n) => {
+            visit_expr(&*n.arg, scope);
+        }
         // Find symbol references which is the list of candidates
         // that may be global (or local) variable references.
         Stmt::Expr(n) => visit_expr(&*n.expr, scope),
