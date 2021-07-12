@@ -527,3 +527,16 @@ fn globals_shadow_arrow_function() -> Result<()> {
     assert_eq!(expected.trim_end(), result);
     Ok(())
 }
+
+#[test]
+fn globals_shadow_class_member() -> Result<()> {
+    let expected =
+        std::fs::read_to_string("tests/globals/shadow/class-member/output.json")?;
+    let analysis =
+        analyze(PathBuf::from("tests/globals/shadow/class-member/input.js"))?;
+    let globals = analysis.globals();
+    let result = serde_json::to_string_pretty(&globals)?;
+    //println!("{}", result);
+    assert_eq!(expected.trim_end(), result);
+    Ok(())
+}
