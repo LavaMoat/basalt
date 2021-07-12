@@ -19,8 +19,22 @@ fn visit_member<'a>(
     let mut is_visitable = !n.computed;
     match &n.obj {
         ExprOrSuper::Expr(expr) => {
-            match **expr {
+            match &**expr {
                 Expr::Ident(_) => visit_member_expr(expr, words),
+                Expr::Call(n) => {
+                    match &n.callee {
+                        ExprOrSuper::Expr(expr) => {
+                            match &**expr {
+                                Expr::Ident(id) => {
+                                    words.push(&id.sym);
+                                }
+                                _ => {}
+                            }
+                        }
+                        _ => {}
+                    }
+                    is_visitable = false;
+                }
                 // NOTE: Don't handle other expressions such as `Call`
                 // NOTE: otherwise we generate for `fetch().then()`
                 _ => {
@@ -66,6 +80,20 @@ pub enum Ref {
     /// Member expression.
     Member(MemberExpr),
 }
+
+/*
+impl PartialEq for Ref {
+    fn eq(&self, other: &Self) -> bool {
+        match (self, other) {
+            (Ref::Word(lhs), Ref::Word(rhs)) => lhs == rhs,
+            (Ref::Member(lhs), Ref::Member(rhs)) => {
+                lhs.obj == rhs.obj
+            }
+            _ => false,
+        }
+    }
+}
+*/
 
 impl Ref {
     /// Get a list of all the words for a reference.
@@ -468,15 +496,13 @@ fn visit_expr(n: &Expr, scope: &mut Scope) {
             todo!("Handle optional chaining operator: ?.");
         }
         Expr::Member(n) => {
-            // NOTE: Don't handle other expressions such as `Call`
-            // NOTE: otherwise we generate for `fetch().then()`
             match &n.obj {
                 ExprOrSuper::Expr(expr) => {
                     match **expr {
-                        Expr::Ident(_) => {
+                        Expr::This(_) => {},
+                        _ => {
                             scope.idents.insert(Ref::Member(n.clone()));
                         },
-                        _ => {},
                     }
                 }
                 _ => {}
