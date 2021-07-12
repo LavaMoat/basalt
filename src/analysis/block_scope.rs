@@ -224,6 +224,11 @@ fn visit_stmt(n: &Stmt, scope: &mut Scope, locals: Option<IndexSet<JsWord>>) {
             }
             scope.scopes.push(next_scope);
         }
+        Stmt::Return(n) => {
+            if let Some(arg) = &n.arg {
+                visit_expr(arg, scope);
+            }
+        }
         // Find symbol references which is the list of candidates
         // that may be global (or local) variable references.
         Stmt::Expr(n) => visit_expr(&*n.expr, scope),
@@ -251,7 +256,6 @@ fn visit_expr(n: &Expr, scope: &mut Scope) {
             }
         }
         Expr::Seq(n) => {
-            println!("HANDLING SEQUENCE EXPRESSION...");
             for expr in n.exprs.iter() {
                 visit_expr(&*expr, scope);
             }
