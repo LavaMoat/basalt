@@ -12,6 +12,52 @@ use serde::{Serialize, Serializer};
 
 use crate::helpers::{pattern_words, var_symbol_words};
 
+fn visit_member<'a>(
+    n: &'a MemberExpr,
+    words: &mut Vec<&'a JsWord>,
+) {
+    let mut is_visitable = !n.computed;
+    match &n.obj {
+        ExprOrSuper::Expr(expr) => {
+            match **expr {
+                Expr::Ident(_) => visit_member_expr(expr, words),
+                // NOTE: Don't handle other expressions such as `Call`
+                // NOTE: otherwise we generate for `fetch().then()`
+                _ => {
+                    is_visitable = false;
+                },
+            }
+        }
+        _ => {}
+    }
+
+    // Recurse or visit if the property is not computed.
+    //
+    // If the property were computed we would just return the parent object.
+    //
+    // console['log']('foo');
+    //
+    // Would return `console`.
+    if is_visitable {
+        match &*n.prop {
+            Expr::Member(n) => visit_member(n, words),
+            _ => visit_member_expr(&*n.prop, words),
+        }
+    }
+}
+
+fn visit_member_expr<'a>(
+    n: &'a Expr,
+    words: &mut Vec<&'a JsWord>,
+) {
+    match n {
+        Expr::Ident(id) => {
+            words.push(&id.sym);
+        }
+        _ => {}
+    }
+}
+
 /// Reference to a symbol.
 #[derive(Debug, Hash, Eq, PartialEq, Clone)]
 pub enum Ref {
@@ -26,7 +72,11 @@ impl Ref {
     pub fn words(&self) -> Vec<&JsWord> {
         match self {
             Ref::Word(word) => vec![word],
-            Ref::Member(_) => todo!(),
+            Ref::Member(n) => {
+                let mut words = Vec::new();
+                visit_member(n, &mut words);
+                words
+            }
         }
     }
 
@@ -60,7 +110,10 @@ impl Serialize for Ref {
     {
         match self {
             Ref::Word(word) => serializer.serialize_str(word.as_ref()),
-            Ref::Member(_) => serializer.serialize_str(&self.path()),
+            Ref::Member(_) => {
+                let dot_path = self.path();
+                serializer.serialize_str(&dot_path)
+            }
         }
     }
 }
@@ -415,15 +468,19 @@ fn visit_expr(n: &Expr, scope: &mut Scope) {
             todo!("Handle optional chaining operator: ?.");
         }
         Expr::Member(n) => {
+            // NOTE: Don't handle other expressions such as `Call`
+            // NOTE: otherwise we generate for `fetch().then()`
             match &n.obj {
                 ExprOrSuper::Expr(expr) => {
-                    println!("Visiting member expression...");
-                    visit_expr(expr, scope);
+                    match **expr {
+                        Expr::Ident(_) => {
+                            scope.idents.insert(Ref::Member(n.clone()));
+                        },
+                        _ => {},
+                    }
                 }
                 _ => {}
             }
-            // FIXME: store expression path!!!
-            //visit_expr(&*n.prop, scope);
         }
         Expr::New(n) => {
             visit_expr(&*n.callee, scope);
