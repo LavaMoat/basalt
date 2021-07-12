@@ -8,26 +8,80 @@ use swc_ecma_ast::*;
 use swc_ecma_visit::{Node, Visit};
 
 use indexmap::IndexSet;
+use serde::{Serialize, Serializer};
 
 use crate::helpers::{pattern_words, var_symbol_words};
 
+/// Reference to a symbol.
+#[derive(Debug, Hash, Eq, PartialEq, Clone)]
+pub enum Ref {
+    /// Simple symbol reference.
+    Word(JsWord),
+    /// Member expression.
+    Member(MemberExpr),
+}
+
+impl Ref {
+    /// Get a list of all the words for a reference.
+    pub fn words(&self) -> Vec<&JsWord> {
+        match self {
+            Ref::Word(word) => vec![word],
+            Ref::Member(_) => todo!(),
+        }
+    }
+
+    /// Get a dot-delimited path for the words in a reference.
+    pub fn path(&self) -> String {
+        let words = self
+            .words()
+            .iter()
+            .map(|w| w.as_ref().to_string())
+            .collect::<Vec<_>>();
+        words.join(".")
+    }
+}
+
+impl From<JsWord> for Ref {
+    fn from(word: JsWord) -> Self {
+        Ref::Word(word)
+    }
+}
+
+impl From<&JsWord> for Ref {
+    fn from(word: &JsWord) -> Self {
+        Ref::Word(word.clone())
+    }
+}
+
+impl Serialize for Ref {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        match self {
+            Ref::Word(word) => serializer.serialize_str(word.as_ref()),
+            Ref::Member(_) => serializer.serialize_str(&self.path()),
+        }
+    }
+}
+
 /// Lexical scope.
-#[derive(Debug, Default)]
+#[derive(Debug)]
 pub struct Scope {
     /// Scopes contained by this scope.
     scopes: Vec<Scope>,
     /// Identifiers local to this scope.
-    locals: IndexSet<JsWord>,
+    locals: IndexSet<Ref>,
     /// Identifiers that are references.
     ///
     /// These could be local or global symbols and we need
     /// to walk all parent scopes to detect if a symbol should
     /// be considered global.
-    idents: IndexSet<JsWord>,
+    idents: IndexSet<Ref>,
 }
 
 impl Scope {
-    fn new(locals: Option<IndexSet<JsWord>>) -> Self {
+    fn new(locals: Option<IndexSet<Ref>>) -> Self {
         Self {
             scopes: Default::default(),
             locals: locals.unwrap_or(Default::default()),
@@ -51,8 +105,8 @@ impl ScopeAnalysis {
     }
 
     /// Compute the global variables.
-    pub fn globals(&self) -> IndexSet<JsWord> {
-        let mut global_symbols: IndexSet<JsWord> = Default::default();
+    pub fn globals(&self) -> IndexSet<Ref> {
+        let mut global_symbols: IndexSet<Ref> = Default::default();
         self.compute_globals(&self.root, &mut global_symbols, &mut vec![]);
         global_symbols
     }
@@ -60,20 +114,20 @@ impl ScopeAnalysis {
     fn compute_globals<'a>(
         &self,
         scope: &'a Scope,
-        global_symbols: &mut IndexSet<JsWord>,
-        locals_stack: &mut Vec<&'a IndexSet<JsWord>>,
+        global_symbols: &mut IndexSet<Ref>,
+        locals_stack: &mut Vec<&'a IndexSet<Ref>>,
     ) {
         locals_stack.push(&scope.locals);
 
-        let mut combined_locals: IndexSet<JsWord> = Default::default();
+        let mut combined_locals: IndexSet<Ref> = Default::default();
         for locals in locals_stack.iter() {
             combined_locals = combined_locals.union(locals).cloned().collect();
         }
 
-        let mut diff: IndexSet<JsWord> =
+        let mut diff: IndexSet<Ref> =
             scope.idents.difference(&combined_locals).cloned().collect();
         for sym in diff.drain(..) {
-            global_symbols.insert(sym);
+            global_symbols.insert(sym.into());
         }
 
         for scope in scope.scopes.iter() {
@@ -91,12 +145,12 @@ impl Visit for ScopeAnalysis {
             ModuleItem::ModuleDecl(decl) => match decl {
                 ModuleDecl::Import(import) => {
                     for spec in import.specifiers.iter() {
-                        let ident = match spec {
+                        let id = match spec {
                             ImportSpecifier::Named(n) => &n.local.sym,
                             ImportSpecifier::Default(n) => &n.local.sym,
                             ImportSpecifier::Namespace(n) => &n.local.sym,
                         };
-                        scope.locals.insert(ident.clone());
+                        scope.locals.insert(id.into());
                     }
                 }
                 _ => {}
@@ -106,16 +160,16 @@ impl Visit for ScopeAnalysis {
     }
 }
 
-fn visit_stmt(n: &Stmt, scope: &mut Scope, locals: Option<IndexSet<JsWord>>) {
+fn visit_stmt(n: &Stmt, scope: &mut Scope, locals: Option<IndexSet<Ref>>) {
     match n {
         Stmt::Decl(decl) => {
             match decl {
                 Decl::Fn(n) => {
-                    scope.locals.insert(n.ident.sym.clone());
+                    scope.locals.insert((&n.ident.sym).into());
                     visit_function(&n.function, scope, Default::default());
                 }
                 Decl::Class(n) => {
-                    scope.locals.insert(n.ident.sym.clone());
+                    scope.locals.insert((&n.ident.sym).into());
                     visit_class(&n.class, scope, None);
                 }
                 Decl::Var(n) => {
@@ -242,7 +296,7 @@ fn visit_stmt(n: &Stmt, scope: &mut Scope, locals: Option<IndexSet<JsWord>>) {
 fn visit_expr(n: &Expr, scope: &mut Scope) {
     match n {
         Expr::Ident(id) => {
-            scope.idents.insert(id.sym.clone());
+            scope.idents.insert((&id.sym).into());
         }
         Expr::PrivateName(n) => {
             scope.idents.insert(private_name_prefix(&n.id.sym));
@@ -278,7 +332,7 @@ fn visit_expr(n: &Expr, scope: &mut Scope) {
                     }
                     PropOrSpread::Prop(n) => match &**n {
                         Prop::Shorthand(id) => {
-                            scope.idents.insert(id.sym.clone());
+                            scope.idents.insert((&id.sym).into());
                         }
                         Prop::KeyValue(n) => {
                             visit_expr(&*n.value, scope);
@@ -305,14 +359,14 @@ fn visit_expr(n: &Expr, scope: &mut Scope) {
             visit_expr(&n.arg, scope);
         }
         Expr::Arrow(n) => {
-            let mut func_param_names: IndexSet<JsWord> = Default::default();
+            let mut func_param_names: IndexSet<Ref> = Default::default();
 
             // Capture arrow function parameters as locals
             for pat in n.params.iter() {
                 let mut names = Vec::new();
                 pattern_words(pat, &mut names);
                 let param_names: IndexSet<_> =
-                    names.into_iter().map(|n| n.clone()).collect();
+                    names.into_iter().map(|n| n.into()).collect();
                 func_param_names =
                     func_param_names.union(&param_names).cloned().collect();
             }
@@ -350,7 +404,7 @@ fn visit_expr(n: &Expr, scope: &mut Scope) {
                 }
                 PatOrExpr::Pat(pat) => match &**pat {
                     Pat::Ident(ident) => {
-                        scope.idents.insert(ident.id.sym.clone());
+                        scope.idents.insert((&ident.id.sym).into());
                     }
                     _ => {}
                 },
@@ -363,6 +417,7 @@ fn visit_expr(n: &Expr, scope: &mut Scope) {
         Expr::Member(n) => {
             match &n.obj {
                 ExprOrSuper::Expr(expr) => {
+                    println!("Visiting member expression...");
                     visit_expr(expr, scope);
                 }
                 _ => {}
@@ -381,7 +436,7 @@ fn visit_expr(n: &Expr, scope: &mut Scope) {
                 .as_ref()
                 .map(|id| {
                     let mut set = IndexSet::new();
-                    set.insert(id.sym.clone());
+                    set.insert((&id.sym).into());
                     set
                 })
                 .unwrap_or_default();
@@ -396,7 +451,7 @@ fn visit_expr(n: &Expr, scope: &mut Scope) {
             // scope so we pass in the locals.
             let locals = n.ident.as_ref().map(|id| {
                 let mut set = IndexSet::new();
-                set.insert(id.sym.clone());
+                set.insert((&id.sym).into());
                 set
             });
             visit_class(&n.class, scope, locals);
@@ -405,7 +460,7 @@ fn visit_expr(n: &Expr, scope: &mut Scope) {
     }
 }
 
-fn visit_class(n: &Class, scope: &mut Scope, locals: Option<IndexSet<JsWord>>) {
+fn visit_class(n: &Class, scope: &mut Scope, locals: Option<IndexSet<Ref>>) {
     let mut next_scope = Scope::new(locals);
 
     // In case the super class reference is a global
@@ -425,7 +480,7 @@ fn visit_class(n: &Class, scope: &mut Scope, locals: Option<IndexSet<JsWord>>) {
                 if !n.is_static {
                     match &n.key {
                         PropName::Ident(id) => {
-                            scope.locals.insert(id.sym.clone());
+                            scope.locals.insert((&id.sym).into());
                         }
                         _ => {}
                     }
@@ -438,7 +493,7 @@ fn visit_class(n: &Class, scope: &mut Scope, locals: Option<IndexSet<JsWord>>) {
             }
             ClassMember::PrivateMethod(n) => {
                 if !n.is_static {
-                    scope.locals.insert(n.key.id.sym.clone());
+                    scope.locals.insert((&n.key.id.sym).into());
                     visit_function(
                         &n.function,
                         &mut next_scope,
@@ -451,7 +506,7 @@ fn visit_class(n: &Class, scope: &mut Scope, locals: Option<IndexSet<JsWord>>) {
                     // TODO: Should we handle other types of expressions here?
                     match &*n.key {
                         Expr::Ident(ident) => {
-                            scope.locals.insert(ident.sym.clone());
+                            scope.locals.insert((&ident.sym).into());
                         }
                         _ => {}
                     }
@@ -475,17 +530,13 @@ fn visit_class(n: &Class, scope: &mut Scope, locals: Option<IndexSet<JsWord>>) {
     scope.scopes.push(next_scope);
 }
 
-fn visit_function(
-    n: &Function,
-    scope: &mut Scope,
-    mut locals: IndexSet<JsWord>,
-) {
+fn visit_function(n: &Function, scope: &mut Scope, mut locals: IndexSet<Ref>) {
     // Capture function parameters as locals
     for param in n.params.iter() {
         let mut names = Vec::new();
         pattern_words(&param.pat, &mut names);
         let param_names: IndexSet<_> =
-            names.into_iter().map(|n| n.clone()).collect();
+            names.into_iter().map(|n| n.into()).collect();
         locals = locals.union(&param_names).cloned().collect();
     }
 
@@ -499,7 +550,7 @@ fn visit_var_decl(n: &VarDecl, scope: &mut Scope) {
     let word_list = var_symbol_words(n);
     for (decl, words) in word_list.iter() {
         for word in words {
-            scope.locals.insert((*word).clone());
+            scope.locals.insert((*word).into());
         }
 
         // Recurse on variable declarations with initializers
@@ -512,6 +563,6 @@ fn visit_var_decl(n: &VarDecl, scope: &mut Scope) {
 // The JsWord for PrivateName is stripped of the # symbol
 // but that would mean that they would incorrectly shadow
 // so we restore it.
-fn private_name_prefix(word: &JsWord) -> JsWord {
-    JsWord::from(format!("#{}", word.as_ref()))
+fn private_name_prefix(word: &JsWord) -> Ref {
+    Ref::from(JsWord::from(format!("#{}", word.as_ref())))
 }
