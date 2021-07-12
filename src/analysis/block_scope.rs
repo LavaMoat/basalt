@@ -360,7 +360,6 @@ fn visit_expr(n: &Expr, scope: &mut Scope) {
         Expr::OptChain(_) => {
             todo!("Handle optional chaining operator: ?.");
         }
-        // TODO: store member expression path!
         Expr::Member(n) => {
             match &n.obj {
                 ExprOrSuper::Expr(expr) => {
@@ -368,7 +367,8 @@ fn visit_expr(n: &Expr, scope: &mut Scope) {
                 }
                 _ => {}
             }
-            visit_expr(&*n.prop, scope);
+            // FIXME: store expression path!!!
+            //visit_expr(&*n.prop, scope);
         }
         Expr::New(n) => {
             visit_expr(&*n.callee, scope);

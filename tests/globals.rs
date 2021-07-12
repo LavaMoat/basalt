@@ -540,3 +540,29 @@ fn globals_shadow_class_member() -> Result<()> {
     assert_eq!(expected.trim_end(), result);
     Ok(())
 }
+
+#[test]
+fn globals_shadow_module() -> Result<()> {
+    let expected =
+        std::fs::read_to_string("tests/globals/shadow/module/output.json")?;
+    let analysis =
+        analyze(PathBuf::from("tests/globals/shadow/module/input.js"))?;
+    let globals = analysis.globals();
+    let result = serde_json::to_string_pretty(&globals)?;
+    //println!("{}", result);
+    assert_eq!(expected.trim_end(), result);
+    Ok(())
+}
+
+#[test]
+fn globals_shadow_block() -> Result<()> {
+    let expected =
+        std::fs::read_to_string("tests/globals/shadow/block/output.json")?;
+    let analysis =
+        analyze(PathBuf::from("tests/globals/shadow/block/input.js"))?;
+    let globals = analysis.globals();
+    let result = serde_json::to_string_pretty(&globals)?;
+    //println!("{}", result);
+    assert_eq!(expected.trim_end(), result);
+    Ok(())
+}
