@@ -8,7 +8,7 @@ use swc_ecma_dep_graph::DependencyDescriptor;
 
 fn load<P: AsRef<Path>>(file: P) -> Result<Vec<DependencyDescriptor>> {
     let (_file_name, source_map, module) = load_file(file)?;
-    Ok(analyze(&module, &source_map, Default::default()))
+    Ok(analyze(&module, &source_map))
 }
 
 #[test]
