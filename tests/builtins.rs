@@ -14,15 +14,17 @@ fn load<P: AsRef<Path>>(file: P) -> Result<Vec<DependencyDescriptor>> {
 #[test]
 fn builtins_esm() -> Result<()> {
     let deps = load("tests/builtins/esm/input.js")?;
+    assert_eq!(2, deps.len());
+    assert_eq!("zlib", deps.get(0).unwrap().specifier.as_ref());
+    assert_eq!("http", deps.get(1).unwrap().specifier.as_ref());
+    Ok(())
+}
 
-    println!("Deps: {:#?}", deps);
-
-    //let expected =
-    //std::fs::read_to_string("tests/transform/reexport/output.js")?;
-    //let (_, result) = transform(TransformSource::File(PathBuf::from(
-    //"tests/builtins/exm/input.js",
-    //)))?;
-    //println!("{}", &result.code);
-    //assert_eq!(expected, result.code);
+#[test]
+fn builtins_commonjs() -> Result<()> {
+    let deps = load("tests/builtins/commonjs/input.js")?;
+    assert_eq!(2, deps.len());
+    assert_eq!("zlib", deps.get(0).unwrap().specifier.as_ref());
+    assert_eq!("http", deps.get(1).unwrap().specifier.as_ref());
     Ok(())
 }
