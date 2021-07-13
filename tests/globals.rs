@@ -477,6 +477,19 @@ fn globals_expr_sequence() -> Result<()> {
 }
 
 #[test]
+fn globals_expr_binary() -> Result<()> {
+    let expected =
+        std::fs::read_to_string("tests/globals/expr/binary/output.json")?;
+    let analysis =
+        analyze(PathBuf::from("tests/globals/expr/binary/input.js"))?;
+    let globals = analysis.globals();
+    let result = serde_json::to_string_pretty(&globals)?;
+    //println!("{}", result);
+    assert_eq!(expected.trim_end(), result);
+    Ok(())
+}
+
+#[test]
 fn globals_expr_member() -> Result<()> {
     let expected =
         std::fs::read_to_string("tests/globals/expr/member/output.json")?;

@@ -179,6 +179,7 @@ fn visit_stmt(n: &Stmt, scope: &mut Scope, locals: Option<IndexSet<JsWord>>) {
         }
         Stmt::If(n) => {
             let mut next_scope = Scope::new(None);
+            visit_expr(&*n.test, &mut next_scope);
             visit_stmt(&*n.cons, &mut next_scope, None);
             scope.scopes.push(next_scope);
 
@@ -246,6 +247,10 @@ fn visit_expr(n: &Expr, scope: &mut Scope) {
         }
         Expr::PrivateName(n) => {
             scope.idents.insert(private_name_prefix(&n.id.sym));
+        }
+        Expr::Bin(n) => {
+            visit_expr(&*n.left, scope);
+            visit_expr(&*n.right, scope);
         }
         Expr::Tpl(n) => {
             for expr in n.exprs.iter() {
