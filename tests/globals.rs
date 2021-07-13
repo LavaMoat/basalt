@@ -503,6 +503,20 @@ fn globals_expr_member() -> Result<()> {
 }
 
 #[test]
+fn globals_expr_optional_chain() -> Result<()> {
+    let expected = std::fs::read_to_string(
+        "tests/globals/expr/optional-chain/output.json",
+    )?;
+    let analysis =
+        analyze(PathBuf::from("tests/globals/expr/optional-chain/input.js"))?;
+    let globals = analysis.globals();
+    let result = serde_json::to_string_pretty(&globals)?;
+    //println!("{}", result);
+    assert_eq!(expected.trim_end(), result);
+    Ok(())
+}
+
+#[test]
 fn globals_shadow_function_decl() -> Result<()> {
     let expected = std::fs::read_to_string(
         "tests/globals/shadow/function-decl/output.json",
