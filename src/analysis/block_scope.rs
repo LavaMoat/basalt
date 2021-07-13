@@ -362,8 +362,8 @@ fn visit_expr(n: &Expr, scope: &mut Scope) {
             }
             visit_expr(&*assign.right, scope);
         }
-        Expr::OptChain(_) => {
-            todo!("Handle optional chaining operator: ?.");
+        Expr::OptChain(n) => {
+            visit_expr(&n.expr, scope);
         }
         Expr::Member(n) => {
             if let Some(word) = compute_member(n) {
