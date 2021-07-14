@@ -5,9 +5,9 @@
 //! list of built in packages for a version of node.
 //!
 
-use swc_common::{comments::SingleThreadedComments, FileName, SourceMap};
+use swc_common::{comments::SingleThreadedComments, SourceMap};
 use swc_ecma_ast::Module;
-use swc_ecma_dep_graph::{analyze_dependencies, DependencyDescriptor};
+use swc_ecma_dep_graph::DependencyDescriptor;
 
 /// List of built in packages for latest stable node with LTS (node@16).
 pub const NODE_LATEST_STABLE: &'static [&'static str] = &[
@@ -89,32 +89,12 @@ pub fn is_local_specifier(s: &str) -> bool {
     s.starts_with("./") || s.starts_with("../") || s.starts_with("/")
 }
 
-/// Analyze the ESM and CommonJS dependencies for a module.
-pub struct ModuleDependencyAnalysis<'a> {
-    file_name: &'a FileName,
-    //source_map: &'a SourceMap,
-    //module: &'a Module,
-    //comments: &'a SingleThreadedComments,
+/// Filter a list of dependencies to detect builtins and other packages.
+pub struct DependencyList {
     dependencies: Vec<DependencyDescriptor>,
 }
 
-impl<'a> ModuleDependencyAnalysis<'a> {
-    /// Create a module dependency analyzer.
-    pub fn new(
-        file_name: &'a FileName,
-        source_map: &'a SourceMap,
-        module: &'a Module,
-        comments: &'a SingleThreadedComments,
-    ) -> Self {
-        Self {
-            file_name,
-            //source_map,
-            //module,
-            //comments,
-            dependencies: analyze_dependencies(module, source_map, comments),
-        }
-    }
-
+impl DependencyList {
     /// Get a list of builtin packages.
     pub fn builtins(&self) -> Vec<&DependencyDescriptor> {
         self.dependencies
@@ -143,5 +123,19 @@ impl<'a> ModuleDependencyAnalysis<'a> {
                 }
             })
             .collect()
+    }
+}
+
+/// Analyze the dependencies for a module and generate
+/// a dependency list that can be filtered into builtins and other packages.
+pub fn analyze_dependencies(
+    source_map: &SourceMap,
+    module: &Module,
+    comments: &SingleThreadedComments,
+) -> DependencyList {
+    DependencyList {
+        dependencies: swc_ecma_dep_graph::analyze_dependencies(
+            module, source_map, comments,
+        ),
     }
 }

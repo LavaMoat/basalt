@@ -4,21 +4,17 @@ use std::path::Path;
 use swc_common::comments::SingleThreadedComments;
 use swc_ecma_dep_graph::DependencyDescriptor;
 
-use basalt::analysis::dependencies::ModuleDependencyAnalysis;
+use basalt::analysis::dependencies::analyze_dependencies;
 use basalt::swc_utils::load_file;
 
 fn load<P: AsRef<Path>>(file: P) -> Result<Vec<DependencyDescriptor>> {
-    let (file_name, source_map, module) = load_file(file)?;
+    let (_file_name, source_map, module) = load_file(file)?;
     let comments: SingleThreadedComments = Default::default();
-    let analyzer = ModuleDependencyAnalysis::new(
-        &file_name,
-        &source_map,
-        &module,
-        &comments,
-    );
-    let deps: Vec<DependencyDescriptor> =
-        analyzer.builtins().into_iter().cloned().collect();
-    Ok(deps)
+    Ok(analyze_dependencies(&source_map, &module, &comments)
+        .builtins()
+        .into_iter()
+        .cloned()
+        .collect())
 }
 
 #[test]
