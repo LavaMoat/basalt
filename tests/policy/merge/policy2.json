@@ -1,0 +1,19 @@
+{
+  "resources": {
+    "@lavamoat/mock": {
+      "native": true,
+      "env": "unfrozen",
+      "builtin": {
+        "path.basename": true,
+        "path.join": false
+      },
+      "globals": {
+        "process.env": false
+      },
+      "packages": {
+        "@lavamoat/alt-mock-dep": true,
+        "@lavamoat/mock-dep": false
+      }
+    }
+  }
+}

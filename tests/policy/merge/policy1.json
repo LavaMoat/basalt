@@ -1,0 +1,15 @@
+{
+  "resources": {
+    "@lavamoat/mock": {
+      "builtin": {
+        "path.join": true
+      },
+      "globals": {
+        "process.env": true
+      },
+      "packages": {
+        "@lavamoat/mock-dep": true
+      }
+    }
+  }
+}

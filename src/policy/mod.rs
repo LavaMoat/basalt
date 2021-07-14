@@ -7,13 +7,14 @@ use serde::{
 use std::collections::BTreeMap;
 use std::fmt;
 
-trait Merge {
+/// Trait for the merge operation.
+pub trait Merge {
     /// Apply overrides from `from`
     fn merge(&mut self, from: &Self);
 }
 
 /// LavaMoat policy file.
-#[derive(Serialize, Deserialize, Default)]
+#[derive(Serialize, Deserialize, Default, Debug, Eq, PartialEq)]
 pub struct Policy {
     /// Collection of package resources for the policy.
     pub resources: BTreeMap<String, PackagePolicy>,
@@ -39,7 +40,8 @@ impl Merge for Policy {
 }
 
 /// Policy for a single package.
-#[derive(Serialize, Deserialize, Clone, Default)]
+#[derive(Serialize, Deserialize, Clone, Default, Debug, Eq, PartialEq)]
+#[serde(default)]
 pub struct PackagePolicy {
     /// Does this policy allow native bindings.
     #[serde(skip_serializing_if = "is_false")]
@@ -72,7 +74,7 @@ impl Merge for PackagePolicy {
 ///
 /// Currently this is just a boolean switch but later we may
 /// modify this to represent [read, write, execute] permissions.
-#[derive(Copy, Clone, Default)]
+#[derive(Copy, Clone, Default, Debug, Eq, PartialEq)]
 pub struct PolicyAccess {
     flag: bool,
 }
@@ -121,7 +123,7 @@ impl From<bool> for PolicyAccess {
 }
 
 /// Encapsulates a map from code access to permission flag.
-#[derive(Serialize, Deserialize, Clone, Default)]
+#[derive(Serialize, Deserialize, Clone, Default, Debug, Eq, PartialEq)]
 pub struct PolicyGroup {
     #[serde(flatten)]
     map: BTreeMap<String, PolicyAccess>,
@@ -148,7 +150,7 @@ impl Merge for PolicyGroup {
 }
 
 /// Enumeration of policy values for the environment access.
-#[derive(Serialize, Deserialize, Eq, PartialEq, Copy, Clone)]
+#[derive(Serialize, Deserialize, Eq, PartialEq, Copy, Clone, Debug)]
 pub enum EnvPolicy {
     /// Freeze the environment.
     #[serde(rename = "frozen")]

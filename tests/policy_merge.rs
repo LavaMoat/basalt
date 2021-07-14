@@ -1,17 +1,24 @@
 use anyhow::Result;
 
-use basalt::policy::{PackagePolicy, Policy};
+use std::fs;
+use std::path::PathBuf;
+
+use basalt::policy::{Merge, Policy};
 
 #[test]
 fn policy_merge() -> Result<()> {
-    let mut policy1: Policy = Default::default();
-    let mut pkg: PackagePolicy = Default::default();
-    pkg.globals.insert("process.env", true.into());
-    pkg.packages.insert("bar", true.into());
-    policy1.insert("foo".to_string(), pkg);
+    let expected: Policy = serde_json::from_str(&fs::read_to_string(
+        PathBuf::from("tests/policy/merge/output.json"),
+    )?)?;
+    let mut policy1: Policy = serde_json::from_str(&fs::read_to_string(
+        PathBuf::from("tests/policy/merge/policy1.json"),
+    )?)?;
+    let policy2: Policy = serde_json::from_str(&fs::read_to_string(
+        PathBuf::from("tests/policy/merge/policy2.json"),
+    )?)?;
 
-    let policy_json = serde_json::to_string_pretty(&policy1)?;
-    println!("{}", policy_json);
+    policy1.merge(&policy2);
+    assert_eq!(expected, policy1);
 
     Ok(())
 }
