@@ -13,6 +13,7 @@ use swc_ecma_visit::VisitWith;
 pub mod analysis;
 pub mod helpers;
 mod module_node;
+pub mod policy;
 pub mod printer;
 pub mod static_module_record;
 pub mod swc_utils;
