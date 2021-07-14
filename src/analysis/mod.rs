@@ -1,3 +1,3 @@
 //! Visitors and helpers for module analysis.
-pub mod block_scope;
-pub mod builtins;
+pub mod dependencies;
+pub mod globals_scope;

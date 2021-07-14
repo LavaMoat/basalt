@@ -1,7 +1,7 @@
 use anyhow::Result;
 use std::path::PathBuf;
 
-use basalt::analysis::block_scope::ScopeAnalysis;
+use basalt::analysis::globals_scope::ScopeAnalysis;
 
 use swc_ecma_visit::VisitWith;
 

@@ -21,7 +21,7 @@ pub use static_module_record::{
     Parser, StaticModuleRecordProgram, TransformSource,
 };
 
-use analysis::block_scope::ScopeAnalysis;
+use analysis::globals_scope::ScopeAnalysis;
 
 /// List all modules.
 pub fn list(file: PathBuf, include_file: bool) -> Result<()> {
