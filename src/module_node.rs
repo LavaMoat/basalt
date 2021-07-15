@@ -8,6 +8,8 @@ use swc_ecma_dep_graph::{analyze_dependencies, DependencyDescriptor};
 
 use swc_ecma_loader::{resolve::Resolve, resolvers::node::NodeResolver};
 
+use crate::module_cache::load_module;
+
 pub enum VisitedModule {
     Module(FileName, Arc<SourceMap>, ModuleNode),
     Json(FileName),
@@ -38,12 +40,12 @@ fn parse_module<P: AsRef<Path>>(
     file: P,
     resolver: &Box<dyn Resolve>,
 ) -> Result<VisitedModule> {
-    let (file_name, source_map, module) = crate::swc_utils::load_file(file)?;
+    let (module, source_map, file_name) = load_module(file)?;
     let comments: SingleThreadedComments = Default::default();
     let mut node = ModuleNode::from(module);
     node.analyze(&source_map, &comments);
     node.resolve(resolver, &file_name)?;
-    Ok(VisitedModule::Module(file_name, source_map, node))
+    Ok(VisitedModule::Module((&*file_name).clone(), source_map, node))
 }
 
 /// Parse a file, analyze dependencies and resolve dependency file paths.
@@ -70,7 +72,7 @@ pub fn parse_file<P: AsRef<Path>>(
 
 #[derive(Debug)]
 pub struct ModuleNode {
-    pub module: Module,
+    pub module: Arc<Module>,
     pub dependencies: Option<Vec<DependencyDescriptor>>,
     pub resolved: Vec<(String, FileName)>,
 }
@@ -177,8 +179,8 @@ impl ModuleNode {
     }
 }
 
-impl From<Module> for ModuleNode {
-    fn from(module: Module) -> Self {
+impl From<Arc<Module>> for ModuleNode {
+    fn from(module: Arc<Module>) -> Self {
         ModuleNode {
             module,
             dependencies: None,
