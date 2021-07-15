@@ -3,7 +3,7 @@ use std::path::Path;
 
 use anyhow::Result;
 
-use crate::module_node::{parse_file, VisitedDependency, VisitedModule};
+use crate::module::node::{parse_file, VisitedDependency, VisitedModule};
 
 use swc_ecma_loader::{resolve::Resolve, resolvers::node::NodeResolver};
 

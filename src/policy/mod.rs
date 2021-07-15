@@ -7,6 +7,8 @@ use serde::{
 use std::collections::BTreeMap;
 use std::fmt;
 
+pub mod builder;
+
 /// Trait for the merge operation.
 pub trait Merge {
     /// Apply overrides from `from`

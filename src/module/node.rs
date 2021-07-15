@@ -1,3 +1,9 @@
+//! Wrapper type for module AST nodes.
+//!
+//! Encapsulates additional useful information and provides an
+//! iterator for resolving and loading dependencies.
+//!
+
 use std::path::Path;
 use std::sync::Arc;
 
@@ -8,31 +14,49 @@ use swc_ecma_dep_graph::{analyze_dependencies, DependencyDescriptor};
 
 use swc_ecma_loader::{resolve::Resolve, resolvers::node::NodeResolver};
 
-use crate::module_cache::load_module;
+use crate::module::cache::load_module;
 
+/// Stores the data for a visited module dependency.
 pub enum VisitedModule {
+    /// A Javascript module.
     Module(FileName, Arc<SourceMap>, ModuleNode),
+    /// A JSON module.
     Json(FileName),
 }
 
+/// Represents a visited dependency.
 #[derive(Debug)]
 pub struct VisitedDependency<'a> {
+    /// The dependency specifier.
     pub spec: String,
+    /// The file name for the dependency.
     pub file_name: FileName,
+    /// Whether this dependency is the last child.
     pub last: bool,
+    /// A parsed module for the dependency.
     pub node: &'a Option<ModuleNode>,
+    /// The current visitor state.
     pub state: &'a VisitState,
+    /// Indicates whether a cycle has been detected.
     pub cycles: Option<&'a FileName>,
 }
 
+/// Stores the branch state for the tree printer.
 #[derive(Debug)]
 pub struct BranchState {
+    /// Determine if this node is the last child
+    /// of it's parent.
     pub last: bool,
 }
 
+/// Represents the visit state for a node iterator.
 #[derive(Debug)]
 pub struct VisitState {
+    /// Stack of branch states.
     pub open: Vec<BranchState>,
+    /// Stack of parents when visiting a module graph.
+    ///
+    /// Used to detect cycles.
     pub parents: Vec<FileName>,
 }
 
@@ -70,14 +94,20 @@ pub fn parse_file<P: AsRef<Path>>(
     }
 }
 
+/// Encapsulates a module and it's dependencies.
 #[derive(Debug)]
 pub struct ModuleNode {
+    /// The underlying module AST node.
     pub module: Arc<Module>,
+    /// The parsed dependencies of this module.
     pub dependencies: Option<Vec<DependencyDescriptor>>,
+    /// The resolved paths for the dependencies.
     pub resolved: Vec<(String, FileName)>,
 }
 
 impl ModuleNode {
+
+    /// Analyze the dependencies for this module.
     pub fn analyze(
         &mut self,
         source_map: &SourceMap,
@@ -87,6 +117,7 @@ impl ModuleNode {
         self.dependencies = if deps.is_empty() { None } else { Some(deps) };
     }
 
+    /// Resolve the dependencies for this module.
     pub fn resolve(
         &mut self,
         resolver: &Box<dyn Resolve>,
@@ -104,6 +135,8 @@ impl ModuleNode {
         Ok(())
     }
 
+    /// Iterate the resolved dependencies of this module and
+    /// attempt to load a module for each resolved dependency.
     pub fn iter<'a>(&'a self) -> NodeIterator<'a> {
         NodeIterator {
             node: self,
@@ -189,6 +222,7 @@ impl From<Arc<Module>> for ModuleNode {
     }
 }
 
+/// Iterate the resolved dependencies of a module node.
 pub struct NodeIterator<'a> {
     node: &'a ModuleNode,
     resolver: Box<dyn Resolve>,
