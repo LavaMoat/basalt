@@ -28,13 +28,13 @@ impl PolicyBuilder {
     pub fn load(self) -> Result<Self> {
         let module = parse_file(&self.entry, &self.resolver)?;
 
-        let node = match module {
+        let node = match &*module {
             VisitedModule::Module(_, _, node) => Some(node),
             VisitedModule::Json(_) => None,
         };
 
         let visitor = |dep: VisitedDependency| {
-            println!("Visiting module dependency {:#?}", dep);
+            //println!("Visiting module dependency {:#?}", dep);
         };
 
         if let Some(node) = node {
@@ -45,7 +45,7 @@ impl PolicyBuilder {
     }
 
     /// Generate a package policy file.
-    pub fn finalize() -> Policy {
+    pub fn finalize(self) -> Policy {
         Default::default()
     }
 }

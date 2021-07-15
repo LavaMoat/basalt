@@ -34,7 +34,8 @@ impl Printer {
         options: &PrintOptions,
     ) -> Result<()> {
         let resolver: Box<dyn Resolve> = Box::new(NodeResolver::default());
-        let node = match parse_file(file.as_ref(), &resolver)? {
+        let module = parse_file(file.as_ref(), &resolver)?;
+        let node = match &*module {
             VisitedModule::Module(_, _, node) => Some(node),
             VisitedModule::Json(_) => None,
         };

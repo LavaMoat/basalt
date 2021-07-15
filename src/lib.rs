@@ -24,6 +24,25 @@ pub use static_module_record::{
 };
 
 use analysis::globals_scope::ScopeAnalysis;
+use policy::builder::PolicyBuilder;
+
+/// Generate a policy file.
+pub fn policy(file: PathBuf) -> Result<()> {
+    if !file.is_file() {
+        bail!("Module {} does not exist or is not a file", file.display());
+    }
+
+    let builder = PolicyBuilder::new(file);
+
+    let policy = builder
+        .load()?
+        .finalize();
+
+    let policy_content = serde_json::to_string_pretty(&policy)?;
+    println!("{}", policy_content);
+
+    Ok(())
+}
 
 /// List all modules.
 pub fn list(file: PathBuf, include_file: bool) -> Result<()> {

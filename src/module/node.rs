@@ -4,10 +4,13 @@
 //! iterator for resolving and loading dependencies.
 //!
 
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
 use anyhow::{anyhow, Context, Result};
+use dashmap::DashMap;
+use std::lazy::SyncLazy;
+
 use swc_common::{comments::SingleThreadedComments, FileName, SourceMap};
 use swc_ecma_ast::Module;
 use swc_ecma_dep_graph::{analyze_dependencies, DependencyDescriptor};
@@ -15,6 +18,10 @@ use swc_ecma_dep_graph::{analyze_dependencies, DependencyDescriptor};
 use swc_ecma_loader::{resolve::Resolve, resolvers::node::NodeResolver};
 
 use crate::module::cache::load_module;
+
+static CACHE: SyncLazy<
+    DashMap<PathBuf, Arc<VisitedModule>>,
+> = SyncLazy::new(|| DashMap::new());
 
 /// Stores the data for a visited module dependency.
 pub enum VisitedModule {
@@ -34,7 +41,7 @@ pub struct VisitedDependency<'a> {
     /// Whether this dependency is the last child.
     pub last: bool,
     /// A parsed module for the dependency.
-    pub node: &'a Option<ModuleNode>,
+    pub node: &'a Option<&'a ModuleNode>,
     /// The current visitor state.
     pub state: &'a VisitState,
     /// Indicates whether a cycle has been detected.
@@ -63,24 +70,31 @@ pub struct VisitState {
 fn parse_module<P: AsRef<Path>>(
     file: P,
     resolver: &Box<dyn Resolve>,
-) -> Result<VisitedModule> {
+) -> Result<Arc<VisitedModule>> {
+    let buf = file.as_ref().to_path_buf();
+    if let Some(entry) = CACHE.get(&buf) {
+        let module = entry.value();
+        return Ok(module.clone());
+    }
     let (module, source_map, file_name) = load_module(file)?;
     let comments: SingleThreadedComments = Default::default();
     let mut node = ModuleNode::from(module);
     node.analyze(&source_map, &comments);
     node.resolve(resolver, &file_name)?;
-    Ok(VisitedModule::Module(
+    let module = Arc::new(VisitedModule::Module(
         (&*file_name).clone(),
         source_map,
         node,
-    ))
+    ));
+    let entry = CACHE.entry(buf).or_insert(module);
+    Ok(entry.value().clone())
 }
 
 /// Parse a file, analyze dependencies and resolve dependency file paths.
 pub fn parse_file<P: AsRef<Path>>(
     file: P,
     resolver: &Box<dyn Resolve>,
-) -> Result<VisitedModule> {
+) -> Result<Arc<VisitedModule>> {
     let extension = file
         .as_ref()
         .extension()
@@ -88,9 +102,9 @@ pub fn parse_file<P: AsRef<Path>>(
     if let Some(ref extension) = extension {
         let extension = &extension[..];
         match extension {
-            "json" => Ok(VisitedModule::Json(FileName::Real(
+            "json" => Ok(Arc::new(VisitedModule::Json(FileName::Real(
                 file.as_ref().to_path_buf(),
-            ))),
+            )))),
             _ => parse_module(file, resolver),
         }
     } else {
@@ -176,14 +190,14 @@ impl ModuleNode {
             let last = i == (node.resolved.len() - 1);
             state.open.last_mut().unwrap().last = last;
 
-            let (file_name, dep) = match parsed {
+            let (file_name, dep) = match &*parsed {
                 VisitedModule::Module(file_name, _, dep) => {
                     (file_name, Some(dep))
                 }
                 VisitedModule::Json(file_name) => (file_name, None),
             };
 
-            let cycles = state.parents.iter().find(|p| *p == &file_name);
+            let cycles = state.parents.iter().find(|p| p == &file_name);
 
             let dependency = VisitedDependency {
                 spec,
@@ -202,7 +216,7 @@ impl ModuleNode {
 
             if let Some(dep) = dep {
                 if !dep.resolved.is_empty() {
-                    state.parents.push(file_name);
+                    state.parents.push(file_name.clone());
                     self.visit_all(&dep, state, callback)?;
                     state.parents.pop();
                 }
@@ -233,7 +247,7 @@ pub struct NodeIterator<'a> {
 }
 
 impl<'a> Iterator for NodeIterator<'a> {
-    type Item = Result<(usize, String, VisitedModule)>;
+    type Item = Result<(usize, String, Arc<VisitedModule>)>;
     fn next(&mut self) -> Option<Self::Item> {
         if self.index >= self.node.resolved.len() {
             return None;
