@@ -1,6 +1,7 @@
 //! Analyzer, linter and bundler for LavaMoat.
 #![feature(unboxed_closures)]
 #![feature(fn_traits)]
+#![feature(once_cell)]
 #![deny(missing_docs)]
 
 use std::io::{self, Read};
@@ -12,6 +13,7 @@ use swc_ecma_visit::VisitWith;
 
 pub mod analysis;
 pub mod helpers;
+pub mod module_cache;
 mod module_node;
 pub mod policy;
 pub mod printer;
