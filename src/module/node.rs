@@ -69,7 +69,11 @@ fn parse_module<P: AsRef<Path>>(
     let mut node = ModuleNode::from(module);
     node.analyze(&source_map, &comments);
     node.resolve(resolver, &file_name)?;
-    Ok(VisitedModule::Module((&*file_name).clone(), source_map, node))
+    Ok(VisitedModule::Module(
+        (&*file_name).clone(),
+        source_map,
+        node,
+    ))
 }
 
 /// Parse a file, analyze dependencies and resolve dependency file paths.
@@ -106,7 +110,6 @@ pub struct ModuleNode {
 }
 
 impl ModuleNode {
-
     /// Analyze the dependencies for this module.
     pub fn analyze(
         &mut self,

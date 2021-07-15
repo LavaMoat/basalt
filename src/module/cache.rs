@@ -24,16 +24,14 @@ pub fn load_module<P: AsRef<Path>>(
     let buf = file.as_ref().to_path_buf();
     if let Some(entry) = CACHE.get(&buf) {
         let (module, source_map, file_name) = entry.value();
-        return Ok((module.clone(), source_map.clone(), file_name.clone()))
+        return Ok((module.clone(), source_map.clone(), file_name.clone()));
     }
     let (file_name, source_map, module) = load_file(file.as_ref())?;
-    let entry = CACHE
-        .entry(buf)
-        .or_insert((
-            Arc::new(module),
-            source_map.clone(),
-            Arc::new(file_name),
-        ));
+    let entry = CACHE.entry(buf).or_insert((
+        Arc::new(module),
+        source_map.clone(),
+        Arc::new(file_name),
+    ));
 
     let (module, source_map, file_name) = entry.value();
     Ok((module.clone(), source_map.clone(), file_name.clone()))
