@@ -11,6 +11,12 @@ use indexmap::IndexSet;
 
 use crate::helpers::{pattern_words, var_symbol_words};
 
+static KEYWORDS: [&'static str; 3] = [
+    "undefined",
+    "NaN",
+    "Infinity"
+];
+
 /// Lexical scope.
 #[derive(Debug)]
 pub struct Scope {
@@ -38,11 +44,11 @@ impl Scope {
 
 /// Analyze the scopes for a module.
 #[derive(Debug)]
-pub struct ScopeAnalysis {
+pub struct GlobalScopeAnalysis {
     root: Scope,
 }
 
-impl ScopeAnalysis {
+impl GlobalScopeAnalysis {
     /// Create a scope analysis.
     pub fn new() -> Self {
         Self {
@@ -73,6 +79,9 @@ impl ScopeAnalysis {
         let mut diff: IndexSet<JsWord> =
             scope.idents.difference(&combined_locals).cloned().collect();
         for sym in diff.drain(..) {
+            if KEYWORDS.contains(&sym.as_ref()) {
+                continue;
+            }
             global_symbols.insert(sym.clone());
         }
 
@@ -84,7 +93,7 @@ impl ScopeAnalysis {
     }
 }
 
-impl Visit for ScopeAnalysis {
+impl Visit for GlobalScopeAnalysis {
     fn visit_module_item(&mut self, n: &ModuleItem, _: &dyn Node) {
         let scope = &mut self.root;
         match n {

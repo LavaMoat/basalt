@@ -5,13 +5,19 @@ use std::path::PathBuf;
 
 use anyhow::{bail, Result};
 
-use swc_common::FileName;
+use swc_common::{chain, FileName};
 use swc_ecma_loader::{resolve::Resolve, resolvers::node::NodeResolver};
+use swc_ecma_visit::VisitWith;
 
-use super::Policy;
-use crate::analysis::dependencies::is_dependent_module;
-use crate::module::node::{
-    cached_modules, parse_file, VisitedDependency, VisitedModule,
+use super::{Policy, PackagePolicy};
+use crate::{
+    analysis::{
+        dependencies::is_dependent_module,
+        globals_scope::GlobalScopeAnalysis,
+    },
+    module::node::{
+        cached_modules, parse_file, VisitedDependency, VisitedModule,
+    }
 };
 
 /// Generate a policy.
@@ -22,6 +28,9 @@ pub struct PolicyBuilder {
     /// for the package as the key and map to all the modules inside
     /// the base path.
     package_buckets: HashMap<(String, PathBuf), HashSet<PathBuf>>,
+    /// Cumulative analysis for a package by merging the analysis for
+    /// each module in the package.
+    package_analysis: HashMap<(String, PathBuf), PackagePolicy>,
 }
 
 impl PolicyBuilder {
@@ -31,6 +40,7 @@ impl PolicyBuilder {
             entry,
             resolver: Box::new(NodeResolver::default()),
             package_buckets: Default::default(),
+            package_analysis: Default::default(),
         }
     }
 
@@ -79,22 +89,63 @@ impl PolicyBuilder {
             }
         }
 
-        //println!("Package buckets {:#?}", self.package_buckets);
-
         Ok(self)
     }
 
-    /// Analyze all the dependent packages.
+    /// Analyze and aggregate the modules for all dependent packages.
     pub fn analyze(mut self) -> Result<Self> {
+        let cache = cached_modules();
+        for ((spec, module_base), modules) in self.package_buckets.drain() {
+
+            // Aggregated analysis data
+            let mut analysis: PackagePolicy = Default::default();
+
+            for module_key in modules {
+                if let Some(cached_module) = cache.get(&module_key) {
+                    let visited_module = cached_module.value();
+
+                    match &**visited_module {
+                        VisitedModule::Module(_, _, node) => {
+                            let mut globals_scope = GlobalScopeAnalysis::new();
+                            //println!("Analyze module: {}", module_key.display());
+
+                            // TODO: chain the visitors!
+                            node.module.visit_children_with(&mut globals_scope);
+
+                            let module_globals = globals_scope.globals();
+                            for atom in module_globals {
+                                analysis.globals.insert(atom.as_ref().to_string(), true.into());
+                            }
+
+                        }
+                        _ => {}
+                    }
+
+                } else {
+                    bail!(
+                        "Failed to locate cached module for {}",
+                        module_key.display()
+                    );
+                }
+            }
+
+            self.package_analysis.insert((spec, module_base), analysis);
+        }
+
         Ok(self)
     }
 
     /// Generate a package policy file.
-    pub fn finalize(self) -> Policy {
-        // TODO
-        Default::default()
+    pub fn finalize(mut self) -> Policy {
+        let mut policy: Policy = Default::default();
+        for ((spec, _), analysis) in self.package_analysis.drain() {
+            policy.insert(spec, analysis);
+        }
+        policy
     }
 }
+
+// FIXME: Fix determining module base when a specific file or directory is imported.
 
 // Attempt to find the base directory for a module import specifier.
 //
