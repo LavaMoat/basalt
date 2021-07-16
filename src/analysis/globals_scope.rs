@@ -11,10 +11,67 @@ use indexmap::IndexSet;
 
 use crate::helpers::{pattern_words, var_symbol_words};
 
-static KEYWORDS: [&'static str; 3] = [
-    "undefined",
-    "NaN",
-    "Infinity"
+// SEE: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects
+
+static KEYWORDS: [&'static str; 4] =
+    ["undefined", "NaN", "Infinity", "globalThis"];
+
+// FIXME: Do not filter intrinsics after building the list of globals but during the analysis!
+
+static INTRINSICS: [&'static str; 42] = [
+    // Fundamental objects
+    "Object",
+    "Function",
+    "Boolean",
+    "Symbol",
+    // Numbers and dates
+    "Number",
+    "BigInt",
+    "Math",
+    "Date",
+    // Text processing
+    "String",
+    "RegExp",
+    // Indexed collections
+    "Array",
+    "Int8Array",
+    "Uint8Array",
+    "Uint8ClampedArray",
+    "Int16Array",
+    "Uint16Array",
+    "Int32Array",
+    "Uint32Array",
+    "Float32Array",
+    "Float64Array",
+    "BigInt64Array",
+    "BigUint64Array",
+    // Keyed collections
+    "Map",
+    "Set",
+    "WeakMap",
+    "WeakSet",
+    // Structured data
+    "ArrayBuffer",
+    "SharedArrayBuffer",
+    "Atomics",
+    "DataView",
+    "JSON",
+    // Control abstraction objects
+    "Promise",
+    "Generator",
+    "GeneratorFunction",
+    "AsyncFunction",
+    "AsyncGenerator",
+    "AsyncGeneratorFunction",
+    // Reflection
+    "Reflect",
+    "Proxy",
+    // Internationalization
+    "Intl",
+    // Webassembly
+    "WebAssembly",
+    // Other
+    "arguments",
 ];
 
 /// Lexical scope.
@@ -46,13 +103,15 @@ impl Scope {
 #[derive(Debug)]
 pub struct GlobalScopeAnalysis {
     root: Scope,
+    filter_intrinsics: bool,
 }
 
 impl GlobalScopeAnalysis {
     /// Create a scope analysis.
-    pub fn new() -> Self {
+    pub fn new(filter_intrinsics: bool) -> Self {
         Self {
             root: Scope::new(None),
+            filter_intrinsics,
         }
     }
 
@@ -62,6 +121,28 @@ impl GlobalScopeAnalysis {
         self.compute_globals(&self.root, &mut global_symbols, &mut vec![]);
         global_symbols
     }
+
+    /*
+    /// Filter intrinsics from a set of global symbols.
+    pub fn filter_intrinsics(
+        &self,
+        globals: IndexSet<JsWord>,
+    ) -> IndexSet<JsWord> {
+        globals.into_iter().filter_map(|word| {
+            if INTRINSICS.contains(&word.as_ref()) {
+                None
+            } else {
+                for obj in INTRINSICS {
+                    let dot_access = format!("{}.", obj);
+                    if word.as_ref().starts_with(&dot_access) {
+                        return None
+                    }
+                }
+                Some(word)
+            }
+        }).collect()
+    }
+    */
 
     fn compute_globals<'a>(
         &self,
@@ -93,9 +174,499 @@ impl GlobalScopeAnalysis {
     }
 }
 
+struct ScopeBuilder {
+    filter_intrinsics: bool,
+}
+
+impl ScopeBuilder {
+    fn _visit_stmt(&self, n: &Stmt, scope: &mut Scope, locals: Option<IndexSet<JsWord>>) {
+        match n {
+            Stmt::Decl(decl) => {
+                match decl {
+                    Decl::Fn(n) => {
+                        scope.locals.insert(n.ident.sym.clone());
+                        self._visit_function(&n.function, scope, Default::default());
+                    }
+                    Decl::Class(n) => {
+                        scope.locals.insert(n.ident.sym.clone());
+                        self._visit_class(&n.class, scope, None);
+                    }
+                    Decl::Var(n) => {
+                        self._visit_var_decl(n, scope);
+                    }
+                    _ => {}
+                };
+            }
+            Stmt::With(n) => {
+                let mut next_scope = Scope::new(None);
+                self._visit_stmt(&*n.body, &mut next_scope, None);
+                scope.scopes.push(next_scope);
+            }
+            Stmt::While(n) => {
+                let mut next_scope = Scope::new(None);
+                self._visit_stmt(&*n.body, &mut next_scope, None);
+                scope.scopes.push(next_scope);
+            }
+            Stmt::DoWhile(n) => {
+                let mut next_scope = Scope::new(None);
+                self._visit_stmt(&*n.body, &mut next_scope, None);
+                scope.scopes.push(next_scope);
+            }
+            Stmt::For(n) => {
+                let mut next_scope = Scope::new(None);
+                if let Some(init) = &n.init {
+                    match init {
+                        VarDeclOrExpr::Expr(n) => {
+                            self._visit_expr(n, &mut next_scope);
+                        }
+                        VarDeclOrExpr::VarDecl(n) => {
+                            self._visit_var_decl(n, &mut next_scope);
+                        }
+                    }
+                }
+
+                if let Some(test) = &n.test {
+                    self._visit_expr(test, &mut next_scope);
+                }
+                if let Some(update) = &n.update {
+                    self._visit_expr(update, &mut next_scope);
+                }
+
+                self._visit_stmt(&*n.body, &mut next_scope, None);
+                scope.scopes.push(next_scope);
+            }
+            Stmt::ForIn(n) => {
+                let mut next_scope = Scope::new(None);
+                self._visit_stmt(&*n.body, &mut next_scope, None);
+                scope.scopes.push(next_scope);
+            }
+            Stmt::ForOf(n) => {
+                let mut next_scope = Scope::new(None);
+                self._visit_stmt(&*n.body, &mut next_scope, None);
+                scope.scopes.push(next_scope);
+            }
+            Stmt::Labeled(n) => {
+                let mut next_scope = Scope::new(None);
+                self._visit_stmt(&*n.body, &mut next_scope, None);
+                scope.scopes.push(next_scope);
+            }
+            Stmt::If(n) => {
+                let mut next_scope = Scope::new(None);
+                self._visit_expr(&*n.test, &mut next_scope);
+                self._visit_stmt(&*n.cons, &mut next_scope, None);
+                scope.scopes.push(next_scope);
+
+                if let Some(ref alt) = n.alt {
+                    let mut next_scope = Scope::new(None);
+                    self._visit_stmt(&*alt, &mut next_scope, None);
+                    scope.scopes.push(next_scope);
+                }
+            }
+            Stmt::Try(n) => {
+                let block_stmt = Stmt::Block(n.block.clone());
+                let mut next_scope = Scope::new(None);
+                self._visit_stmt(&block_stmt, &mut next_scope, None);
+                scope.scopes.push(next_scope);
+
+                if let Some(ref catch_clause) = n.handler {
+                    let block_stmt = Stmt::Block(catch_clause.body.clone());
+                    let mut next_scope = Scope::new(None);
+                    self._visit_stmt(&block_stmt, &mut next_scope, None);
+                    scope.scopes.push(next_scope);
+                }
+
+                if let Some(ref finalizer) = n.finalizer {
+                    let block_stmt = Stmt::Block(finalizer.clone());
+                    let mut next_scope = Scope::new(None);
+                    self._visit_stmt(&block_stmt, &mut next_scope, None);
+                    scope.scopes.push(next_scope);
+                }
+            }
+            Stmt::Switch(n) => {
+                for case in n.cases.iter() {
+                    for stmt in case.cons.iter() {
+                        let mut next_scope = Scope::new(None);
+                        self._visit_stmt(stmt, &mut next_scope, None);
+                        scope.scopes.push(next_scope);
+                    }
+                }
+            }
+            Stmt::Block(n) => {
+                let mut next_scope = Scope::new(locals);
+                for stmt in n.stmts.iter() {
+                    self._visit_stmt(stmt, &mut next_scope, None);
+                }
+                scope.scopes.push(next_scope);
+            }
+            Stmt::Return(n) => {
+                if let Some(arg) = &n.arg {
+                    self._visit_expr(arg, scope);
+                }
+            }
+            Stmt::Throw(n) => {
+                self._visit_expr(&*n.arg, scope);
+            }
+            // Find symbol references which is the list of candidates
+            // that may be global (or local) variable references.
+            Stmt::Expr(n) => self._visit_expr(&*n.expr, scope),
+            _ => {}
+        }
+    }
+
+    fn _visit_expr(&self, n: &Expr, scope: &mut Scope) {
+        match n {
+            Expr::Ident(id) => {
+                self.insert_ident(id.sym.clone(), scope);
+            }
+            Expr::PrivateName(n) => {
+                self.insert_ident(private_name_prefix(&n.id.sym), scope);
+            }
+            Expr::Bin(n) => {
+                self._visit_expr(&*n.left, scope);
+                self._visit_expr(&*n.right, scope);
+            }
+            Expr::Tpl(n) => {
+                for expr in n.exprs.iter() {
+                    self._visit_expr(&*expr, scope);
+                }
+            }
+            Expr::TaggedTpl(n) => {
+                self._visit_expr(&*n.tag, scope);
+                for expr in n.tpl.exprs.iter() {
+                    self._visit_expr(&*expr, scope);
+                }
+            }
+            Expr::Seq(n) => {
+                for expr in n.exprs.iter() {
+                    self._visit_expr(&*expr, scope);
+                }
+            }
+            Expr::Array(n) => {
+                for elem in n.elems.iter() {
+                    if let Some(elem) = elem {
+                        self._visit_expr(&elem.expr, scope);
+                    }
+                }
+            }
+            Expr::Object(n) => {
+                for prop in n.props.iter() {
+                    match prop {
+                        PropOrSpread::Spread(n) => {
+                            self._visit_expr(&*n.expr, scope);
+                        }
+                        PropOrSpread::Prop(n) => match &**n {
+                            Prop::Shorthand(id) => {
+                                self.insert_ident(id.sym.clone(), scope);
+                            }
+                            Prop::KeyValue(n) => {
+                                self._visit_expr(&*n.value, scope);
+                            }
+                            _ => {}
+                        },
+                    }
+                }
+            }
+            Expr::Paren(n) => {
+                self._visit_expr(&n.expr, scope);
+            }
+            Expr::Yield(n) => {
+                if let Some(ref arg) = n.arg {
+                    self._visit_expr(arg, scope);
+                }
+            }
+            Expr::Cond(n) => {
+                self._visit_expr(&*n.test, scope);
+                self._visit_expr(&*n.cons, scope);
+                self._visit_expr(&*n.alt, scope);
+            }
+            Expr::Await(n) => {
+                self._visit_expr(&n.arg, scope);
+            }
+            Expr::Arrow(n) => {
+                let mut func_param_names: IndexSet<JsWord> = Default::default();
+
+                // Capture arrow function parameters as locals
+                for pat in n.params.iter() {
+                    let mut names = Vec::new();
+                    pattern_words(pat, &mut names);
+                    let param_names: IndexSet<_> =
+                        names.into_iter().map(|n| n.clone()).collect();
+                    func_param_names =
+                        func_param_names.union(&param_names).cloned().collect();
+                }
+
+                match &n.body {
+                    BlockStmtOrExpr::BlockStmt(block) => {
+                        let block_stmt = Stmt::Block(block.clone());
+                        self._visit_stmt(&block_stmt, scope, Some(func_param_names));
+                    }
+                    BlockStmtOrExpr::Expr(expr) => {
+                        let expr_stmt = Stmt::Expr(ExprStmt {
+                            span: DUMMY_SP,
+                            expr: expr.clone(),
+                        });
+                        self._visit_stmt(&expr_stmt, scope, Some(func_param_names));
+                    }
+                }
+            }
+            Expr::Call(n) => match &n.callee {
+                ExprOrSuper::Expr(expr) => {
+                    self._visit_expr(expr, scope);
+                }
+                _ => {}
+            },
+            Expr::Update(n) => {
+                self._visit_expr(&n.arg, scope);
+            }
+            Expr::Unary(n) => {
+                self._visit_expr(&n.arg, scope);
+            }
+            Expr::Assign(assign) => {
+                match &assign.left {
+                    PatOrExpr::Expr(expr) => {
+                        self._visit_expr(expr, scope);
+                    }
+                    PatOrExpr::Pat(pat) => match &**pat {
+                        Pat::Ident(ident) => {
+                            self.insert_ident(ident.id.sym.clone(), scope);
+                        }
+                        _ => {}
+                    },
+                }
+                self._visit_expr(&*assign.right, scope);
+            }
+            Expr::OptChain(n) => {
+                self._visit_expr(&n.expr, scope);
+            }
+            Expr::Member(n) => {
+                if let Some(word) = self.compute_member(n) {
+                    self.insert_ident(word, scope);
+                }
+            }
+            Expr::New(n) => {
+                self._visit_expr(&*n.callee, scope);
+            }
+            Expr::Fn(n) => {
+                // Named function expressions only expose the name
+                // to the inner scope like class expressions.
+                let locals = n
+                    .ident
+                    .as_ref()
+                    .map(|id| {
+                        let mut set = IndexSet::new();
+                        set.insert(id.sym.clone());
+                        set
+                    })
+                    .unwrap_or_default();
+                self._visit_function(&n.function, scope, locals);
+            }
+            Expr::Class(n) => {
+                // Class expressions with a named identifer like:
+                //
+                // const Foo = class FooNamed {}
+                //
+                // Only expose the class name (FooNamed) to the inner
+                // scope so we pass in the locals.
+                let locals = n.ident.as_ref().map(|id| {
+                    let mut set = IndexSet::new();
+                    set.insert(id.sym.clone());
+                    set
+                });
+                self._visit_class(&n.class, scope, locals);
+            }
+            _ => {}
+        }
+    }
+
+
+    fn _visit_class(&self, n: &Class, scope: &mut Scope, locals: Option<IndexSet<JsWord>>) {
+        let mut next_scope = Scope::new(locals);
+
+        // In case the super class reference is a global
+        if let Some(ref super_class) = n.super_class {
+            self._visit_expr(&*super_class, scope);
+        }
+
+        for member in n.body.iter() {
+            match member {
+                ClassMember::Constructor(n) => {
+                    if let Some(body) = &n.body {
+                        let block_stmt = Stmt::Block(body.clone());
+                        self._visit_stmt(&block_stmt, &mut next_scope, None);
+                    }
+                }
+                ClassMember::Method(n) => {
+                    if !n.is_static {
+                        match &n.key {
+                            PropName::Ident(id) => {
+                                scope.locals.insert(id.sym.clone());
+                            }
+                            _ => {}
+                        }
+                        self._visit_function(
+                            &n.function,
+                            &mut next_scope,
+                            Default::default(),
+                        );
+                    }
+                }
+                ClassMember::PrivateMethod(n) => {
+                    if !n.is_static {
+                        scope.locals.insert(n.key.id.sym.clone());
+                        self._visit_function(
+                            &n.function,
+                            &mut next_scope,
+                            Default::default(),
+                        );
+                    }
+                }
+                ClassMember::ClassProp(n) => {
+                    if !n.is_static {
+                        // TODO: Should we handle other types of expressions here?
+                        match &*n.key {
+                            Expr::Ident(ident) => {
+                                scope.locals.insert(ident.sym.clone());
+                            }
+                            _ => {}
+                        }
+                        if let Some(value) = &n.value {
+                            self._visit_expr(value, &mut next_scope);
+                        }
+                    }
+                }
+                ClassMember::PrivateProp(n) => {
+                    if !n.is_static {
+                        scope.locals.insert(private_name_prefix(&n.key.id.sym));
+                        if let Some(value) = &n.value {
+                            self._visit_expr(value, &mut next_scope);
+                        }
+                    }
+                }
+                _ => {}
+            }
+        }
+
+        scope.scopes.push(next_scope);
+    }
+
+    fn _visit_function(
+        &self,
+        n: &Function,
+        scope: &mut Scope,
+        mut locals: IndexSet<JsWord>,
+    ) {
+        // Capture function parameters as locals
+        for param in n.params.iter() {
+            let mut names = Vec::new();
+            pattern_words(&param.pat, &mut names);
+            let param_names: IndexSet<_> =
+                names.into_iter().map(|n| n.clone()).collect();
+            locals = locals.union(&param_names).cloned().collect();
+        }
+
+        if let Some(ref body) = n.body {
+            let block_stmt = Stmt::Block(body.clone());
+            self._visit_stmt(&block_stmt, scope, Some(locals));
+        }
+    }
+
+    fn _visit_var_decl(&self, n: &VarDecl, scope: &mut Scope) {
+        let word_list = var_symbol_words(n);
+        for (decl, words) in word_list.iter() {
+            for word in words {
+                scope.locals.insert((*word).clone());
+            }
+
+            // Recurse on variable declarations with initializers
+            if let Some(ref init) = decl.init {
+                self._visit_expr(init, scope);
+            }
+        }
+    }
+
+    fn compute_member(&self, n: &MemberExpr) -> Option<JsWord> {
+        let mut words = Vec::new();
+        self._visit_member(n, &mut words);
+        if !words.is_empty() {
+            let words = words
+                .iter()
+                .map(|w| w.as_ref().to_string())
+                .collect::<Vec<_>>();
+
+            Some(JsWord::from(words.join(".")))
+        } else {
+            None
+        }
+    }
+
+    fn _visit_member<'a>(&self, n: &'a MemberExpr, words: &mut Vec<&'a JsWord>) {
+        let compute_prop = match &n.obj {
+            ExprOrSuper::Expr(expr) => {
+                match &**expr {
+                    Expr::Ident(_) => {
+                        self._visit_member_expr(expr, words);
+                        true
+                    }
+                    Expr::Call(n) => {
+                        match &n.callee {
+                            ExprOrSuper::Expr(expr) => match &**expr {
+                                Expr::Ident(id) => {
+                                    words.push(&id.sym);
+                                }
+                                _ => {}
+                            },
+                            _ => {}
+                        }
+                        false
+                    }
+                    // NOTE: Don't compute properties for Call expressions
+                    // NOTE: otherwise we generate for `fetch().then()`
+                    _ => false,
+                }
+            }
+            _ => false,
+        };
+
+        if self.filter_intrinsics && !words.is_empty() {
+            if let Some(first) = words.get(0) {
+                if INTRINSICS.contains(&first.as_ref()) {
+                    words.clear();
+                    return;
+                }
+            }
+        }
+
+        if compute_prop && !n.computed {
+            match &*n.prop {
+                Expr::Member(n) => self._visit_member(n, words),
+                _ => self._visit_member_expr(&*n.prop, words),
+            }
+        }
+    }
+
+    fn _visit_member_expr<'a>(&self, n: &'a Expr, words: &mut Vec<&'a JsWord>) {
+        match n {
+            Expr::Ident(id) => {
+                words.push(&id.sym);
+            }
+            _ => {}
+        }
+    }
+
+    fn insert_ident(&self, word: JsWord, scope: &mut Scope) {
+        if self.filter_intrinsics {
+            if INTRINSICS.contains(&word.as_ref()) {
+                return;
+            }
+        }
+        scope.idents.insert(word);
+    }
+}
+
 impl Visit for GlobalScopeAnalysis {
     fn visit_module_item(&mut self, n: &ModuleItem, _: &dyn Node) {
         let scope = &mut self.root;
+        let builder = ScopeBuilder { filter_intrinsics: self.filter_intrinsics };
         match n {
             ModuleItem::ModuleDecl(decl) => match decl {
                 ModuleDecl::Import(import) => {
@@ -110,410 +681,7 @@ impl Visit for GlobalScopeAnalysis {
                 }
                 _ => {}
             },
-            ModuleItem::Stmt(stmt) => visit_stmt(stmt, scope, None),
-        }
-    }
-}
-
-fn visit_stmt(n: &Stmt, scope: &mut Scope, locals: Option<IndexSet<JsWord>>) {
-    match n {
-        Stmt::Decl(decl) => {
-            match decl {
-                Decl::Fn(n) => {
-                    scope.locals.insert(n.ident.sym.clone());
-                    visit_function(&n.function, scope, Default::default());
-                }
-                Decl::Class(n) => {
-                    scope.locals.insert(n.ident.sym.clone());
-                    visit_class(&n.class, scope, None);
-                }
-                Decl::Var(n) => {
-                    visit_var_decl(n, scope);
-                }
-                _ => {}
-            };
-        }
-        Stmt::With(n) => {
-            let mut next_scope = Scope::new(None);
-            visit_stmt(&*n.body, &mut next_scope, None);
-            scope.scopes.push(next_scope);
-        }
-        Stmt::While(n) => {
-            let mut next_scope = Scope::new(None);
-            visit_stmt(&*n.body, &mut next_scope, None);
-            scope.scopes.push(next_scope);
-        }
-        Stmt::DoWhile(n) => {
-            let mut next_scope = Scope::new(None);
-            visit_stmt(&*n.body, &mut next_scope, None);
-            scope.scopes.push(next_scope);
-        }
-        Stmt::For(n) => {
-            let mut next_scope = Scope::new(None);
-            if let Some(init) = &n.init {
-                match init {
-                    VarDeclOrExpr::Expr(n) => {
-                        visit_expr(n, &mut next_scope);
-                    }
-                    VarDeclOrExpr::VarDecl(n) => {
-                        visit_var_decl(n, &mut next_scope);
-                    }
-                }
-            }
-
-            if let Some(test) = &n.test {
-                visit_expr(test, &mut next_scope);
-            }
-            if let Some(update) = &n.update {
-                visit_expr(update, &mut next_scope);
-            }
-
-            visit_stmt(&*n.body, &mut next_scope, None);
-            scope.scopes.push(next_scope);
-        }
-        Stmt::ForIn(n) => {
-            let mut next_scope = Scope::new(None);
-            visit_stmt(&*n.body, &mut next_scope, None);
-            scope.scopes.push(next_scope);
-        }
-        Stmt::ForOf(n) => {
-            let mut next_scope = Scope::new(None);
-            visit_stmt(&*n.body, &mut next_scope, None);
-            scope.scopes.push(next_scope);
-        }
-        Stmt::Labeled(n) => {
-            let mut next_scope = Scope::new(None);
-            visit_stmt(&*n.body, &mut next_scope, None);
-            scope.scopes.push(next_scope);
-        }
-        Stmt::If(n) => {
-            let mut next_scope = Scope::new(None);
-            visit_expr(&*n.test, &mut next_scope);
-            visit_stmt(&*n.cons, &mut next_scope, None);
-            scope.scopes.push(next_scope);
-
-            if let Some(ref alt) = n.alt {
-                let mut next_scope = Scope::new(None);
-                visit_stmt(&*alt, &mut next_scope, None);
-                scope.scopes.push(next_scope);
-            }
-        }
-        Stmt::Try(n) => {
-            let block_stmt = Stmt::Block(n.block.clone());
-            let mut next_scope = Scope::new(None);
-            visit_stmt(&block_stmt, &mut next_scope, None);
-            scope.scopes.push(next_scope);
-
-            if let Some(ref catch_clause) = n.handler {
-                let block_stmt = Stmt::Block(catch_clause.body.clone());
-                let mut next_scope = Scope::new(None);
-                visit_stmt(&block_stmt, &mut next_scope, None);
-                scope.scopes.push(next_scope);
-            }
-
-            if let Some(ref finalizer) = n.finalizer {
-                let block_stmt = Stmt::Block(finalizer.clone());
-                let mut next_scope = Scope::new(None);
-                visit_stmt(&block_stmt, &mut next_scope, None);
-                scope.scopes.push(next_scope);
-            }
-        }
-        Stmt::Switch(n) => {
-            for case in n.cases.iter() {
-                for stmt in case.cons.iter() {
-                    let mut next_scope = Scope::new(None);
-                    visit_stmt(stmt, &mut next_scope, None);
-                    scope.scopes.push(next_scope);
-                }
-            }
-        }
-        Stmt::Block(n) => {
-            let mut next_scope = Scope::new(locals);
-            for stmt in n.stmts.iter() {
-                visit_stmt(stmt, &mut next_scope, None);
-            }
-            scope.scopes.push(next_scope);
-        }
-        Stmt::Return(n) => {
-            if let Some(arg) = &n.arg {
-                visit_expr(arg, scope);
-            }
-        }
-        Stmt::Throw(n) => {
-            visit_expr(&*n.arg, scope);
-        }
-        // Find symbol references which is the list of candidates
-        // that may be global (or local) variable references.
-        Stmt::Expr(n) => visit_expr(&*n.expr, scope),
-        _ => {}
-    }
-}
-
-fn visit_expr(n: &Expr, scope: &mut Scope) {
-    match n {
-        Expr::Ident(id) => {
-            scope.idents.insert(id.sym.clone());
-        }
-        Expr::PrivateName(n) => {
-            scope.idents.insert(private_name_prefix(&n.id.sym));
-        }
-        Expr::Bin(n) => {
-            visit_expr(&*n.left, scope);
-            visit_expr(&*n.right, scope);
-        }
-        Expr::Tpl(n) => {
-            for expr in n.exprs.iter() {
-                visit_expr(&*expr, scope);
-            }
-        }
-        Expr::TaggedTpl(n) => {
-            visit_expr(&*n.tag, scope);
-            for expr in n.tpl.exprs.iter() {
-                visit_expr(&*expr, scope);
-            }
-        }
-        Expr::Seq(n) => {
-            for expr in n.exprs.iter() {
-                visit_expr(&*expr, scope);
-            }
-        }
-        Expr::Array(n) => {
-            for elem in n.elems.iter() {
-                if let Some(elem) = elem {
-                    visit_expr(&elem.expr, scope);
-                }
-            }
-        }
-        Expr::Object(n) => {
-            for prop in n.props.iter() {
-                match prop {
-                    PropOrSpread::Spread(n) => {
-                        visit_expr(&*n.expr, scope);
-                    }
-                    PropOrSpread::Prop(n) => match &**n {
-                        Prop::Shorthand(id) => {
-                            scope.idents.insert(id.sym.clone());
-                        }
-                        Prop::KeyValue(n) => {
-                            visit_expr(&*n.value, scope);
-                        }
-                        _ => {}
-                    },
-                }
-            }
-        }
-        Expr::Paren(n) => {
-            visit_expr(&n.expr, scope);
-        }
-        Expr::Yield(n) => {
-            if let Some(ref arg) = n.arg {
-                visit_expr(arg, scope);
-            }
-        }
-        Expr::Cond(n) => {
-            visit_expr(&*n.test, scope);
-            visit_expr(&*n.cons, scope);
-            visit_expr(&*n.alt, scope);
-        }
-        Expr::Await(n) => {
-            visit_expr(&n.arg, scope);
-        }
-        Expr::Arrow(n) => {
-            let mut func_param_names: IndexSet<JsWord> = Default::default();
-
-            // Capture arrow function parameters as locals
-            for pat in n.params.iter() {
-                let mut names = Vec::new();
-                pattern_words(pat, &mut names);
-                let param_names: IndexSet<_> =
-                    names.into_iter().map(|n| n.clone()).collect();
-                func_param_names =
-                    func_param_names.union(&param_names).cloned().collect();
-            }
-
-            match &n.body {
-                BlockStmtOrExpr::BlockStmt(block) => {
-                    let block_stmt = Stmt::Block(block.clone());
-                    visit_stmt(&block_stmt, scope, Some(func_param_names));
-                }
-                BlockStmtOrExpr::Expr(expr) => {
-                    let expr_stmt = Stmt::Expr(ExprStmt {
-                        span: DUMMY_SP,
-                        expr: expr.clone(),
-                    });
-                    visit_stmt(&expr_stmt, scope, Some(func_param_names));
-                }
-            }
-        }
-        Expr::Call(n) => match &n.callee {
-            ExprOrSuper::Expr(expr) => {
-                visit_expr(expr, scope);
-            }
-            _ => {}
-        },
-        Expr::Update(n) => {
-            visit_expr(&n.arg, scope);
-        }
-        Expr::Unary(n) => {
-            visit_expr(&n.arg, scope);
-        }
-        Expr::Assign(assign) => {
-            match &assign.left {
-                PatOrExpr::Expr(expr) => {
-                    visit_expr(expr, scope);
-                }
-                PatOrExpr::Pat(pat) => match &**pat {
-                    Pat::Ident(ident) => {
-                        scope.idents.insert(ident.id.sym.clone());
-                    }
-                    _ => {}
-                },
-            }
-            visit_expr(&*assign.right, scope);
-        }
-        Expr::OptChain(n) => {
-            visit_expr(&n.expr, scope);
-        }
-        Expr::Member(n) => {
-            if let Some(word) = compute_member(n) {
-                scope.idents.insert(word);
-            }
-        }
-        Expr::New(n) => {
-            visit_expr(&*n.callee, scope);
-        }
-        Expr::Fn(n) => {
-            // Named function expressions only expose the name
-            // to the inner scope like class expressions.
-            let locals = n
-                .ident
-                .as_ref()
-                .map(|id| {
-                    let mut set = IndexSet::new();
-                    set.insert(id.sym.clone());
-                    set
-                })
-                .unwrap_or_default();
-            visit_function(&n.function, scope, locals);
-        }
-        Expr::Class(n) => {
-            // Class expressions with a named identifer like:
-            //
-            // const Foo = class FooNamed {}
-            //
-            // Only expose the class name (FooNamed) to the inner
-            // scope so we pass in the locals.
-            let locals = n.ident.as_ref().map(|id| {
-                let mut set = IndexSet::new();
-                set.insert(id.sym.clone());
-                set
-            });
-            visit_class(&n.class, scope, locals);
-        }
-        _ => {}
-    }
-}
-
-fn visit_class(n: &Class, scope: &mut Scope, locals: Option<IndexSet<JsWord>>) {
-    let mut next_scope = Scope::new(locals);
-
-    // In case the super class reference is a global
-    if let Some(ref super_class) = n.super_class {
-        visit_expr(&*super_class, scope);
-    }
-
-    for member in n.body.iter() {
-        match member {
-            ClassMember::Constructor(n) => {
-                if let Some(body) = &n.body {
-                    let block_stmt = Stmt::Block(body.clone());
-                    visit_stmt(&block_stmt, &mut next_scope, None);
-                }
-            }
-            ClassMember::Method(n) => {
-                if !n.is_static {
-                    match &n.key {
-                        PropName::Ident(id) => {
-                            scope.locals.insert(id.sym.clone());
-                        }
-                        _ => {}
-                    }
-                    visit_function(
-                        &n.function,
-                        &mut next_scope,
-                        Default::default(),
-                    );
-                }
-            }
-            ClassMember::PrivateMethod(n) => {
-                if !n.is_static {
-                    scope.locals.insert(n.key.id.sym.clone());
-                    visit_function(
-                        &n.function,
-                        &mut next_scope,
-                        Default::default(),
-                    );
-                }
-            }
-            ClassMember::ClassProp(n) => {
-                if !n.is_static {
-                    // TODO: Should we handle other types of expressions here?
-                    match &*n.key {
-                        Expr::Ident(ident) => {
-                            scope.locals.insert(ident.sym.clone());
-                        }
-                        _ => {}
-                    }
-                    if let Some(value) = &n.value {
-                        visit_expr(value, &mut next_scope);
-                    }
-                }
-            }
-            ClassMember::PrivateProp(n) => {
-                if !n.is_static {
-                    scope.locals.insert(private_name_prefix(&n.key.id.sym));
-                    if let Some(value) = &n.value {
-                        visit_expr(value, &mut next_scope);
-                    }
-                }
-            }
-            _ => {}
-        }
-    }
-
-    scope.scopes.push(next_scope);
-}
-
-fn visit_function(
-    n: &Function,
-    scope: &mut Scope,
-    mut locals: IndexSet<JsWord>,
-) {
-    // Capture function parameters as locals
-    for param in n.params.iter() {
-        let mut names = Vec::new();
-        pattern_words(&param.pat, &mut names);
-        let param_names: IndexSet<_> =
-            names.into_iter().map(|n| n.clone()).collect();
-        locals = locals.union(&param_names).cloned().collect();
-    }
-
-    if let Some(ref body) = n.body {
-        let block_stmt = Stmt::Block(body.clone());
-        visit_stmt(&block_stmt, scope, Some(locals));
-    }
-}
-
-fn visit_var_decl(n: &VarDecl, scope: &mut Scope) {
-    let word_list = var_symbol_words(n);
-    for (decl, words) in word_list.iter() {
-        for word in words {
-            scope.locals.insert((*word).clone());
-        }
-
-        // Recurse on variable declarations with initializers
-        if let Some(ref init) = decl.init {
-            visit_expr(init, scope);
+            ModuleItem::Stmt(stmt) => builder._visit_stmt(stmt, scope, None),
         }
     }
 }
@@ -525,60 +693,3 @@ fn private_name_prefix(word: &JsWord) -> JsWord {
     JsWord::from(format!("#{}", word.as_ref()))
 }
 
-fn compute_member(n: &MemberExpr) -> Option<JsWord> {
-    let mut words = Vec::new();
-    visit_member(n, &mut words);
-    if !words.is_empty() {
-        let words = words
-            .iter()
-            .map(|w| w.as_ref().to_string())
-            .collect::<Vec<_>>();
-        Some(JsWord::from(words.join(".")))
-    } else {
-        None
-    }
-}
-
-fn visit_member<'a>(n: &'a MemberExpr, words: &mut Vec<&'a JsWord>) {
-    let compute_prop = match &n.obj {
-        ExprOrSuper::Expr(expr) => {
-            match &**expr {
-                Expr::Ident(_) => {
-                    visit_member_expr(expr, words);
-                    true
-                }
-                Expr::Call(n) => {
-                    match &n.callee {
-                        ExprOrSuper::Expr(expr) => match &**expr {
-                            Expr::Ident(id) => {
-                                words.push(&id.sym);
-                            }
-                            _ => {}
-                        },
-                        _ => {}
-                    }
-                    false
-                }
-                // NOTE: Don't compute properties for Call expressions
-                // NOTE: otherwise we generate for `fetch().then()`
-                _ => false,
-            }
-        }
-        _ => false,
-    };
-    if compute_prop && !n.computed {
-        match &*n.prop {
-            Expr::Member(n) => visit_member(n, words),
-            _ => visit_member_expr(&*n.prop, words),
-        }
-    }
-}
-
-fn visit_member_expr<'a>(n: &'a Expr, words: &mut Vec<&'a JsWord>) {
-    match n {
-        Expr::Ident(id) => {
-            words.push(&id.sym);
-        }
-        _ => {}
-    }
-}

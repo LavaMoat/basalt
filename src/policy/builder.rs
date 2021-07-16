@@ -9,15 +9,14 @@ use swc_common::{chain, FileName};
 use swc_ecma_loader::{resolve::Resolve, resolvers::node::NodeResolver};
 use swc_ecma_visit::VisitWith;
 
-use super::{Policy, PackagePolicy};
+use super::{PackagePolicy, Policy};
 use crate::{
     analysis::{
-        dependencies::is_dependent_module,
-        globals_scope::GlobalScopeAnalysis,
+        dependencies::is_dependent_module, globals_scope::GlobalScopeAnalysis,
     },
     module::node::{
         cached_modules, parse_file, VisitedDependency, VisitedModule,
-    }
+    },
 };
 
 /// Generate a policy.
@@ -96,7 +95,6 @@ impl PolicyBuilder {
     pub fn analyze(mut self) -> Result<Self> {
         let cache = cached_modules();
         for ((spec, module_base), modules) in self.package_buckets.drain() {
-
             // Aggregated analysis data
             let mut analysis: PackagePolicy = Default::default();
 
@@ -106,7 +104,7 @@ impl PolicyBuilder {
 
                     match &**visited_module {
                         VisitedModule::Module(_, _, node) => {
-                            let mut globals_scope = GlobalScopeAnalysis::new();
+                            let mut globals_scope = GlobalScopeAnalysis::new(true);
                             //println!("Analyze module: {}", module_key.display());
 
                             // TODO: chain the visitors!
@@ -114,13 +112,14 @@ impl PolicyBuilder {
 
                             let module_globals = globals_scope.globals();
                             for atom in module_globals {
-                                analysis.globals.insert(atom.as_ref().to_string(), true.into());
+                                analysis.globals.insert(
+                                    atom.as_ref().to_string(),
+                                    true.into(),
+                                );
                             }
-
                         }
                         _ => {}
                     }
-
                 } else {
                     bail!(
                         "Failed to locate cached module for {}",

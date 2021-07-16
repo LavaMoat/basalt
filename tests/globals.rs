@@ -6,7 +6,7 @@ use basalt::analysis::globals_scope::GlobalScopeAnalysis;
 use swc_ecma_visit::VisitWith;
 
 fn analyze(file: PathBuf) -> Result<GlobalScopeAnalysis> {
-    let mut analyzer = GlobalScopeAnalysis::new();
+    let mut analyzer = GlobalScopeAnalysis::new(true);
     let (_, _, module) = basalt::swc_utils::load_file(&file)?;
     module.visit_children_with(&mut analyzer);
     Ok(analyzer)

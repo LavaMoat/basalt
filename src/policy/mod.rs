@@ -179,4 +179,3 @@ impl Default for EnvPolicy {
 fn is_false(flag: &bool) -> bool {
     flag == &false
 }
-
