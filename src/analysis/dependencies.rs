@@ -77,7 +77,7 @@ pub const NODE_LATEST_STABLE: &'static [&'static str] = &[
 ];
 
 /// Determine if a package is a core package.
-pub fn is_core_package(s: &str) -> bool {
+pub fn is_builtin_module(s: &str) -> bool {
     NODE_LATEST_STABLE.contains(&s)
 }
 
@@ -85,8 +85,13 @@ pub fn is_core_package(s: &str) -> bool {
 ///
 /// A local path is one that uses either a relative or absolute
 /// file system path.
-pub fn is_local_specifier(s: &str) -> bool {
+pub fn is_local_module(s: &str) -> bool {
     s.starts_with("./") || s.starts_with("../") || s.starts_with("/")
+}
+
+/// Determine if a module appears to be a third-party dependency.
+pub fn is_dependent_module(s: &str) -> bool {
+    !is_builtin_module(s) && !is_local_module(s)
 }
 
 /// Filter a list of dependencies to detect builtins and other packages.
@@ -100,7 +105,7 @@ impl DependencyList {
         self.dependencies
             .iter()
             .filter_map(|dep| {
-                if is_core_package(dep.specifier.as_ref()) {
+                if is_builtin_module(dep.specifier.as_ref()) {
                     Some(dep)
                 } else {
                     None
@@ -114,8 +119,8 @@ impl DependencyList {
         self.dependencies
             .iter()
             .filter_map(|dep| {
-                if !is_core_package(dep.specifier.as_ref())
-                    && !is_local_specifier(dep.specifier.as_ref())
+                if !is_builtin_module(dep.specifier.as_ref())
+                    && !is_local_module(dep.specifier.as_ref())
                 {
                     Some(dep)
                 } else {

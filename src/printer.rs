@@ -41,7 +41,7 @@ impl Printer {
         };
         println!("{}", file.as_ref().display());
 
-        let visitor = |dep: VisitedDependency| {
+        let mut visitor = |dep: VisitedDependency| {
             let mark = if dep.last { TREE_CORNER } else { TREE_BRANCH };
             for (j, iter_state) in dep.state.open.iter().enumerate() {
                 let end = j == (dep.state.open.len() - 1);
@@ -67,10 +67,12 @@ impl Printer {
             }
 
             print!("\n");
+
+            Ok(())
         };
 
         if let Some(node) = node {
-            node.visit(&visitor)?;
+            node.visit(&mut visitor)?;
         }
 
         Ok(())

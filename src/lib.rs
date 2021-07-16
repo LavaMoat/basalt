@@ -34,9 +34,7 @@ pub fn policy(file: PathBuf) -> Result<()> {
 
     let builder = PolicyBuilder::new(file);
 
-    let policy = builder
-        .load()?
-        .finalize();
+    let policy = builder.load()?.finalize();
 
     let policy_content = serde_json::to_string_pretty(&policy)?;
     println!("{}", policy_content);

@@ -19,9 +19,8 @@ use swc_ecma_loader::{resolve::Resolve, resolvers::node::NodeResolver};
 
 use crate::module::cache::load_module;
 
-static CACHE: SyncLazy<
-    DashMap<PathBuf, Arc<VisitedModule>>,
-> = SyncLazy::new(|| DashMap::new());
+static CACHE: SyncLazy<DashMap<PathBuf, Arc<VisitedModule>>> =
+    SyncLazy::new(|| DashMap::new());
 
 /// Stores the data for a visited module dependency.
 pub enum VisitedModule {
@@ -163,9 +162,9 @@ impl ModuleNode {
     }
 
     /// Visit all dependencies of this node recursively.
-    pub fn visit<F>(&self, callback: &F) -> Result<()>
+    pub fn visit<F>(&self, callback: &mut F) -> Result<()>
     where
-        F: Fn(VisitedDependency),
+        F: FnMut(VisitedDependency) -> Result<()>,
     {
         let mut state = VisitState {
             open: Vec::new(),
@@ -178,10 +177,10 @@ impl ModuleNode {
         &self,
         node: &ModuleNode,
         state: &mut VisitState,
-        callback: &F,
+        callback: &mut F,
     ) -> Result<()>
     where
-        F: Fn(VisitedDependency),
+        F: FnMut(VisitedDependency) -> Result<()>,
     {
         state.open.push(BranchState { last: false });
 
@@ -208,7 +207,7 @@ impl ModuleNode {
                 cycles,
             };
 
-            callback.call((dependency,));
+            callback.call_mut((dependency,))?;
 
             if cycles.is_some() {
                 continue;
