@@ -10,7 +10,9 @@ use swc_ecma_loader::{resolve::Resolve, resolvers::node::NodeResolver};
 
 use super::Policy;
 use crate::analysis::dependencies::is_dependent_module;
-use crate::module::node::{parse_file, VisitedDependency, VisitedModule};
+use crate::module::node::{
+    cached_modules, parse_file, VisitedDependency, VisitedModule,
+};
 
 /// Generate a policy.
 pub struct PolicyBuilder {
@@ -32,7 +34,8 @@ impl PolicyBuilder {
         }
     }
 
-    /// Load the entry point module and all dependencies.
+    /// Load the entry point module and all dependencies grouping modules
+    /// into dependent package buckets.
     pub fn load(mut self) -> Result<Self> {
         let module = parse_file(&self.entry, &self.resolver)?;
 
@@ -48,10 +51,9 @@ impl PolicyBuilder {
                         if let Some(module_base) =
                             module_base_directory(&dep.spec, &path)
                         {
-                            let set = self.package_buckets
+                            self.package_buckets
                                 .entry((dep.spec.clone(), module_base))
                                 .or_insert(Default::default());
-                            set.insert(path);
                         } else {
                             bail!("Failed to resolve module base for specifier {}", &dep.spec);
                         }
@@ -67,13 +69,29 @@ impl PolicyBuilder {
             node.visit(&mut visitor)?;
         }
 
-        println!("Package buckets {:#?}", self.package_buckets);
+        // Put the cached module paths in each package bucket.
+        for item in cached_modules().iter() {
+            let key = item.key();
+            for ((_, module_base), set) in self.package_buckets.iter_mut() {
+                if key.starts_with(module_base) {
+                    set.insert(key.to_path_buf());
+                }
+            }
+        }
 
+        //println!("Package buckets {:#?}", self.package_buckets);
+
+        Ok(self)
+    }
+
+    /// Analyze all the dependent packages.
+    pub fn analyze(mut self) -> Result<Self> {
         Ok(self)
     }
 
     /// Generate a package policy file.
     pub fn finalize(self) -> Policy {
+        // TODO
         Default::default()
     }
 }

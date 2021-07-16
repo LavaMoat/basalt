@@ -33,9 +33,7 @@ pub fn policy(file: PathBuf) -> Result<()> {
     }
 
     let builder = PolicyBuilder::new(file);
-
-    let policy = builder.load()?.finalize();
-
+    let policy = builder.load()?.analyze()?.finalize();
     let policy_content = serde_json::to_string_pretty(&policy)?;
     println!("{}", policy_content);
 
@@ -121,6 +119,8 @@ pub fn transform(file: PathBuf, json: bool) -> Result<()> {
     Ok(())
 }
 
+/// Helper to remove a trailing semi-colon from the generated functor program
+/// as a trailing semi-colon breaks static module record interoperability.
 fn trim_code(code: String) -> String {
     let out = code.trim_end();
     out.trim_end_matches(";").to_string()

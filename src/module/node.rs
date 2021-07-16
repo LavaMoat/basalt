@@ -19,8 +19,15 @@ use swc_ecma_loader::{resolve::Resolve, resolvers::node::NodeResolver};
 
 use crate::module::cache::load_module;
 
+/// Cache of visited modules.
 static CACHE: SyncLazy<DashMap<PathBuf, Arc<VisitedModule>>> =
     SyncLazy::new(|| DashMap::new());
+
+/// Get the map of cached modules.
+pub fn cached_modules(
+) -> &'static SyncLazy<DashMap<PathBuf, Arc<VisitedModule>>> {
+    &CACHE
+}
 
 /// Stores the data for a visited module dependency.
 pub enum VisitedModule {
