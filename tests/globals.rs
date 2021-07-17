@@ -612,3 +612,16 @@ fn globals_shadow_block() -> Result<()> {
     assert_eq!(expected.trim_end(), result);
     Ok(())
 }
+
+#[test]
+fn globals_filter_intrinsics() -> Result<()> {
+    let expected =
+        std::fs::read_to_string("tests/globals/intrinsics/output.json")?;
+    let analysis =
+        analyze(PathBuf::from("tests/globals/intrinsics/input.js"))?;
+    let globals = analysis.globals();
+    let result = serde_json::to_string_pretty(&globals)?;
+    //println!("{}", result);
+    assert_eq!(expected.trim_end(), result);
+    Ok(())
+}
