@@ -91,12 +91,14 @@ static INTRINSICS: [&'static str; 51] = [
 #[derive(Debug, Clone, Copy)]
 pub struct GlobalOptions {
     filter_intrinsics: bool,
+    filter_keywords: bool,
 }
 
 impl Default for GlobalOptions {
     fn default() -> Self {
         Self {
             filter_intrinsics: true,
+            filter_keywords: true,
         }
     }
 }
@@ -165,9 +167,6 @@ impl GlobalAnalysis {
         let mut diff: IndexSet<JsWord> =
             scope.idents.difference(&combined_locals).cloned().collect();
         for sym in diff.drain(..) {
-            if KEYWORDS.contains(&sym.as_ref()) {
-                continue;
-            }
             global_symbols.insert(sym.clone());
         }
 
@@ -658,13 +657,18 @@ impl ScopeBuilder {
         }
     }
 
-    fn insert_ident(&self, word: JsWord, scope: &mut Scope) {
+    fn insert_ident(&self, sym: JsWord, scope: &mut Scope) {
         if self.options.filter_intrinsics {
-            if INTRINSICS.contains(&word.as_ref()) {
+            if INTRINSICS.contains(&sym.as_ref()) {
                 return;
             }
         }
-        scope.idents.insert(word);
+
+        if self.options.filter_keywords && KEYWORDS.contains(&sym.as_ref()) {
+            return;
+        }
+
+        scope.idents.insert(sym);
     }
 }
 
