@@ -12,7 +12,7 @@ use swc_ecma_visit::VisitWith;
 use super::{PackagePolicy, Policy, PolicyAccess};
 use crate::{
     analysis::{
-        dependencies::is_dependent_module, globals_scope::GlobalScopeAnalysis,
+        dependencies::is_dependent_module, globals_scope::GlobalAnalysis,
     },
     module::node::{
         cached_modules, parse_file, VisitedDependency, VisitedModule,
@@ -103,7 +103,7 @@ impl PolicyBuilder {
                     let visited_module = cached_module.value();
                     match &**visited_module {
                         VisitedModule::Module(_, _, node) => {
-                            let mut globals_scope = GlobalScopeAnalysis::new(true);
+                            let mut globals_scope = GlobalAnalysis::new(Default::default());
                             //println!("Analyze module: {}", module_key.display());
 
                             // TODO: chain the visitors!

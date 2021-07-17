@@ -12,9 +12,12 @@ use indexmap::IndexSet;
 use crate::helpers::{pattern_words, var_symbol_words};
 
 // SEE: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects
+//
 
-static KEYWORDS: [&'static str; 4] =
-    ["undefined", "NaN", "Infinity", "globalThis"];
+static GLOBAL_THIS: &str = "globalThis";
+
+static KEYWORDS: [&'static str; 3] =
+    ["undefined", "NaN", "Infinity"];
 
 // TODO: should global functions be included with intrinsics or handled differently?
 
@@ -84,6 +87,20 @@ static INTRINSICS: [&'static str; 51] = [
     "arguments",
 ];
 
+/// Processing options for the global analysis.
+#[derive(Debug, Clone, Copy)]
+pub struct GlobalOptions {
+    filter_intrinsics: bool,
+}
+
+impl Default for GlobalOptions {
+    fn default() -> Self {
+        Self {
+            filter_intrinsics: true,
+        }
+    }
+}
+
 /// Lexical scope.
 #[derive(Debug)]
 pub struct Scope {
@@ -111,17 +128,17 @@ impl Scope {
 
 /// Analyze the scopes for a module.
 #[derive(Debug)]
-pub struct GlobalScopeAnalysis {
+pub struct GlobalAnalysis {
     root: Scope,
-    filter_intrinsics: bool,
+    options: GlobalOptions,
 }
 
-impl GlobalScopeAnalysis {
+impl GlobalAnalysis {
     /// Create a scope analysis.
-    pub fn new(filter_intrinsics: bool) -> Self {
+    pub fn new(options: GlobalOptions) -> Self {
         Self {
             root: Scope::new(None),
-            filter_intrinsics,
+            options,
         }
     }
 
@@ -163,7 +180,7 @@ impl GlobalScopeAnalysis {
 }
 
 struct ScopeBuilder {
-    filter_intrinsics: bool,
+    options: GlobalOptions,
 }
 
 impl ScopeBuilder {
@@ -615,7 +632,7 @@ impl ScopeBuilder {
             _ => false,
         };
 
-        if self.filter_intrinsics && !words.is_empty() {
+        if self.options.filter_intrinsics && !words.is_empty() {
             if let Some(first) = words.get(0) {
                 if INTRINSICS.contains(&first.as_ref()) {
                     words.clear();
@@ -642,7 +659,7 @@ impl ScopeBuilder {
     }
 
     fn insert_ident(&self, word: JsWord, scope: &mut Scope) {
-        if self.filter_intrinsics {
+        if self.options.filter_intrinsics {
             if INTRINSICS.contains(&word.as_ref()) {
                 return;
             }
@@ -651,10 +668,10 @@ impl ScopeBuilder {
     }
 }
 
-impl Visit for GlobalScopeAnalysis {
+impl Visit for GlobalAnalysis {
     fn visit_module_item(&mut self, n: &ModuleItem, _: &dyn Node) {
         let scope = &mut self.root;
-        let builder = ScopeBuilder { filter_intrinsics: self.filter_intrinsics };
+        let builder = ScopeBuilder { options: self.options };
         match n {
             ModuleItem::ModuleDecl(decl) => match decl {
                 ModuleDecl::Import(import) => {

@@ -23,7 +23,7 @@ pub use static_module_record::{
     Parser, StaticModuleRecordProgram, TransformSource,
 };
 
-use analysis::globals_scope::GlobalScopeAnalysis;
+use analysis::globals_scope::GlobalAnalysis;
 use policy::builder::PolicyBuilder;
 
 /// Generate a policy file.
@@ -73,7 +73,7 @@ pub fn symbols(file: PathBuf, debug: bool) -> Result<()> {
         bail!("Module {} does not exist or is not a file", file.display());
     }
 
-    let mut block_scope = GlobalScopeAnalysis::new(true);
+    let mut block_scope = GlobalAnalysis::new(Default::default());
     let (_, _, module) = crate::swc_utils::load_file(&file)?;
     module.visit_children_with(&mut block_scope);
 
