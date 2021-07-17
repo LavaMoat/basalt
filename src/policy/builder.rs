@@ -1,6 +1,6 @@
 //! Build a package policy.
 
-use std::collections::{HashMap, HashSet};
+use std::collections::{BTreeMap, HashMap, HashSet};
 use std::path::PathBuf;
 
 use anyhow::{bail, Result};
@@ -9,7 +9,7 @@ use swc_common::{chain, FileName};
 use swc_ecma_loader::{resolve::Resolve, resolvers::node::NodeResolver};
 use swc_ecma_visit::VisitWith;
 
-use super::{PackagePolicy, Policy};
+use super::{PackagePolicy, Policy, PolicyAccess};
 use crate::{
     analysis::{
         dependencies::is_dependent_module, globals_scope::GlobalScopeAnalysis,
@@ -101,7 +101,6 @@ impl PolicyBuilder {
             for module_key in modules {
                 if let Some(cached_module) = cache.get(&module_key) {
                     let visited_module = cached_module.value();
-
                     match &**visited_module {
                         VisitedModule::Module(_, _, node) => {
                             let mut globals_scope = GlobalScopeAnalysis::new(true);
@@ -116,6 +115,19 @@ impl PolicyBuilder {
                                     atom.as_ref().to_string(),
                                     true.into(),
                                 );
+                            }
+
+                            if let Some(ref deps) = node.dependencies {
+                                let mut packages: BTreeMap<String, PolicyAccess> =
+                                    deps
+                                    .iter()
+                                    .filter_map(|dep| {
+                                        if is_dependent_module(dep.specifier.as_ref()) {
+                                            Some((dep.specifier.as_ref().to_string(), true.into()))
+                                        } else { None }
+                                    })
+                                    .collect();
+                                analysis.packages.append(&mut packages);
                             }
                         }
                         _ => {}

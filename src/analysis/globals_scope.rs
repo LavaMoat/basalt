@@ -16,14 +16,24 @@ use crate::helpers::{pattern_words, var_symbol_words};
 static KEYWORDS: [&'static str; 4] =
     ["undefined", "NaN", "Infinity", "globalThis"];
 
-// FIXME: Do not filter intrinsics after building the list of globals but during the analysis!
+// TODO: should global functions be included with intrinsics or handled differently?
 
-static INTRINSICS: [&'static str; 42] = [
+static INTRINSICS: [&'static str; 51] = [
     // Fundamental objects
     "Object",
     "Function",
     "Boolean",
     "Symbol",
+    // Error objects
+    "Error",
+    "AggregateError",
+    "EvalError",
+    "InternalError",
+    "RangeError",
+    "ReferenceError",
+    "SyntaxError",
+    "TypeError",
+    "URIError",
     // Numbers and dates
     "Number",
     "BigInt",
@@ -121,28 +131,6 @@ impl GlobalScopeAnalysis {
         self.compute_globals(&self.root, &mut global_symbols, &mut vec![]);
         global_symbols
     }
-
-    /*
-    /// Filter intrinsics from a set of global symbols.
-    pub fn filter_intrinsics(
-        &self,
-        globals: IndexSet<JsWord>,
-    ) -> IndexSet<JsWord> {
-        globals.into_iter().filter_map(|word| {
-            if INTRINSICS.contains(&word.as_ref()) {
-                None
-            } else {
-                for obj in INTRINSICS {
-                    let dot_access = format!("{}.", obj);
-                    if word.as_ref().starts_with(&dot_access) {
-                        return None
-                    }
-                }
-                Some(word)
-            }
-        }).collect()
-    }
-    */
 
     fn compute_globals<'a>(
         &self,

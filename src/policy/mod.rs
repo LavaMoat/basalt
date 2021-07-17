@@ -141,6 +141,11 @@ impl PolicyGroup {
     pub fn insert<S: AsRef<str>>(&mut self, key: S, value: PolicyAccess) {
         self.map.insert(key.as_ref().into(), value);
     }
+
+    /// Append a map of packages to this group.
+    pub fn append(&mut self, other: &mut BTreeMap<String, PolicyAccess>) {
+        self.map.append(other);
+    }
 }
 
 impl Merge for PolicyGroup {
