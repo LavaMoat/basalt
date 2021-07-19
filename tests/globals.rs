@@ -617,8 +617,7 @@ fn globals_shadow_block() -> Result<()> {
 fn globals_filter_intrinsics() -> Result<()> {
     let expected =
         std::fs::read_to_string("tests/globals/intrinsics/output.json")?;
-    let analysis =
-        analyze(PathBuf::from("tests/globals/intrinsics/input.js"))?;
+    let analysis = analyze(PathBuf::from("tests/globals/intrinsics/input.js"))?;
     let globals = analysis.globals();
     let result = serde_json::to_string_pretty(&globals)?;
     //println!("{}", result);
@@ -630,8 +629,7 @@ fn globals_filter_intrinsics() -> Result<()> {
 fn globals_filter_keywords() -> Result<()> {
     let expected =
         std::fs::read_to_string("tests/globals/keywords/output.json")?;
-    let analysis =
-        analyze(PathBuf::from("tests/globals/keywords/input.js"))?;
+    let analysis = analyze(PathBuf::from("tests/globals/keywords/input.js"))?;
     let globals = analysis.globals();
     let result = serde_json::to_string_pretty(&globals)?;
     //println!("{}", result);

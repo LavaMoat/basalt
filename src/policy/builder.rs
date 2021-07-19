@@ -103,7 +103,8 @@ impl PolicyBuilder {
                     let visited_module = cached_module.value();
                     match &**visited_module {
                         VisitedModule::Module(_, _, node) => {
-                            let mut globals_scope = GlobalAnalysis::new(Default::default());
+                            let mut globals_scope =
+                                GlobalAnalysis::new(Default::default());
                             //println!("Analyze module: {}", module_key.display());
 
                             // TODO: chain the visitors!
@@ -118,13 +119,24 @@ impl PolicyBuilder {
                             }
 
                             if let Some(ref deps) = node.dependencies {
-                                let mut packages: BTreeMap<String, PolicyAccess> =
-                                    deps
+                                let mut packages: BTreeMap<
+                                    String,
+                                    PolicyAccess,
+                                > = deps
                                     .iter()
                                     .filter_map(|dep| {
-                                        if is_dependent_module(dep.specifier.as_ref()) {
-                                            Some((dep.specifier.as_ref().to_string(), true.into()))
-                                        } else { None }
+                                        if is_dependent_module(
+                                            dep.specifier.as_ref(),
+                                        ) {
+                                            Some((
+                                                dep.specifier
+                                                    .as_ref()
+                                                    .to_string(),
+                                                true.into(),
+                                            ))
+                                        } else {
+                                            None
+                                        }
                                     })
                                     .collect();
                                 analysis.packages.append(&mut packages);
