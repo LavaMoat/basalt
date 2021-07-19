@@ -309,6 +309,9 @@ impl ScopeBuilder {
             }
             Stmt::Block(n) => {
                 if merge {
+                    if let Some(merge_locals) = locals {
+                        scope.locals = scope.locals.union(&merge_locals).cloned().collect();
+                    }
                     for stmt in n.stmts.iter() {
                         self._visit_stmt(stmt, scope, None, false);
                     }
