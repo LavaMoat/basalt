@@ -14,6 +14,7 @@ use crate::helpers::{pattern_words, var_symbol_words};
 // SEE: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects
 //
 
+static REQUIRE: &str = "require";
 static GLOBAL_THIS: &str = "globalThis";
 
 static KEYWORDS: [&'static str; 3] = ["undefined", "NaN", "Infinity"];
@@ -91,6 +92,7 @@ static INTRINSICS: [&'static str; 51] = [
 pub struct GlobalOptions {
     filter_intrinsics: bool,
     filter_keywords: bool,
+    filter_require: bool,
 }
 
 impl Default for GlobalOptions {
@@ -98,6 +100,7 @@ impl Default for GlobalOptions {
         Self {
             filter_intrinsics: true,
             filter_keywords: true,
+            filter_require: true,
         }
     }
 }
@@ -441,6 +444,16 @@ impl ScopeBuilder {
             Expr::Call(n) => match &n.callee {
                 ExprOrSuper::Expr(expr) => {
                     self._visit_expr(expr, scope);
+                    if self.options.filter_require {
+                        match &**expr {
+                            Expr::Ident(id) => {
+                                if REQUIRE == id.sym.as_ref() {
+                                    scope.idents.remove(&id.sym);
+                                }
+                            }
+                            _ => {}
+                        }
+                    }
                 }
                 _ => {}
             },

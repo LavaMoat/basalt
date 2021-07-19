@@ -1,2 +1,2 @@
-//require('core-js/internals/promise-resolve.js');
-require('@babel/core');
+require('core-js/internals/promise-resolve.js');
+//require('@babel/core');
