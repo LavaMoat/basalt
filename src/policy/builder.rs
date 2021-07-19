@@ -14,6 +14,7 @@ use crate::{
     analysis::{
         dependencies::is_dependent_module, globals_scope::GlobalAnalysis,
     },
+    module::base::module_base_directory,
     module::node::{
         cached_modules, parse_file, VisitedDependency, VisitedModule,
     },
@@ -54,6 +55,7 @@ impl PolicyBuilder {
         };
 
         let mut visitor = |dep: VisitedDependency| {
+            //println!("Visiting module {:?}", dep.spec);
             if is_dependent_module(&dep.spec) {
                 match dep.file_name {
                     FileName::Real(path) => {
@@ -168,23 +170,57 @@ impl PolicyBuilder {
     }
 }
 
-// FIXME: Fix determining module base when a specific file or directory is imported.
-
+/*
 // Attempt to find the base directory for a module import specifier.
-//
-// Walks the parents of the path and matches against the specifier split on a
-// slash to account for scoped packages in the specifier.
-//
-// WARN: Nested imports that reference a file in the package may not work as
-// WARN: expected due to the use of a file name in the specifier.
-//
 fn module_base_directory(specifier: &str, path: &PathBuf) -> Option<PathBuf> {
+    let mut sys_path = path.to_string_lossy().to_string();
+    if cfg!(target_os = "windows") {
+        sys_path = sys_path.replace("\\", "/");
+    }
+    let mut sub_path = vec!["node_modules"];
+    let mut spec_parts : Vec<&str> = specifier.split("/").collect();
+    if let Some(first) = spec_parts.get(0) {
+        sub_path.push(first);
+        if first.starts_with("@") {
+            if let Some(second) = spec_parts.get(1) {
+                sub_path.push(second);
+            }
+        }
+    }
+    let sub_path = sub_path.join("/");
+    for i in sys_path.rmatch_indices(&sub_path).take(1) {
+        let before = &sys_path[0..i.0];
+        return Some(PathBuf::from(format!("{}{}", before, i.1)));
+    }
+
+    //println!("Sub path is {:#?}", sub_path);
+
+    let needle = format!("/node_modules/{}", specifier);
+    if sys_path.ends_with(&needle) {
+        let root = sys_path.trim_end_matches(&needle);
+        let mut root_path = PathBuf::from(root);
+        root_path.push("node_modules");
+        let parts: Vec<&str> = specifier.split("/").collect();
+        if let Some(first) = parts.get(0) {
+            root_path.push(first);
+            if first.starts_with("@") {
+                if let Some(second) = parts.get(1) {
+                    root_path.push(second);
+                }
+            }
+            return Some(root_path);
+        }
+    }
+
+    // This handles the common path of standard package import.
     let get_requirements = || -> Vec<&str> {
         let mut requirements: Vec<&str> = specifier.split("/").collect();
         requirements.insert(0, "node_modules");
         requirements = requirements.into_iter().rev().collect();
         requirements
     };
+
+    let mut matches: Vec<bool> = Vec::new();
 
     let mut requirements = get_requirements();
     let mut search = path.to_path_buf();
@@ -194,9 +230,13 @@ fn module_base_directory(specifier: &str, path: &PathBuf) -> Option<PathBuf> {
             if let Some(needle) = requirements.get(0) {
                 // This part matches the specifier
                 if *needle == name.to_string_lossy().as_ref() {
-                    requirements.swap_remove(0);
+                    println!("Got match on {:#?}", name);
+                    //matches.push(true);
+                    //println!("Before remove {:#?}", requirements.len());
+                    //requirements.remove(0);
+                    //println!("After remove {:#?}", requirements.len());
                     // If the requirements are empty we matched all parts
-                    if requirements.is_empty() {
+                    if requirements.len() == matches.len() {
                         let mut base = p.to_path_buf();
                         // Append the requirements back to the current parent path
                         // skipping the `node_modules` we just matched on.
@@ -208,15 +248,19 @@ fn module_base_directory(specifier: &str, path: &PathBuf) -> Option<PathBuf> {
                         for part in replay.drain(..) {
                             base = base.join(part);
                         }
+
+                        println!("Returning base {:#?}", base);
+
                         return Some(base);
                     }
                 }
             } else {
                 // Matches must be consecutive so we reset if a match fails
-                requirements = get_requirements();
+                //requirements = get_requirements();
             }
         }
         search = p.to_path_buf();
     }
     None
 }
+*/

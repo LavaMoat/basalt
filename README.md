@@ -24,7 +24,7 @@ rustup override unset
 
 ## Test
 
-To run the tests:
+To run the tests first install dependencies with `yarn install` or `npm install` then run:
 
 ```
 cargo +nightly test -- --nocapture
