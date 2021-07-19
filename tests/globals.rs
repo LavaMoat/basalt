@@ -361,6 +361,8 @@ fn globals_expr_unary() -> Result<()> {
 
 #[test]
 fn globals_expr_class() -> Result<()> {
+    // TODO: Restore `output.json` to use the order that the variables
+    // TODO: are declared in `input.js`
     let expected =
         std::fs::read_to_string("tests/globals/expr/class/output.json")?;
     let analysis = analyze(PathBuf::from("tests/globals/expr/class/input.js"))?;

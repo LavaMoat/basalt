@@ -168,7 +168,17 @@ impl GlobalAnalysis {
 
         let mut diff: IndexSet<JsWord> =
             scope.idents.difference(&combined_locals).cloned().collect();
-        for sym in diff.drain(..) {
+        'symbols: for sym in diff.drain(..) {
+
+            // Hack to ignore member expressions where the first
+            // part of the path matches a local symbol
+            for local in &combined_locals {
+                let dot_word = format!("{}.", local);
+                if sym.starts_with(&dot_word) {
+                    continue 'symbols;
+                }
+            }
+
             global_symbols.insert(sym.clone());
         }
 
@@ -662,10 +672,14 @@ impl ScopeBuilder {
         let compute_prop = match &n.obj {
             ExprOrSuper::Expr(expr) => {
                 match &**expr {
-                    Expr::Ident(id) => {
-                        if scope.locals.contains(&id.sym) {
-                            return;
-                        }
+                    Expr::Ident(_) => {
+                        // TODO: Detect whether a member expression `obj`
+                        // TODO: would be a local but we need to walk the
+                        // TODO: parent hierarchy or have a stack of all locals
+                        // TODO: to do this so deferring until later.
+                        //
+                        // TODO: Once this is done then the hack for this when
+                        // TODO: computing globals() can be removed.
                         self._visit_member_expr(expr, words);
                         true
                     }
