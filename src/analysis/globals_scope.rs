@@ -142,17 +142,24 @@ pub struct GlobalAnalysis {
 impl GlobalAnalysis {
     /// Create a scope analysis.
     pub fn new(options: GlobalOptions) -> Self {
-        let locals = if options.filter_module_exports {
-            let mut locals = IndexSet::new();
+        // Setting locals at the root scope allows us to
+        // filter out certain symbols from being detected
+        // as global.
+        let mut locals = IndexSet::new();
+
+        if options.filter_module_exports {
             locals.insert(JsWord::from(MODULE));
             locals.insert(JsWord::from(EXPORTS));
-            Some(locals)
-        } else {
-            None
-        };
+        }
+
+        if options.filter_keywords {
+            for word in KEYWORDS {
+                locals.insert(JsWord::from(word));
+            }
+        }
 
         Self {
-            root: Scope::new(locals),
+            root: Scope::new(Some(locals)),
             options,
         }
     }
@@ -748,10 +755,6 @@ impl ScopeBuilder {
             if INTRINSICS.contains(&sym.as_ref()) {
                 return;
             }
-        }
-
-        if self.options.filter_keywords && KEYWORDS.contains(&sym.as_ref()) {
-            return;
         }
 
         scope.idents.insert(sym);
