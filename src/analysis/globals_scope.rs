@@ -107,6 +107,44 @@ impl Default for GlobalOptions {
     }
 }
 
+/// Represents a symbol word or a member expression path.
+#[derive(Debug, Hash, Eq, PartialEq, Clone)]
+pub enum WordOrPath {
+    /// Symbol word.
+    Word(JsWord),
+    /// Member expression path.
+    Path(JsWord, Vec<JsWord>),
+}
+
+impl WordOrPath {
+    /// Convert into a dot delimited path.
+    pub fn into_path(&self) -> JsWord {
+        match self {
+            WordOrPath::Word(word) => word.clone(),
+            WordOrPath::Path(word, parts) => {
+                let mut words: Vec<&JsWord> = parts.iter().collect();
+                words.insert(0, word);
+                let words: Vec<String> =
+                    words.iter().map(|w| w.as_ref().to_string()).collect();
+                JsWord::from(words.join("."))
+            }
+        }
+    }
+}
+
+impl Into<JsWord> for &WordOrPath {
+    fn into(self) -> JsWord {
+        // This implementation only returns the first word
+        // so that detection of member expressions when computing
+        // globals is correct when comparing against locals which
+        // should always be a single word.
+        match self {
+            WordOrPath::Word(word) => word.clone(),
+            WordOrPath::Path(word, _) => word.clone(),
+        }
+    }
+}
+
 /// Lexical scope.
 #[derive(Debug)]
 pub struct Scope {
@@ -119,7 +157,7 @@ pub struct Scope {
     /// These could be local or global symbols and we need
     /// to walk all parent scopes to detect if a symbol should
     /// be considered global.
-    idents: IndexSet<JsWord>,
+    idents: IndexSet<WordOrPath>,
 }
 
 impl Scope {
@@ -194,19 +232,18 @@ impl GlobalAnalysis {
             combined_locals = combined_locals.union(locals).cloned().collect();
         }
 
-        let mut diff: IndexSet<JsWord> =
-            scope.idents.difference(&combined_locals).cloned().collect();
-        'symbols: for sym in diff.drain(..) {
-            // Hack to ignore member expressions where the first
-            // part of the path matches a local symbol
-            for local in &combined_locals {
-                let dot_word = format!("{}.", local);
-                if sym.starts_with(&dot_word) {
-                    continue 'symbols;
-                }
+        // Build up the difference between the sets, cannot use difference()
+        // as they are of different types.
+        let mut diff: IndexSet<&WordOrPath> = Default::default();
+        for ident in scope.idents.iter() {
+            let word: JsWord = ident.into();
+            if !combined_locals.contains(&word) {
+                diff.insert(ident);
             }
+        }
 
-            global_symbols.insert(sym.clone());
+        for sym in diff.drain(..) {
+            global_symbols.insert(sym.into_path());
         }
 
         for scope in scope.scopes.iter() {
@@ -217,9 +254,34 @@ impl GlobalAnalysis {
     }
 }
 
-struct ScopeBuilder {
-    options: GlobalOptions,
+impl Visit for GlobalAnalysis {
+    fn visit_module_item(&mut self, n: &ModuleItem, _: &dyn Node) {
+        let scope = &mut self.root;
+        let builder = ScopeBuilder {};
+        match n {
+            ModuleItem::ModuleDecl(decl) => match decl {
+                ModuleDecl::Import(import) => {
+                    for spec in import.specifiers.iter() {
+                        let id = match spec {
+                            ImportSpecifier::Named(n) => &n.local.sym,
+                            ImportSpecifier::Default(n) => &n.local.sym,
+                            ImportSpecifier::Namespace(n) => &n.local.sym,
+                        };
+                        scope.locals.insert(id.clone());
+                    }
+                }
+                _ => {}
+            },
+            ModuleItem::Stmt(stmt) => {
+                builder._visit_stmt(stmt, scope, None, false)
+            }
+        }
+    }
 }
+
+/// Scope builder is used instead of the visitor implementation as we need
+/// to borrow the root scope mutably to start processing.
+struct ScopeBuilder;
 
 impl ScopeBuilder {
     fn _visit_stmt(
@@ -406,10 +468,10 @@ impl ScopeBuilder {
     fn _visit_expr(&self, n: &Expr, scope: &mut Scope) {
         match n {
             Expr::Ident(id) => {
-                self.insert_ident(id.sym.clone(), scope);
+                self.insert_ident(id.sym.clone(), scope, None);
             }
             Expr::PrivateName(n) => {
-                self.insert_ident(private_name_prefix(&n.id.sym), scope);
+                self.insert_ident(private_name_prefix(&n.id.sym), scope, None);
             }
             Expr::Bin(n) => {
                 self._visit_expr(&*n.left, scope);
@@ -446,7 +508,7 @@ impl ScopeBuilder {
                         }
                         PropOrSpread::Prop(n) => match &**n {
                             Prop::Shorthand(id) => {
-                                self.insert_ident(id.sym.clone(), scope);
+                                self.insert_ident(id.sym.clone(), scope, None);
                             }
                             Prop::KeyValue(n) => {
                                 self._visit_expr(&*n.value, scope);
@@ -524,7 +586,11 @@ impl ScopeBuilder {
                     }
                     PatOrExpr::Pat(pat) => match &**pat {
                         Pat::Ident(ident) => {
-                            self.insert_ident(ident.id.sym.clone(), scope);
+                            self.insert_ident(
+                                ident.id.sym.clone(),
+                                scope,
+                                None,
+                            );
                         }
                         _ => {}
                     },
@@ -535,8 +601,8 @@ impl ScopeBuilder {
                 self._visit_expr(&n.expr, scope);
             }
             Expr::Member(n) => {
-                if let Some(word) = self.compute_member(n, scope) {
-                    self.insert_ident(word, scope);
+                if let Some((word, parts)) = self.compute_member(n, scope) {
+                    self.insert_ident(word, scope, Some(parts));
                 }
             }
             Expr::New(n) => {
@@ -689,16 +755,21 @@ impl ScopeBuilder {
         }
     }
 
-    fn compute_member(&self, n: &MemberExpr, scope: &Scope) -> Option<JsWord> {
+    fn compute_member(
+        &self,
+        n: &MemberExpr,
+        scope: &Scope,
+    ) -> Option<(JsWord, Vec<JsWord>)> {
         let mut words = Vec::new();
         self._visit_member(n, &mut words, scope);
         if !words.is_empty() {
-            let words = words
-                .iter()
-                .map(|w| w.as_ref().to_string())
-                .collect::<Vec<_>>();
+            let words =
+                words.into_iter().map(|w| w.clone()).collect::<Vec<_>>();
 
-            Some(JsWord::from(words.join(".")))
+            let mut it = words.into_iter();
+            let sym = it.next().unwrap();
+            let parts: Vec<JsWord> = it.collect();
+            Some((sym, parts))
         } else {
             None
         }
@@ -761,39 +832,18 @@ impl ScopeBuilder {
         }
     }
 
-    fn insert_ident(&self, sym: JsWord, scope: &mut Scope) {
-        // An earlier version of this performed filtering of
-        // intrinsics and keywords here.
-        //
-        // This can be refactored to just inserting directly now.
-        scope.idents.insert(sym);
-    }
-}
-
-impl Visit for GlobalAnalysis {
-    fn visit_module_item(&mut self, n: &ModuleItem, _: &dyn Node) {
-        let scope = &mut self.root;
-        let builder = ScopeBuilder {
-            options: self.options,
+    fn insert_ident(
+        &self,
+        sym: JsWord,
+        scope: &mut Scope,
+        path: Option<Vec<JsWord>>,
+    ) {
+        let word_or_path = if let Some(path) = path {
+            WordOrPath::Path(sym, path)
+        } else {
+            WordOrPath::Word(sym)
         };
-        match n {
-            ModuleItem::ModuleDecl(decl) => match decl {
-                ModuleDecl::Import(import) => {
-                    for spec in import.specifiers.iter() {
-                        let id = match spec {
-                            ImportSpecifier::Named(n) => &n.local.sym,
-                            ImportSpecifier::Default(n) => &n.local.sym,
-                            ImportSpecifier::Namespace(n) => &n.local.sym,
-                        };
-                        scope.locals.insert(id.clone());
-                    }
-                }
-                _ => {}
-            },
-            ModuleItem::Stmt(stmt) => {
-                builder._visit_stmt(stmt, scope, None, false)
-            }
-        }
+        scope.idents.insert(word_or_path);
     }
 }
 
