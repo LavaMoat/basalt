@@ -450,6 +450,9 @@ impl ScopeBuilder {
     }
 
     fn _visit_expr(&self, n: &Expr, scope: &mut Scope) {
+
+        println!("Node {:#?}", n);
+
         match n {
             Expr::Ident(id) => {
                 self.insert_ident(id.sym.clone(), scope, None);
@@ -770,6 +773,7 @@ impl ScopeBuilder {
                         self._visit_member_expr(expr, words);
                         true
                     }
+                    Expr::This(_) => true,
                     Expr::Call(n) => {
                         match &n.callee {
                             ExprOrSuper::Expr(expr) => match &**expr {
