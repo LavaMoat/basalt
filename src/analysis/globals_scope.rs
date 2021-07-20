@@ -290,11 +290,35 @@ impl ScopeBuilder {
             }
             Stmt::ForIn(n) => {
                 let mut next_scope = Scope::new(None);
+
+                match &n.left {
+                    VarDeclOrPat::VarDecl(n) => {
+                        self._visit_var_decl(n, &mut next_scope);
+                    }
+                    _ => {
+                        todo!("Handle for in pattern destructuring?");
+                    }
+                }
+
+                self._visit_expr(&*n.right, &mut next_scope);
+
                 self._visit_stmt(&*n.body, &mut next_scope, None, false);
                 scope.scopes.push(next_scope);
             }
             Stmt::ForOf(n) => {
                 let mut next_scope = Scope::new(None);
+
+                match &n.left {
+                    VarDeclOrPat::VarDecl(n) => {
+                        self._visit_var_decl(n, &mut next_scope);
+                    }
+                    _ => {
+                        todo!("Handle for of pattern destructuring?");
+                    }
+                }
+
+                self._visit_expr(&*n.right, &mut next_scope);
+
                 self._visit_stmt(&*n.body, &mut next_scope, None, false);
                 scope.scopes.push(next_scope);
             }
