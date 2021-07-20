@@ -643,7 +643,8 @@ fn globals_filter_keywords() -> Result<()> {
 fn globals_filter_module_exports() -> Result<()> {
     let expected =
         std::fs::read_to_string("tests/globals/module-exports/output.json")?;
-    let analysis = analyze(PathBuf::from("tests/globals/module-exports/input.js"))?;
+    let analysis =
+        analyze(PathBuf::from("tests/globals/module-exports/input.js"))?;
     let globals = analysis.globals();
     let result = serde_json::to_string_pretty(&globals)?;
     //println!("{}", result);

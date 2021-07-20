@@ -147,7 +147,9 @@ impl GlobalAnalysis {
             locals.insert(JsWord::from(MODULE));
             locals.insert(JsWord::from(EXPORTS));
             Some(locals)
-        } else { None };
+        } else {
+            None
+        };
 
         Self {
             root: Scope::new(locals),
@@ -178,7 +180,6 @@ impl GlobalAnalysis {
         let mut diff: IndexSet<JsWord> =
             scope.idents.difference(&combined_locals).cloned().collect();
         'symbols: for sym in diff.drain(..) {
-
             // Hack to ignore member expressions where the first
             // part of the path matches a local symbol
             for local in &combined_locals {
@@ -329,7 +330,11 @@ impl ScopeBuilder {
             Stmt::Block(n) => {
                 if merge {
                     if let Some(merge_locals) = locals {
-                        scope.locals = scope.locals.union(&merge_locals).cloned().collect();
+                        scope.locals = scope
+                            .locals
+                            .union(&merge_locals)
+                            .cloned()
+                            .collect();
                     }
                     for stmt in n.stmts.iter() {
                         self._visit_stmt(stmt, scope, None, false);
@@ -450,16 +455,12 @@ impl ScopeBuilder {
                         );
                     }
                     BlockStmtOrExpr::Expr(expr) => {
-                        let expr_stmt = Stmt::Expr(ExprStmt {
-                            span: DUMMY_SP,
-                            expr: expr.clone(),
-                        });
-                        self._visit_stmt(
-                            &expr_stmt,
-                            scope,
-                            Some(func_param_names),
-                            false,
-                        );
+                        scope.locals = scope
+                            .locals
+                            .union(&func_param_names)
+                            .cloned()
+                            .collect();
+                        self._visit_expr(expr, scope);
                     }
                 }
             }
@@ -628,6 +629,8 @@ impl ScopeBuilder {
         scope: &mut Scope,
         mut locals: IndexSet<JsWord>,
     ) {
+        println!("Visiting function: {:#?}", n.params.len());
+
         // Capture function parameters as locals
         for param in n.params.iter() {
             let mut names = Vec::new();
@@ -635,6 +638,8 @@ impl ScopeBuilder {
             let param_names: IndexSet<_> =
                 names.into_iter().map(|n| n.clone()).collect();
             locals = locals.union(&param_names).cloned().collect();
+
+            println!("Visiting function param {:#?}", locals);
         }
 
         if let Some(ref body) = n.body {
