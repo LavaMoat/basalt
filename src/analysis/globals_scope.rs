@@ -153,6 +153,10 @@ impl GlobalAnalysis {
             }
         }
 
+        if options.filter_require {
+            locals.insert(JsWord::from(REQUIRE));
+        }
+
         if options.filter_module_exports {
             locals.insert(JsWord::from(MODULE));
             locals.insert(JsWord::from(EXPORTS));
@@ -480,16 +484,6 @@ impl ScopeBuilder {
             Expr::Call(n) => match &n.callee {
                 ExprOrSuper::Expr(expr) => {
                     self._visit_expr(expr, scope);
-                    if self.options.filter_require {
-                        match &**expr {
-                            Expr::Ident(id) => {
-                                if REQUIRE == id.sym.as_ref() {
-                                    scope.idents.remove(&id.sym);
-                                }
-                            }
-                            _ => {}
-                        }
-                    }
                 }
                 _ => {}
             },

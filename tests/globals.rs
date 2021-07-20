@@ -618,8 +618,8 @@ fn globals_shadow_block() -> Result<()> {
 #[test]
 fn globals_filter_intrinsics() -> Result<()> {
     let expected =
-        std::fs::read_to_string("tests/globals/intrinsics/output.json")?;
-    let analysis = analyze(PathBuf::from("tests/globals/intrinsics/input.js"))?;
+        std::fs::read_to_string("tests/globals/filter/intrinsics/output.json")?;
+    let analysis = analyze(PathBuf::from("tests/globals/filter/intrinsics/input.js"))?;
     let globals = analysis.globals();
     let result = serde_json::to_string_pretty(&globals)?;
     //println!("{}", result);
@@ -630,8 +630,8 @@ fn globals_filter_intrinsics() -> Result<()> {
 #[test]
 fn globals_filter_keywords() -> Result<()> {
     let expected =
-        std::fs::read_to_string("tests/globals/keywords/output.json")?;
-    let analysis = analyze(PathBuf::from("tests/globals/keywords/input.js"))?;
+        std::fs::read_to_string("tests/globals/filter/keywords/output.json")?;
+    let analysis = analyze(PathBuf::from("tests/globals/filter/keywords/input.js"))?;
     let globals = analysis.globals();
     let result = serde_json::to_string_pretty(&globals)?;
     //println!("{}", result);
@@ -642,9 +642,22 @@ fn globals_filter_keywords() -> Result<()> {
 #[test]
 fn globals_filter_module_exports() -> Result<()> {
     let expected =
-        std::fs::read_to_string("tests/globals/module-exports/output.json")?;
+        std::fs::read_to_string("tests/globals/filter/module-exports/output.json")?;
     let analysis =
-        analyze(PathBuf::from("tests/globals/module-exports/input.js"))?;
+        analyze(PathBuf::from("tests/globals/filter/module-exports/input.js"))?;
+    let globals = analysis.globals();
+    let result = serde_json::to_string_pretty(&globals)?;
+    //println!("{}", result);
+    assert_eq!(expected.trim_end(), result);
+    Ok(())
+}
+
+#[test]
+fn globals_filter_require() -> Result<()> {
+    let expected =
+        std::fs::read_to_string("tests/globals/filter/require/output.json")?;
+    let analysis =
+        analyze(PathBuf::from("tests/globals/filter/require/input.js"))?;
     let globals = analysis.globals();
     let result = serde_json::to_string_pretty(&globals)?;
     //println!("{}", result);
