@@ -9,3 +9,5 @@ for (let i of [1,2,3]) {
 for (const [key, value] of iterable) {
   console.log(value);
 }
+
+for ((item) of list) {}

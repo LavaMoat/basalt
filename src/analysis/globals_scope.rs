@@ -5,7 +5,7 @@
 //! Once the scope tree is built we can compute globals by doing a
 //! depth-first traversal and performing a union of all the locals
 //! for each scope into a set, globals are then symbol references
-//! that do not exist in the set of scope locals.
+//! that do not exist in the set of all locals.
 //!
 //! Member expressions with a dot-delimited path only compare using
 //! the first word in the path.
@@ -360,8 +360,19 @@ impl ScopeBuilder {
                     VarDeclOrPat::VarDecl(n) => {
                         self._visit_var_decl(n, &mut next_scope);
                     }
-                    _ => {
-                        todo!("Handle for in pattern destructuring?");
+                    VarDeclOrPat::Pat(pat) => {
+                        match pat {
+                            Pat::Expr(n) => {
+                                self._visit_expr(n, &mut next_scope);
+                            }
+                            _ => {
+                                let mut names = Vec::new();
+                                pattern_words(pat, &mut names);
+                                for sym in names {
+                                    self.insert_ident(sym.clone(), scope, None);
+                                }
+                            }
+                        }
                     }
                 }
 
@@ -377,8 +388,19 @@ impl ScopeBuilder {
                     VarDeclOrPat::VarDecl(n) => {
                         self._visit_var_decl(n, &mut next_scope);
                     }
-                    _ => {
-                        todo!("Handle for of pattern destructuring?");
+                    VarDeclOrPat::Pat(pat) => {
+                        match pat {
+                            Pat::Expr(n) => {
+                                self._visit_expr(n, &mut next_scope);
+                            }
+                            _ => {
+                                let mut names = Vec::new();
+                                pattern_words(pat, &mut names);
+                                for sym in names {
+                                    self.insert_ident(sym.clone(), scope, None);
+                                }
+                            }
+                        }
                     }
                 }
 
