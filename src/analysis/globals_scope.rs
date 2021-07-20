@@ -147,6 +147,12 @@ impl GlobalAnalysis {
         // as global.
         let mut locals = IndexSet::new();
 
+        if options.filter_intrinsics {
+            for word in INTRINSICS {
+                locals.insert(JsWord::from(word));
+            }
+        }
+
         if options.filter_module_exports {
             locals.insert(JsWord::from(MODULE));
             locals.insert(JsWord::from(EXPORTS));
@@ -636,8 +642,6 @@ impl ScopeBuilder {
         scope: &mut Scope,
         mut locals: IndexSet<JsWord>,
     ) {
-        println!("Visiting function: {:#?}", n.params.len());
-
         // Capture function parameters as locals
         for param in n.params.iter() {
             let mut names = Vec::new();
@@ -645,8 +649,6 @@ impl ScopeBuilder {
             let param_names: IndexSet<_> =
                 names.into_iter().map(|n| n.clone()).collect();
             locals = locals.union(&param_names).cloned().collect();
-
-            println!("Visiting function param {:#?}", locals);
         }
 
         if let Some(ref body) = n.body {
@@ -751,12 +753,10 @@ impl ScopeBuilder {
     }
 
     fn insert_ident(&self, sym: JsWord, scope: &mut Scope) {
-        if self.options.filter_intrinsics {
-            if INTRINSICS.contains(&sym.as_ref()) {
-                return;
-            }
-        }
-
+        // An earlier version of this performed filtering of
+        // intrinsics and keywords here.
+        //
+        // This can be refactored to just inserting directly now.
         scope.idents.insert(sym);
     }
 }
