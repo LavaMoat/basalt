@@ -155,7 +155,7 @@ pub struct Scope {
     /// Identifiers that are references.
     ///
     /// These could be local or global symbols and we need
-    /// to walk all parent scopes to detect if a symbol should
+    /// to combine all parent scopes to detect if a symbol should
     /// be considered global.
     idents: IndexSet<WordOrPath>,
 }
@@ -767,13 +767,6 @@ impl ScopeBuilder {
             ExprOrSuper::Expr(expr) => {
                 match &**expr {
                     Expr::Ident(_) => {
-                        // TODO: Detect whether a member expression `obj`
-                        // TODO: would be a local but we need to walk the
-                        // TODO: parent hierarchy or have a stack of all locals
-                        // TODO: to do this so deferring until later.
-                        //
-                        // TODO: Once this is done then the hack for this when
-                        // TODO: computing globals() can be removed.
                         self._visit_member_expr(expr, words);
                         true
                     }
