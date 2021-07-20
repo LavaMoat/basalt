@@ -726,15 +726,6 @@ impl ScopeBuilder {
             _ => false,
         };
 
-        if self.options.filter_intrinsics && !words.is_empty() {
-            if let Some(first) = words.get(0) {
-                if INTRINSICS.contains(&first.as_ref()) {
-                    words.clear();
-                    return;
-                }
-            }
-        }
-
         if compute_prop && !n.computed {
             match &*n.prop {
                 Expr::Member(n) => self._visit_member(n, words, scope),
