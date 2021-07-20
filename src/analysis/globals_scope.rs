@@ -12,14 +12,14 @@ use indexmap::IndexSet;
 use crate::helpers::{pattern_words, var_symbol_words};
 
 // SEE: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects
-//
 
 static REQUIRE: &str = "require";
+static MODULE: &str = "module";
+static EXPORTS: &str = "exports";
+// TODO
 static GLOBAL_THIS: &str = "globalThis";
 
 static KEYWORDS: [&'static str; 3] = ["undefined", "NaN", "Infinity"];
-
-// TODO: should global functions be included with intrinsics or handled differently?
 
 static INTRINSICS: [&'static str; 51] = [
     // Fundamental objects
@@ -93,6 +93,7 @@ pub struct GlobalOptions {
     filter_intrinsics: bool,
     filter_keywords: bool,
     filter_require: bool,
+    filter_module_exports: bool,
 }
 
 impl Default for GlobalOptions {
@@ -101,6 +102,7 @@ impl Default for GlobalOptions {
             filter_intrinsics: true,
             filter_keywords: true,
             filter_require: true,
+            filter_module_exports: true,
         }
     }
 }
@@ -140,8 +142,15 @@ pub struct GlobalAnalysis {
 impl GlobalAnalysis {
     /// Create a scope analysis.
     pub fn new(options: GlobalOptions) -> Self {
+        let locals = if options.filter_module_exports {
+            let mut locals = IndexSet::new();
+            locals.insert(JsWord::from(MODULE));
+            locals.insert(JsWord::from(EXPORTS));
+            Some(locals)
+        } else { None };
+
         Self {
-            root: Scope::new(None),
+            root: Scope::new(locals),
             options,
         }
     }
