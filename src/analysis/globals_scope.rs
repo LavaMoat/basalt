@@ -2,6 +2,14 @@
 //! containing the local symbols and a list of identities which are
 //! symbol references that maybe global variables.
 //!
+//! Once the scope tree is built we can compute globals by doing a
+//! depth-first traversal and performing a union of all the locals
+//! for each scope into a set, globals are then symbol references
+//! that do not exist in the set of scope locals.
+//!
+//! Member expressions with a dot-delimited path only compare using
+//! the first word in the path.
+//!
 
 use swc_atoms::JsWord;
 use swc_ecma_ast::*;
@@ -17,7 +25,6 @@ static REQUIRE: &str = "require";
 static MODULE: &str = "module";
 static EXPORTS: &str = "exports";
 static GLOBAL_THIS: &str = "globalThis";
-
 static KEYWORDS: [&'static str; 3] = ["undefined", "NaN", "Infinity"];
 
 static INTRINSICS: [&'static str; 51] = [
