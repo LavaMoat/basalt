@@ -1,9 +1,9 @@
 //! Analyze the lexical scopes for a module and generate a tree
 //! containing the local symbols and a list of identities which are
 //! symbol references that maybe global variables.
+//!
 
 use swc_atoms::JsWord;
-use swc_common::DUMMY_SP;
 use swc_ecma_ast::*;
 use swc_ecma_visit::{Node, Visit};
 
@@ -16,7 +16,6 @@ use crate::helpers::{pattern_words, var_symbol_words};
 static REQUIRE: &str = "require";
 static MODULE: &str = "module";
 static EXPORTS: &str = "exports";
-// TODO
 static GLOBAL_THIS: &str = "globalThis";
 
 static KEYWORDS: [&'static str; 3] = ["undefined", "NaN", "Infinity"];
@@ -272,9 +271,7 @@ impl Visit for GlobalAnalysis {
                 }
                 _ => {}
             },
-            ModuleItem::Stmt(stmt) => {
-                builder._visit_stmt(stmt, scope, None)
-            }
+            ModuleItem::Stmt(stmt) => builder._visit_stmt(stmt, scope, None),
         }
     }
 }
@@ -450,9 +447,6 @@ impl ScopeBuilder {
     }
 
     fn _visit_expr(&self, n: &Expr, scope: &mut Scope) {
-
-        println!("Node {:#?}", n);
-
         match n {
             Expr::Ident(id) => {
                 self.insert_ident(id.sym.clone(), scope, None);
@@ -587,8 +581,18 @@ impl ScopeBuilder {
                 self._visit_expr(&n.expr, scope);
             }
             Expr::Member(n) => {
-                if let Some((word, parts)) = self.compute_member(n, scope) {
-                    self.insert_ident(word, scope, Some(parts));
+                if let Some((word, mut parts)) = self.compute_member(n, scope) {
+                    if word.as_ref() == GLOBAL_THIS {
+                        // If it is just a reference to `globalThis` we filter it
+                        if parts.is_empty() {
+                            return;
+                        }
+
+                        let word = parts.remove(0);
+                        self.insert_ident(word, scope, Some(parts));
+                    } else {
+                        self.insert_ident(word, scope, Some(parts));
+                    }
                 }
             }
             Expr::New(n) => {
@@ -644,11 +648,7 @@ impl ScopeBuilder {
                 ClassMember::Constructor(n) => {
                     if let Some(body) = &n.body {
                         let block_stmt = Stmt::Block(body.clone());
-                        self._visit_stmt(
-                            &block_stmt,
-                            &mut next_scope,
-                            None,
-                        );
+                        self._visit_stmt(&block_stmt, &mut next_scope, None);
                     }
                 }
                 ClassMember::Method(n) => {

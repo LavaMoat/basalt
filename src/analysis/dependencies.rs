@@ -5,10 +5,6 @@
 //! list of built in packages for a version of node.
 //!
 
-use swc_common::{comments::SingleThreadedComments, SourceMap};
-use swc_ecma_ast::Module;
-use swc_ecma_dep_graph::DependencyDescriptor;
-
 /// List of built in packages for latest stable node with LTS (node@16).
 pub const NODE_LATEST_STABLE: &'static [&'static str] = &[
     "_http_agent",

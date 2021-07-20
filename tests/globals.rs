@@ -681,3 +681,16 @@ fn globals_normalize_this() -> Result<()> {
     assert_eq!(expected.trim_end(), result);
     Ok(())
 }
+
+#[test]
+fn globals_normalize_global_this() -> Result<()> {
+    let expected =
+        std::fs::read_to_string("tests/globals/normalize/global-this/output.json")?;
+    let analysis =
+        analyze(PathBuf::from("tests/globals/normalize/global-this/input.js"))?;
+    let globals = analysis.globals();
+    let result = serde_json::to_string_pretty(&globals)?;
+    //println!("{}", result);
+    assert_eq!(expected.trim_end(), result);
+    Ok(())
+}
