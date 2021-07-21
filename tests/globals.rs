@@ -684,6 +684,7 @@ fn globals_filter_global_functions() -> Result<()> {
     Ok(())
 }
 
+/*
 #[test]
 fn globals_normalize_this() -> Result<()> {
     let expected =
@@ -696,6 +697,7 @@ fn globals_normalize_this() -> Result<()> {
     assert_eq!(expected.trim_end(), result);
     Ok(())
 }
+*/
 
 #[test]
 fn globals_normalize_global_this() -> Result<()> {

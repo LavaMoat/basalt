@@ -793,9 +793,37 @@ impl ScopeBuilder {
         n: &MemberExpr,
         scope: &mut Scope,
     ) -> Option<(JsWord, Vec<JsWord>)> {
+
         let mut words = Vec::new();
-        self._visit_member(n, &mut words, scope, false);
-        if !words.is_empty() {
+        let mut members = Vec::new();
+        self._visit_member(n, &mut words, &mut members, scope, false);
+
+        // This is a hack for expressions like:
+        //
+        // `[].slice.call(arguments)`
+        //
+        // Where the array literal is a nested member expression so it is not
+        // the first member expression we encounter when iterating.
+        //
+        // We need to ignore the entire expression so track member expresions
+        // encountered and ignore all the words if the last member expression
+        // object is a literal statement.
+        let keep_words = if let Some(last) = members.last() {
+            match &last.obj {
+                ExprOrSuper::Expr(expr) => {
+                    match &**expr {
+                        Expr::Array(_) => false,
+                        Expr::Object(_) => false,
+                        Expr::Lit(_) => false,
+                        _ => true,
+                    }
+                }
+                _ => false,
+
+            }
+        } else { false };
+
+        if keep_words && !words.is_empty() {
             let words =
                 words.into_iter().map(|w| w.clone()).collect::<Vec<_>>();
 
@@ -812,18 +840,21 @@ impl ScopeBuilder {
         &self,
         n: &'a MemberExpr,
         words: &mut Vec<&'a JsWord>,
+        members: &mut Vec<&'a MemberExpr>,
         scope: &mut Scope,
         compute_prop_break: bool,
     ) {
+        members.push(n);
+
         let compute_prop = match &n.obj {
             ExprOrSuper::Expr(expr) => {
-                self._visit_member_expr(expr, words, scope)
+                self._visit_member_expr(expr, words, members, scope)
             }
             _ => false,
         };
 
         if !compute_prop_break && compute_prop && !n.computed {
-            self._visit_member_expr(&*n.prop, words, scope);
+            self._visit_member_expr(&*n.prop, words, members, scope);
         }
     }
 
@@ -831,6 +862,7 @@ impl ScopeBuilder {
         &self,
         n: &'a Expr,
         words: &mut Vec<&'a JsWord>,
+        members: &mut Vec<&'a MemberExpr>,
         scope: &mut Scope,
     ) -> bool {
         match n {
@@ -839,13 +871,15 @@ impl ScopeBuilder {
                 true
             }
             Expr::Member(n) => {
-                self._visit_member(n, words, scope, false);
+                self._visit_member(n, words, members, scope, false);
                 true
             }
             Expr::PrivateName(_) => false,
             Expr::This(_) => false,
             Expr::Lit(_) => false,
-            Expr::Array(_) => false,
+            Expr::Array(_) => {
+                false
+            },
             Expr::Object(_) => false,
             Expr::Call(n) => {
                 match &n.callee {
@@ -854,7 +888,7 @@ impl ScopeBuilder {
                             words.push(&id.sym);
                         }
                         Expr::Member(n) => {
-                            self._visit_member(n, words, scope, true);
+                            self._visit_member(n, words, members, scope, true);
                         }
                         _ => {}
                     },
