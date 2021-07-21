@@ -5,7 +5,7 @@ use std::path::PathBuf;
 
 use anyhow::{bail, Result};
 
-use swc_common::{chain, FileName};
+use swc_common::FileName;
 use swc_ecma_loader::{resolve::Resolve, resolvers::node::NodeResolver};
 use swc_ecma_visit::VisitWith;
 
@@ -13,6 +13,7 @@ use super::{PackagePolicy, Policy, PolicyAccess};
 use crate::{
     analysis::{
         dependencies::is_dependent_module, globals_scope::GlobalAnalysis,
+        builtin::BuiltinAnalysis,
     },
     module::base::module_base_directory,
     module::node::{
@@ -105,14 +106,11 @@ impl PolicyBuilder {
                     let visited_module = cached_module.value();
                     match &**visited_module {
                         VisitedModule::Module(_, _, node) => {
+                            // Compute and aggregate globals
                             let mut globals_scope =
                                 GlobalAnalysis::new(Default::default());
-                            //println!("Analyze module: {}", module_key.display());
-
-                            // TODO: chain the visitors!
                             node.module.visit_children_with(&mut globals_scope);
-
-                            let module_globals = globals_scope.globals();
+                            let module_globals = globals_scope.compute();
                             for atom in module_globals {
                                 analysis.globals.insert(
                                     atom.as_ref().to_string(),
@@ -120,6 +118,19 @@ impl PolicyBuilder {
                                 );
                             }
 
+                            // Compute and aggregate builtins
+                            let mut builtins =
+                                BuiltinAnalysis::new();
+                            node.module.visit_children_with(&mut builtins);
+                            let module_builtins = builtins.compute();
+                            for atom in module_builtins {
+                                analysis.builtin.insert(
+                                    atom.as_ref().to_string(),
+                                    true.into(),
+                                );
+                            }
+
+                            // Compute dependent packages for each direct dependency
                             if let Some(ref deps) = node.dependencies {
                                 let mut packages: BTreeMap<
                                     String,

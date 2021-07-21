@@ -73,14 +73,14 @@ pub fn symbols(file: PathBuf, debug: bool) -> Result<()> {
         bail!("Module {} does not exist or is not a file", file.display());
     }
 
-    let mut block_scope = GlobalAnalysis::new(Default::default());
+    let mut globals_scope = GlobalAnalysis::new(Default::default());
     let (_, _, module) = crate::swc_utils::load_file(&file)?;
-    module.visit_children_with(&mut block_scope);
+    module.visit_children_with(&mut globals_scope);
 
     if debug {
-        println!("{:#?}", block_scope);
+        println!("{:#?}", globals_scope);
     } else {
-        let globals = block_scope.globals();
+        let globals = globals_scope.compute();
         println!("{}", serde_json::to_string_pretty(&globals)?);
     }
 
