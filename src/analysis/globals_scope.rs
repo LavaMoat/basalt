@@ -802,6 +802,12 @@ impl ScopeBuilder {
                         self._visit_member_expr(expr, words);
                         true
                     }
+                    // For deep paths the object itself is a member expression
+                    // Eg: `!(process.env.TERM || '')`;
+                    Expr::Member(n) => {
+                        self._visit_member(n, words, scope);
+                        true
+                    }
                     Expr::This(_) => true,
                     Expr::Call(n) => {
                         match &n.callee {
