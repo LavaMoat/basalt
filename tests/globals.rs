@@ -670,6 +670,21 @@ fn globals_filter_require() -> Result<()> {
 }
 
 #[test]
+fn globals_filter_global_functions() -> Result<()> {
+    let expected = std::fs::read_to_string(
+        "tests/globals/filter/global-functions/output.json",
+    )?;
+    let analysis = analyze(PathBuf::from(
+        "tests/globals/filter/global-functions/input.js",
+    ))?;
+    let globals = analysis.compute();
+    let result = serde_json::to_string_pretty(&globals)?;
+    //println!("{}", result);
+    assert_eq!(expected.trim_end(), result);
+    Ok(())
+}
+
+#[test]
 fn globals_normalize_this() -> Result<()> {
     let expected =
         std::fs::read_to_string("tests/globals/normalize/this/output.json")?;

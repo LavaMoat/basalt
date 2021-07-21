@@ -26,6 +26,21 @@ static MODULE: &str = "module";
 static EXPORTS: &str = "exports";
 static GLOBAL_THIS: &str = "globalThis";
 static KEYWORDS: [&'static str; 3] = ["undefined", "NaN", "Infinity"];
+static GLOBAL_FUNCTIONS: [&'static str; 12] = [
+    "eval",
+    "uneval",
+    "isFinite",
+    "isNaN",
+    "parseFloat",
+    "parseInt",
+    "encodeURI",
+    "encodeURIComponent",
+    "decodeURI",
+    "decodeURIComponent",
+    // Deprecated
+    "escape",
+    "unescape",
+];
 
 static INTRINSICS: [&'static str; 51] = [
     // Fundamental objects
@@ -100,6 +115,7 @@ pub struct GlobalOptions {
     filter_keywords: bool,
     filter_require: bool,
     filter_module_exports: bool,
+    filter_global_functions: bool,
 }
 
 impl Default for GlobalOptions {
@@ -109,6 +125,7 @@ impl Default for GlobalOptions {
             filter_keywords: true,
             filter_require: true,
             filter_module_exports: true,
+            filter_global_functions: true,
         }
     }
 }
@@ -208,6 +225,12 @@ impl GlobalAnalysis {
 
         if options.filter_keywords {
             for word in KEYWORDS {
+                locals.insert(JsWord::from(word));
+            }
+        }
+
+        if options.filter_global_functions {
+            for word in GLOBAL_FUNCTIONS {
                 locals.insert(JsWord::from(word));
             }
         }
@@ -830,7 +853,7 @@ impl ScopeBuilder {
                         Expr::Member(n) => {
                             self._visit_member(n, words, scope, true);
                         }
-                        _ => {},
+                        _ => {}
                     },
                     _ => {}
                 }
@@ -839,7 +862,7 @@ impl ScopeBuilder {
             _ => {
                 self._visit_expr(n, scope);
                 true
-            },
+            }
         }
     }
 
