@@ -1,3 +1,5 @@
 [
-  "document"
+  "document",
+  "process.platform",
+  "process.env.TERM"
 ]
