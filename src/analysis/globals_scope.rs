@@ -843,7 +843,10 @@ impl ScopeBuilder {
                 true
             }
             Expr::PrivateName(_) => false,
-            Expr::This(_) => true,
+            Expr::This(_) => false,
+            Expr::Lit(_) => false,
+            Expr::Array(_) => false,
+            Expr::Object(_) => false,
             Expr::Call(n) => {
                 match &n.callee {
                     ExprOrSuper::Expr(expr) => match &**expr {
