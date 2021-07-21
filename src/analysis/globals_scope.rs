@@ -360,20 +360,18 @@ impl ScopeBuilder {
                     VarDeclOrPat::VarDecl(n) => {
                         self._visit_var_decl(n, &mut next_scope);
                     }
-                    VarDeclOrPat::Pat(pat) => {
-                        match pat {
-                            Pat::Expr(n) => {
-                                self._visit_expr(n, &mut next_scope);
-                            }
-                            _ => {
-                                let mut names = Vec::new();
-                                pattern_words(pat, &mut names);
-                                for sym in names {
-                                    self.insert_ident(sym.clone(), scope, None);
-                                }
+                    VarDeclOrPat::Pat(pat) => match pat {
+                        Pat::Expr(n) => {
+                            self._visit_expr(n, &mut next_scope);
+                        }
+                        _ => {
+                            let mut names = Vec::new();
+                            pattern_words(pat, &mut names);
+                            for sym in names {
+                                self.insert_ident(sym.clone(), scope, None);
                             }
                         }
-                    }
+                    },
                 }
 
                 self._visit_expr(&*n.right, &mut next_scope);
@@ -388,20 +386,18 @@ impl ScopeBuilder {
                     VarDeclOrPat::VarDecl(n) => {
                         self._visit_var_decl(n, &mut next_scope);
                     }
-                    VarDeclOrPat::Pat(pat) => {
-                        match pat {
-                            Pat::Expr(n) => {
-                                self._visit_expr(n, &mut next_scope);
-                            }
-                            _ => {
-                                let mut names = Vec::new();
-                                pattern_words(pat, &mut names);
-                                for sym in names {
-                                    self.insert_ident(sym.clone(), scope, None);
-                                }
+                    VarDeclOrPat::Pat(pat) => match pat {
+                        Pat::Expr(n) => {
+                            self._visit_expr(n, &mut next_scope);
+                        }
+                        _ => {
+                            let mut names = Vec::new();
+                            pattern_words(pat, &mut names);
+                            for sym in names {
+                                self.insert_ident(sym.clone(), scope, None);
                             }
                         }
-                    }
+                    },
                 }
 
                 self._visit_expr(&*n.right, &mut next_scope);
@@ -772,10 +768,10 @@ impl ScopeBuilder {
     fn compute_member(
         &self,
         n: &MemberExpr,
-        scope: &Scope,
+        scope: &mut Scope,
     ) -> Option<(JsWord, Vec<JsWord>)> {
         let mut words = Vec::new();
-        self._visit_member(n, &mut words, scope);
+        self._visit_member(n, &mut words, scope, false);
         if !words.is_empty() {
             let words =
                 words.into_iter().map(|w| w.clone()).collect::<Vec<_>>();
@@ -793,56 +789,57 @@ impl ScopeBuilder {
         &self,
         n: &'a MemberExpr,
         words: &mut Vec<&'a JsWord>,
-        scope: &Scope,
+        scope: &mut Scope,
+        compute_prop_break: bool,
     ) {
         let compute_prop = match &n.obj {
             ExprOrSuper::Expr(expr) => {
-                match &**expr {
-                    Expr::Ident(_) => {
-                        self._visit_member_expr(expr, words);
-                        true
-                    }
-                    // For deep paths the object itself is a member expression
-                    // Eg: `!(process.env.TERM || '')`;
-                    Expr::Member(n) => {
-                        self._visit_member(n, words, scope);
-                        true
-                    }
-                    Expr::This(_) => true,
-                    Expr::Call(n) => {
-                        match &n.callee {
-                            ExprOrSuper::Expr(expr) => match &**expr {
-                                Expr::Ident(id) => {
-                                    words.push(&id.sym);
-                                }
-                                _ => {}
-                            },
-                            _ => {}
-                        }
-                        false
-                    }
-                    // NOTE: Don't compute properties for Call expressions
-                    // NOTE: otherwise we generate for `fetch().then()`
-                    _ => false,
-                }
+                self._visit_member_expr(expr, words, scope)
             }
             _ => false,
         };
 
-        if compute_prop && !n.computed {
-            match &*n.prop {
-                Expr::Member(n) => self._visit_member(n, words, scope),
-                _ => self._visit_member_expr(&*n.prop, words),
-            }
+        if !compute_prop_break && compute_prop && !n.computed {
+            self._visit_member_expr(&*n.prop, words, scope);
         }
     }
 
-    fn _visit_member_expr<'a>(&self, n: &'a Expr, words: &mut Vec<&'a JsWord>) {
+    fn _visit_member_expr<'a>(
+        &self,
+        n: &'a Expr,
+        words: &mut Vec<&'a JsWord>,
+        scope: &mut Scope,
+    ) -> bool {
         match n {
             Expr::Ident(id) => {
                 words.push(&id.sym);
+                true
             }
-            _ => {}
+            Expr::Member(n) => {
+                self._visit_member(n, words, scope, false);
+                true
+            }
+            Expr::PrivateName(_) => false,
+            Expr::This(_) => true,
+            Expr::Call(n) => {
+                match &n.callee {
+                    ExprOrSuper::Expr(expr) => match &**expr {
+                        Expr::Ident(id) => {
+                            words.push(&id.sym);
+                        }
+                        Expr::Member(n) => {
+                            self._visit_member(n, words, scope, true);
+                        }
+                        _ => {},
+                    },
+                    _ => {}
+                }
+                false
+            }
+            _ => {
+                self._visit_expr(n, scope);
+                true
+            },
         }
     }
 

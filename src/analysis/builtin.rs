@@ -37,7 +37,7 @@ impl Visit for BuiltinAnalysis {
                 }
                 _ => {}
             },
-            ModuleItem::Stmt(_stmt) => {},
+            ModuleItem::Stmt(_stmt) => {}
         }
     }
 }

@@ -1,4 +1,8 @@
 [
+  "document",
   "console.log",
-  "fetch"
+  "fetch",
+  "window",
+  "process.platform",
+  "process.env.TERM"
 ]

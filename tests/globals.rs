@@ -684,10 +684,12 @@ fn globals_normalize_this() -> Result<()> {
 
 #[test]
 fn globals_normalize_global_this() -> Result<()> {
-    let expected =
-        std::fs::read_to_string("tests/globals/normalize/global-this/output.json")?;
-    let analysis =
-        analyze(PathBuf::from("tests/globals/normalize/global-this/input.js"))?;
+    let expected = std::fs::read_to_string(
+        "tests/globals/normalize/global-this/output.json",
+    )?;
+    let analysis = analyze(PathBuf::from(
+        "tests/globals/normalize/global-this/input.js",
+    ))?;
     let globals = analysis.compute();
     let result = serde_json::to_string_pretty(&globals)?;
     //println!("{}", result);

@@ -12,8 +12,8 @@ use swc_ecma_visit::VisitWith;
 use super::{PackagePolicy, Policy, PolicyAccess};
 use crate::{
     analysis::{
-        dependencies::is_dependent_module, globals_scope::GlobalAnalysis,
-        builtin::BuiltinAnalysis,
+        builtin::BuiltinAnalysis, dependencies::is_dependent_module,
+        globals_scope::GlobalAnalysis,
     },
     module::base::module_base_directory,
     module::node::{
@@ -119,8 +119,7 @@ impl PolicyBuilder {
                             }
 
                             // Compute and aggregate builtins
-                            let mut builtins =
-                                BuiltinAnalysis::new();
+                            let mut builtins = BuiltinAnalysis::new();
                             node.module.visit_children_with(&mut builtins);
                             let module_builtins = builtins.compute();
                             for atom in module_builtins {
