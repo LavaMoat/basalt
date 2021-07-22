@@ -21,12 +21,12 @@ use crate::helpers::{pattern_words, var_symbol_words};
 
 // SEE: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects
 
-static REQUIRE: &str = "require";
-static MODULE: &str = "module";
-static EXPORTS: &str = "exports";
-static GLOBAL_THIS: &str = "globalThis";
-static KEYWORDS: [&'static str; 3] = ["undefined", "NaN", "Infinity"];
-static GLOBAL_FUNCTIONS: [&'static str; 12] = [
+const REQUIRE: &str = "require";
+const MODULE: &str = "module";
+const EXPORTS: &str = "exports";
+const GLOBAL_THIS: &str = "globalThis";
+const KEYWORDS: [&'static str; 3] = ["undefined", "NaN", "Infinity"];
+const GLOBAL_FUNCTIONS: [&'static str; 12] = [
     "eval",
     "uneval",
     "isFinite",
@@ -42,7 +42,7 @@ static GLOBAL_FUNCTIONS: [&'static str; 12] = [
     "unescape",
 ];
 
-static INTRINSICS: [&'static str; 51] = [
+const INTRINSICS: [&'static str; 51] = [
     // Fundamental objects
     "Object",
     "Function",

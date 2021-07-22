@@ -7,7 +7,7 @@ use anyhow::{bail, Result};
 
 use swc_common::FileName;
 use swc_ecma_loader::{resolve::Resolve, resolvers::node::NodeResolver};
-use swc_ecma_visit::VisitWith;
+use swc_ecma_visit::{VisitWith, VisitAllWith};
 
 use super::{PackagePolicy, Policy, PolicyAccess};
 use crate::{
@@ -121,7 +121,7 @@ impl PolicyBuilder {
 
                             // Compute and aggregate builtins
                             let mut builtins = BuiltinAnalysis::new();
-                            node.module.visit_children_with(&mut builtins);
+                            node.module.visit_all_children_with(&mut builtins);
                             let module_builtins = builtins.compute();
                             for atom in module_builtins {
                                 analysis.builtin.insert(
