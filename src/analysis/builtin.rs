@@ -2,7 +2,7 @@
 //!
 use swc_atoms::JsWord;
 use swc_ecma_ast::*;
-use swc_ecma_visit::{Node, VisitAll};
+use swc_ecma_visit::{Node, VisitAll, VisitAllWith};
 
 use indexmap::IndexSet;
 
@@ -10,7 +10,7 @@ use super::dependencies::is_builtin_module;
 
 const REQUIRE: &str = "require";
 
-#[derive(Debug, Hash, Eq, PartialEq)]
+#[derive(Debug, Hash, Eq, PartialEq, Clone)]
 enum Local {
     Default(JsWord),
     // Named locals will need to be converted to fully qualified
@@ -18,7 +18,7 @@ enum Local {
     Named(JsWord),
 }
 
-#[derive(Debug, Hash, Eq, PartialEq)]
+#[derive(Debug, Hash, Eq, PartialEq, Clone)]
 struct Builtin {
     source: JsWord,
     locals: Vec<Local>,
@@ -55,19 +55,34 @@ impl BuiltinAnalysis {
         }
     }
 
+    /// Analyze and compute the builtins for a module.
+    pub fn analyze(&self, module: &Module) -> IndexSet<JsWord> {
+        let mut finder = BuiltinFinder {
+            candidates: Default::default(),
+            computed: Default::default(),
+        };
+        module.visit_all_children_with(&mut finder);
+        self.compute(finder.computed)
+    }
+
     /// Compute the builtins.
-    pub fn compute(&self) -> IndexSet<JsWord> {
+    fn compute(&self, candidates: IndexSet<Builtin>) -> IndexSet<JsWord> {
         let mut out: IndexSet<JsWord> = Default::default();
-        for builtin_module in self.candidates.iter() {
+        for builtin_module in candidates.iter() {
             let symbols = builtin_module.canonical_symbols();
-            // TODO: filter symbols to only those used in the module!
             out = out.union(&symbols).cloned().collect();
         }
         out
     }
 }
 
-impl BuiltinAnalysis {
+/// Find the imports and require calls to built in modules.
+struct BuiltinFinder {
+    candidates: IndexSet<Builtin>,
+    computed: IndexSet<Builtin>,
+}
+
+impl BuiltinFinder {
     // Detect an expression that is a call to `require()`.
     //
     // The call must have a single argument and the argument
@@ -93,7 +108,7 @@ impl BuiltinAnalysis {
     }
 }
 
-impl VisitAll for BuiltinAnalysis {
+impl VisitAll for BuiltinFinder {
     fn visit_import_decl(&mut self, n: &ImportDecl, _: &dyn Node) {
         if is_builtin_module(n.src.value.as_ref()) {
             let mut builtin = Builtin {
@@ -126,6 +141,7 @@ impl VisitAll for BuiltinAnalysis {
 
     fn visit_var_declarator(&mut self, n: &VarDeclarator, _: &dyn Node) {
         if let Some(init) = &n.init {
+            let mut is_builtin_require = false;
             if let Some(name) = self.is_require_expression(init) {
                 if is_builtin_module(name.as_ref()) {
                     let mut builtin = Builtin {
@@ -136,7 +152,12 @@ impl VisitAll for BuiltinAnalysis {
                     //println!("{:#?}", builtin);
 
                     self.candidates.insert(builtin);
+                    is_builtin_require = true;
                 }
+            }
+
+            if !is_builtin_require {
+                println!("Check var decl init for usage {:#?}", init);
             }
         }
     }
