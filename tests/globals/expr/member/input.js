@@ -8,3 +8,5 @@ const addEventListener = globalThis.window['addEventListener'];
 const isSimpleWindowsTerm = process.platform === 'win32' && !(process.env.TERM || '').toLowerCase().startsWith('xterm');
 
 [].slice.call(arguments);
+
+//(versionA + '.').indexOf(versionB + '.')

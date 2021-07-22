@@ -7,7 +7,7 @@ use anyhow::{bail, Result};
 
 use swc_common::FileName;
 use swc_ecma_loader::{resolve::Resolve, resolvers::node::NodeResolver};
-use swc_ecma_visit::{VisitWith, VisitAllWith};
+use swc_ecma_visit::{VisitAllWith, VisitWith};
 
 use super::{PackagePolicy, Policy, PolicyAccess};
 use crate::{
