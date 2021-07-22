@@ -17,6 +17,7 @@ use swc_ecma_dep_graph::{analyze_dependencies, DependencyDescriptor};
 
 use swc_ecma_loader::{resolve::Resolve, resolvers::node::NodeResolver};
 
+use crate::analysis::dependencies::is_builtin_module;
 use crate::module::cache::load_module;
 
 /// Cache of visited modules.
@@ -35,6 +36,8 @@ pub enum VisitedModule {
     Module(FileName, Arc<SourceMap>, ModuleNode),
     /// A JSON module.
     Json(FileName),
+    /// A builtin module.
+    Builtin(FileName),
 }
 
 /// Represents a visited dependency.
@@ -201,6 +204,7 @@ impl ModuleNode {
                     (file_name, Some(dep))
                 }
                 VisitedModule::Json(file_name) => (file_name, None),
+                VisitedModule::Builtin(file_name) => (file_name, None),
             };
 
             let cycles = state.parents.iter().find(|p| p == &file_name);
@@ -261,16 +265,33 @@ impl<'a> Iterator for NodeIterator<'a> {
 
         if let Some(resolved) = self.node.resolved.get(self.index) {
             self.index += 1;
-            if let FileName::Real(file_name) = &resolved.1 {
-                return match parse_file(file_name, &self.resolver) {
-                    Ok(parsed) => {
-                        Some(Ok((self.index - 1, resolved.0.clone(), parsed)))
+
+            match &resolved.1 {
+                FileName::Real(file_name) => {
+                    return match parse_file(file_name, &self.resolver) {
+                        Ok(parsed) => Some(Ok((
+                            self.index - 1,
+                            resolved.0.clone(),
+                            parsed,
+                        ))),
+                        Err(e) => Some(Err(anyhow!(e))),
+                    };
+                }
+                FileName::Custom(file_name) => {
+                    if is_builtin_module(file_name) {
+                        let builtin_module = Arc::new(VisitedModule::Builtin(
+                            resolved.1.clone(),
+                        ));
+                        return Some(Ok((
+                            self.index - 1,
+                            resolved.0.clone(),
+                            builtin_module,
+                        )));
                     }
-                    Err(e) => Some(Err(anyhow!(e))),
-                };
+                }
+                _ => {}
             }
         }
-
         None
     }
 }

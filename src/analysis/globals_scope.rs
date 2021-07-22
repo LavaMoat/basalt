@@ -793,7 +793,6 @@ impl ScopeBuilder {
         n: &MemberExpr,
         scope: &mut Scope,
     ) -> Option<(JsWord, Vec<JsWord>)> {
-
         let mut words = Vec::new();
         let mut members = Vec::new();
         self._visit_member(n, &mut words, &mut members, scope, false);
@@ -810,18 +809,17 @@ impl ScopeBuilder {
         // object is a literal statement.
         let keep_words = if let Some(last) = members.last() {
             match &last.obj {
-                ExprOrSuper::Expr(expr) => {
-                    match &**expr {
-                        Expr::Array(_) => false,
-                        Expr::Object(_) => false,
-                        Expr::Lit(_) => false,
-                        _ => true,
-                    }
-                }
+                ExprOrSuper::Expr(expr) => match &**expr {
+                    Expr::Array(_) => false,
+                    Expr::Object(_) => false,
+                    Expr::Lit(_) => false,
+                    _ => true,
+                },
                 _ => false,
-
             }
-        } else { false };
+        } else {
+            false
+        };
 
         if keep_words && !words.is_empty() {
             let words =
@@ -877,9 +875,7 @@ impl ScopeBuilder {
             Expr::PrivateName(_) => false,
             Expr::This(_) => false,
             Expr::Lit(_) => false,
-            Expr::Array(_) => {
-                false
-            },
+            Expr::Array(_) => false,
             Expr::Object(_) => false,
             Expr::Call(n) => {
                 match &n.callee {

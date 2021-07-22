@@ -38,6 +38,7 @@ impl Printer {
         let node = match &*module {
             VisitedModule::Module(_, _, node) => Some(node),
             VisitedModule::Json(_) => None,
+            VisitedModule::Builtin(_) => None,
         };
         println!("{}", file.as_ref().display());
 

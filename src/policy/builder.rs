@@ -53,6 +53,7 @@ impl PolicyBuilder {
         let node = match &*module {
             VisitedModule::Module(_, _, node) => Some(node),
             VisitedModule::Json(_) => None,
+            VisitedModule::Builtin(_) => None,
         };
 
         let mut visitor = |dep: VisitedDependency| {
