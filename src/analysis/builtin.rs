@@ -1,12 +1,18 @@
 //! Analyze imports from builtin modules.
 //!
+//! Only finds builtin modules that are assigned;
+//! side effect imports or calls to require will be ignored
+//! under the assumption that built in modules would never
+//! be designed for side effects.
+//!
 use swc_atoms::JsWord;
 use swc_ecma_ast::*;
-use swc_ecma_visit::{Node, VisitAll, VisitAllWith};
+use swc_ecma_visit::{Node, Visit, VisitWith};
 
 use indexmap::IndexSet;
 
 use super::dependencies::is_builtin_module;
+use crate::helpers::pattern_words;
 
 const REQUIRE: &str = "require";
 
@@ -61,7 +67,7 @@ impl BuiltinAnalysis {
             candidates: Default::default(),
             computed: Default::default(),
         };
-        module.visit_all_children_with(&mut finder);
+        module.visit_children_with(&mut finder);
         self.compute(finder.computed)
     }
 
@@ -108,7 +114,7 @@ impl BuiltinFinder {
     }
 }
 
-impl VisitAll for BuiltinFinder {
+impl Visit for BuiltinFinder {
     fn visit_import_decl(&mut self, n: &ImportDecl, _: &dyn Node) {
         if is_builtin_module(n.src.value.as_ref()) {
             let mut builtin = Builtin {
@@ -132,16 +138,12 @@ impl VisitAll for BuiltinFinder {
                     builtin.locals.push(local);
                 }
             }
-
-            //println!("{:#?}", builtin);
-
             self.candidates.insert(builtin);
         }
     }
 
     fn visit_var_declarator(&mut self, n: &VarDeclarator, _: &dyn Node) {
         if let Some(init) = &n.init {
-            let mut is_builtin_require = false;
             if let Some(name) = self.is_require_expression(init) {
                 if is_builtin_module(name.as_ref()) {
                     let mut builtin = Builtin {
@@ -149,15 +151,19 @@ impl VisitAll for BuiltinFinder {
                         locals: Default::default(),
                     };
 
-                    //println!("{:#?}", builtin);
+                    builtin.locals = match &n.name {
+                        Pat::Ident(ident) => {
+                            vec![Local::Default(ident.id.sym.clone())]
+                        }
+                        _ => {
+                            let mut names = Vec::new();
+                            pattern_words(&n.name, &mut names);
+                            names.into_iter().cloned().map(|sym| Local::Named(sym)).collect()
+                        }
+                    };
 
                     self.candidates.insert(builtin);
-                    is_builtin_require = true;
                 }
-            }
-
-            if !is_builtin_require {
-                println!("Check var decl init for usage {:#?}", init);
             }
         }
     }
