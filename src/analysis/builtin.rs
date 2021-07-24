@@ -184,6 +184,43 @@ impl BuiltinFinder {
             Expr::Assign(n) => {
                 self.access_visit_expr(&n.right, kind);
             }
+            Expr::Paren(n) => {
+                self.access_visit_expr(&*n.expr, kind);
+            }
+            Expr::OptChain(n) => {
+                self.access_visit_expr(&*n.expr, kind);
+            }
+            Expr::Unary(n) => {
+                self.access_visit_expr(&n.arg, kind);
+            }
+            Expr::Await(n) => {
+                self.access_visit_expr(&n.arg, kind);
+            }
+            Expr::Yield(n) => {
+                if let Some(arg) = &n.arg {
+                    self.access_visit_expr(arg, kind);
+                }
+            }
+            Expr::Bin(n) => {
+                self.access_visit_expr(&*n.left, kind);
+                self.access_visit_expr(&*n.right, kind);
+            }
+            Expr::Cond(n) => {
+                self.access_visit_expr(&*n.test, kind);
+                self.access_visit_expr(&*n.cons, kind);
+                self.access_visit_expr(&*n.alt, kind);
+            }
+            Expr::Tpl(n) => {
+                for expr in n.exprs.iter() {
+                    self.access_visit_expr(&*expr, kind);
+                }
+            }
+            Expr::TaggedTpl(n) => {
+                self.access_visit_expr(&*n.tag, kind);
+                for expr in n.tpl.exprs.iter() {
+                    self.access_visit_expr(&*expr, kind);
+                }
+            }
             _ => {}
         }
     }
