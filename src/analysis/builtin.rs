@@ -21,17 +21,25 @@ const REQUIRE: &str = "require";
 
 #[derive(Debug, Hash, Eq, PartialEq, Clone)]
 enum Local {
-    Default(JsWord),
+    Default(JsWord, Access),
     // Named locals will need to be converted to fully qualified
     // module paths, eg: `readSync` would become the canonical `fs.readSync`
-    Named(JsWord),
+    Named(JsWord, Access),
+}
+
+impl Local {
+    fn access_mut(&mut self) -> &mut Access {
+        match self {
+            Self::Default(_, access) => access,
+            Self::Named(_, access) => access,
+        }
+    }
 }
 
 #[derive(Debug, Hash, Eq, PartialEq, Clone)]
 struct Builtin {
     source: JsWord,
     locals: Vec<Local>,
-    access: Access,
 }
 
 impl Builtin {
@@ -39,10 +47,10 @@ impl Builtin {
         let mut out: IndexSet<JsWord> = Default::default();
         for local in self.locals.iter() {
             match local {
-                Local::Default(word) => {
+                Local::Default(word, _) => {
                     out.insert(word.clone());
                 }
-                Local::Named(word) => {
+                Local::Named(word, _) => {
                     out.insert(JsWord::from(format!(
                         "{}.{}",
                         self.source, word
@@ -64,9 +72,11 @@ impl BuiltinAnalysis {
     pub fn analyze(&self, module: &Module) -> IndexSet<JsWord> {
         let mut finder = BuiltinFinder {
             candidates: Default::default(),
-            access: Default::default(),
         };
         module.visit_all_children_with(&mut finder);
+
+        println!("{:#?}", finder.candidates);
+
         self.compute(finder.candidates)
     }
 
@@ -84,7 +94,6 @@ impl BuiltinAnalysis {
 /// Find the imports and require calls to built in modules.
 struct BuiltinFinder {
     candidates: Vec<Builtin>,
-    access: Vec<Builtin>,
 }
 
 impl BuiltinFinder {
@@ -114,18 +123,18 @@ impl BuiltinFinder {
 
     /// Determine if a word matches a previously located builtin module local
     /// symbol. For member expressions pass the first word in the expression.
-    fn is_builtin_match(&mut self, sym: &JsWord) -> Option<&mut Builtin> {
+    fn is_builtin_match(&mut self, sym: &JsWord) -> Option<&mut Local> {
         for builtin in self.candidates.iter_mut() {
-            let matched = builtin.locals.iter().find(|local| {
+            let mut matched = builtin.locals.iter_mut().find(|local| {
                 let word = match local {
-                    Local::Default(word) => word,
-                    Local::Named(_) => &builtin.source,
+                    Local::Default(word, _) => word,
+                    Local::Named(word, _) => word,
                 };
                 word == sym
             });
 
-            if matched.is_some() {
-                return Some(builtin);
+            if let Some(local) = matched.take() {
+                return Some(local);
             }
         }
         None
@@ -138,19 +147,18 @@ impl VisitAll for BuiltinFinder {
             let mut builtin = Builtin {
                 source: n.src.value.clone(),
                 locals: Default::default(),
-                access: Default::default(),
             };
 
             for spec in n.specifiers.iter() {
                 let local = match spec {
                     ImportSpecifier::Default(n) => {
-                        Local::Default(n.local.sym.clone())
+                        Local::Default(n.local.sym.clone(), Default::default())
                     }
                     ImportSpecifier::Named(n) => {
-                        Local::Named(n.local.sym.clone())
+                        Local::Named(n.local.sym.clone(), Default::default())
                     }
                     ImportSpecifier::Namespace(n) => {
-                        Local::Default(n.local.sym.clone())
+                        Local::Default(n.local.sym.clone(), Default::default())
                     }
                 };
                 if !builtin.locals.contains(&local) {
@@ -168,11 +176,13 @@ impl VisitAll for BuiltinFinder {
                     let mut builtin = Builtin {
                         source: name.clone(),
                         locals: Default::default(),
-                        access: Default::default(),
                     };
                     builtin.locals = match &n.name {
                         Pat::Ident(ident) => {
-                            vec![Local::Default(ident.id.sym.clone())]
+                            vec![Local::Default(
+                                ident.id.sym.clone(),
+                                Default::default(),
+                            )]
                         }
                         _ => {
                             let mut names = Vec::new();
@@ -180,7 +190,9 @@ impl VisitAll for BuiltinFinder {
                             names
                                 .into_iter()
                                 .cloned()
-                                .map(|sym| Local::Named(sym))
+                                .map(|sym| {
+                                    Local::Named(sym, Default::default())
+                                })
                                 .collect()
                         }
                     };
@@ -193,36 +205,41 @@ impl VisitAll for BuiltinFinder {
     fn visit_expr(&mut self, n: &Expr, _: &dyn Node) {
         match n {
             // Write access on LHS of an assignment
-            Expr::Assign(n) => {
-                match &n.left {
-                    PatOrExpr::Pat(n) => {
-                        match &**n {
-                            Pat::Ident(n) => {
-                                if let Some(builtin) =
-                                    self.is_builtin_match(&n.id.sym)
-                                {
-                                    builtin.access.write = true;
-                                }
-                            }
-                            Pat::Expr(n) => {
-                                match &**n {
-                                    Expr::Member(n) => {
-                                        let members = member_expr_words(n);
-                                        println!("Got member expression on LHS {:#?}", members.len());
-                                        for m in members {
-                                            println!("Got member {:#?}", m);
-                                        }
-                                    }
-                                    _ => {}
-                                }
-                                //println!("Got expressiono pattern on LHS: {:#?}", n);
-                            }
-                            _ => {}
+            Expr::Assign(n) => match &n.left {
+                PatOrExpr::Pat(n) => match &**n {
+                    Pat::Ident(n) => {
+                        if let Some(local) = self.is_builtin_match(&n.id.sym) {
+                            local.access_mut().write = true;
                         }
                     }
+                    Pat::Expr(n) => match &**n {
+                        Expr::Member(n) => {
+                            let members = member_expr_words(n);
+                            if let Some(word) = members.get(0) {
+                                if let Some(local) = self.is_builtin_match(word)
+                                {
+                                    local.access_mut().write = true;
+                                }
+                            }
+                        }
+                        _ => {}
+                    },
                     _ => {}
-                }
-            }
+                },
+                _ => {}
+            },
+            Expr::Call(n) => match &n.callee {
+                ExprOrSuper::Expr(n) => match &**n {
+                    Expr::Ident(id) => {
+                        if let Some(local) = self.is_builtin_match(&id.sym) {
+                            local.access_mut().execute = true;
+                        }
+                    }
+                    Expr::Member(_) => {}
+                    _ => {}
+                },
+                _ => {}
+            },
             _ => {}
         }
     }

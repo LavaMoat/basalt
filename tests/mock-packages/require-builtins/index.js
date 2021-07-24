@@ -4,7 +4,7 @@ const {readSync, writeSync} = require('fs');
 
 const file = readSync("test.txt");
 const other = fs.readSync("test.txt");
-fs.writeSync("test.txt", "foo");
+writeSync("test.txt", "foo");
 
 const pth = path.join("a", "b", "c");
 
