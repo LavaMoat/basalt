@@ -7,12 +7,15 @@
 //!
 use swc_atoms::JsWord;
 use swc_ecma_ast::*;
-use swc_ecma_visit::{Node, Visit, VisitWith};
+use swc_ecma_visit::{Node, VisitAll, VisitAllWith};
 
 use indexmap::IndexSet;
 
 use super::dependencies::is_builtin_module;
-use crate::helpers::pattern_words;
+use crate::{
+    access::Access,
+    helpers::{member_expr_words, pattern_words},
+};
 
 const REQUIRE: &str = "require";
 
@@ -28,6 +31,7 @@ enum Local {
 struct Builtin {
     source: JsWord,
     locals: Vec<Local>,
+    access: Access,
 }
 
 impl Builtin {
@@ -37,9 +41,12 @@ impl Builtin {
             match local {
                 Local::Default(word) => {
                     out.insert(word.clone());
-                },
+                }
                 Local::Named(word) => {
-                    out.insert(JsWord::from(format!("{}.{}", self.source, word)));
+                    out.insert(JsWord::from(format!(
+                        "{}.{}",
+                        self.source, word
+                    )));
                 }
             }
         }
@@ -49,30 +56,22 @@ impl Builtin {
 
 /// Visit a module and generate the set of access
 /// to builtin packages.
-pub struct BuiltinAnalysis {
-    candidates: IndexSet<Builtin>,
-}
+#[derive(Default)]
+pub struct BuiltinAnalysis;
 
 impl BuiltinAnalysis {
-    /// Create a builtin analysis.
-    pub fn new() -> Self {
-        Self {
-            candidates: Default::default(),
-        }
-    }
-
     /// Analyze and compute the builtins for a module.
     pub fn analyze(&self, module: &Module) -> IndexSet<JsWord> {
         let mut finder = BuiltinFinder {
             candidates: Default::default(),
-            computed: Default::default(),
+            access: Default::default(),
         };
-        module.visit_children_with(&mut finder);
-        self.compute(finder.computed)
+        module.visit_all_children_with(&mut finder);
+        self.compute(finder.candidates)
     }
 
     /// Compute the builtins.
-    fn compute(&self, candidates: IndexSet<Builtin>) -> IndexSet<JsWord> {
+    fn compute(&self, candidates: Vec<Builtin>) -> IndexSet<JsWord> {
         let mut out: IndexSet<JsWord> = Default::default();
         for builtin_module in candidates.iter() {
             let symbols = builtin_module.canonical_symbols();
@@ -84,8 +83,8 @@ impl BuiltinAnalysis {
 
 /// Find the imports and require calls to built in modules.
 struct BuiltinFinder {
-    candidates: IndexSet<Builtin>,
-    computed: IndexSet<Builtin>,
+    candidates: Vec<Builtin>,
+    access: Vec<Builtin>,
 }
 
 impl BuiltinFinder {
@@ -112,14 +111,34 @@ impl BuiltinFinder {
         }
         None
     }
+
+    /// Determine if a word matches a previously located builtin module local
+    /// symbol. For member expressions pass the first word in the expression.
+    fn is_builtin_match(&mut self, sym: &JsWord) -> Option<&mut Builtin> {
+        for builtin in self.candidates.iter_mut() {
+            let matched = builtin.locals.iter().find(|local| {
+                let word = match local {
+                    Local::Default(word) => word,
+                    Local::Named(_) => &builtin.source,
+                };
+                word == sym
+            });
+
+            if matched.is_some() {
+                return Some(builtin);
+            }
+        }
+        None
+    }
 }
 
-impl Visit for BuiltinFinder {
+impl VisitAll for BuiltinFinder {
     fn visit_import_decl(&mut self, n: &ImportDecl, _: &dyn Node) {
         if is_builtin_module(n.src.value.as_ref()) {
             let mut builtin = Builtin {
                 source: n.src.value.clone(),
                 locals: Default::default(),
+                access: Default::default(),
             };
 
             for spec in n.specifiers.iter() {
@@ -138,7 +157,7 @@ impl Visit for BuiltinFinder {
                     builtin.locals.push(local);
                 }
             }
-            self.candidates.insert(builtin);
+            self.candidates.push(builtin);
         }
     }
 
@@ -149,8 +168,8 @@ impl Visit for BuiltinFinder {
                     let mut builtin = Builtin {
                         source: name.clone(),
                         locals: Default::default(),
+                        access: Default::default(),
                     };
-
                     builtin.locals = match &n.name {
                         Pat::Ident(ident) => {
                             vec![Local::Default(ident.id.sym.clone())]
@@ -158,13 +177,53 @@ impl Visit for BuiltinFinder {
                         _ => {
                             let mut names = Vec::new();
                             pattern_words(&n.name, &mut names);
-                            names.into_iter().cloned().map(|sym| Local::Named(sym)).collect()
+                            names
+                                .into_iter()
+                                .cloned()
+                                .map(|sym| Local::Named(sym))
+                                .collect()
                         }
                     };
-
-                    self.candidates.insert(builtin);
+                    self.candidates.push(builtin);
                 }
             }
+        }
+    }
+
+    fn visit_expr(&mut self, n: &Expr, _: &dyn Node) {
+        match n {
+            // Write access on LHS of an assignment
+            Expr::Assign(n) => {
+                match &n.left {
+                    PatOrExpr::Pat(n) => {
+                        match &**n {
+                            Pat::Ident(n) => {
+                                if let Some(builtin) =
+                                    self.is_builtin_match(&n.id.sym)
+                                {
+                                    builtin.access.write = true;
+                                }
+                            }
+                            Pat::Expr(n) => {
+                                match &**n {
+                                    Expr::Member(n) => {
+                                        let members = member_expr_words(n);
+                                        println!("Got member expression on LHS {:#?}", members.len());
+                                        for m in members {
+                                            println!("Got member {:#?}", m);
+                                        }
+                                    }
+                                    _ => {}
+                                }
+                                //println!("Got expressiono pattern on LHS: {:#?}", n);
+                            }
+                            _ => {}
+                        }
+                    }
+                    _ => {}
+                }
+            }
+            _ => {}
         }
     }
 }

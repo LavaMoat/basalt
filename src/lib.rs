@@ -11,6 +11,7 @@ use anyhow::{bail, Result};
 
 use swc_ecma_visit::VisitWith;
 
+pub mod access;
 pub mod analysis;
 pub mod helpers;
 pub mod module;
