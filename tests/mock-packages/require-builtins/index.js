@@ -7,7 +7,9 @@ const other = fs.readSync("test.txt");
 writeSync("test.txt", "foo");
 
 const pth = path.join("a", "b", "c");
+const rs = readSync;
 
 // Write to builtin(s)!
 path.join.a.b.c = function() {}
 fs = {}
+writeSync++;

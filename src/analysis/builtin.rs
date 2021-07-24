@@ -19,6 +19,12 @@ use crate::{
 
 const REQUIRE: &str = "require";
 
+enum AccessKind {
+    Read,
+    Write,
+    Execute,
+}
+
 #[derive(Debug, Hash, Eq, PartialEq, Clone)]
 enum Local {
     Default(JsWord, Access),
@@ -139,6 +145,48 @@ impl BuiltinFinder {
         }
         None
     }
+
+    fn access_visit_expr(&mut self, n: &Expr, kind: &AccessKind) {
+        match n {
+            Expr::Ident(n) => {
+                if let Some(local) = self.is_builtin_match(&n.sym) {
+                    match kind {
+                        AccessKind::Read => {
+                            local.access_mut().read = true;
+                        }
+                        AccessKind::Write => {
+                            local.access_mut().write = true;
+                        }
+                        AccessKind::Execute => {
+                            local.access_mut().execute = true;
+                        }
+                    }
+                }
+            }
+            Expr::Member(n) => {
+                let members = member_expr_words(n);
+                if let Some(word) = members.get(0) {
+                    if let Some(local) = self.is_builtin_match(word) {
+                        match kind {
+                            AccessKind::Read => {
+                                local.access_mut().read = true;
+                            }
+                            AccessKind::Write => {
+                                local.access_mut().write = true;
+                            }
+                            AccessKind::Execute => {
+                                local.access_mut().execute = true;
+                            }
+                        }
+                    }
+                }
+            }
+            Expr::Assign(n) => {
+                self.access_visit_expr(&n.right, kind);
+            }
+            _ => {}
+        }
+    }
 }
 
 impl VisitAll for BuiltinFinder {
@@ -198,47 +246,44 @@ impl VisitAll for BuiltinFinder {
                     };
                     self.candidates.push(builtin);
                 }
+            } else {
+                self.access_visit_expr(&*init, &AccessKind::Read);
             }
         }
     }
 
     fn visit_expr(&mut self, n: &Expr, _: &dyn Node) {
         match n {
-            // Write access on LHS of an assignment
-            Expr::Assign(n) => match &n.left {
-                PatOrExpr::Pat(n) => match &**n {
-                    Pat::Ident(n) => {
-                        if let Some(local) = self.is_builtin_match(&n.id.sym) {
-                            local.access_mut().write = true;
-                        }
-                    }
-                    Pat::Expr(n) => match &**n {
-                        Expr::Member(n) => {
-                            let members = member_expr_words(n);
-                            if let Some(word) = members.get(0) {
-                                if let Some(local) = self.is_builtin_match(word)
-                                {
-                                    local.access_mut().write = true;
-                                }
+            // Write access on left-hand side of an assignment
+            Expr::Assign(n) => {
+                match &n.left {
+                    PatOrExpr::Pat(n) => match &**n {
+                        Pat::Ident(n) => {
+                            if let Some(local) = self.is_builtin_match(&n.id.sym) {
+                                local.access_mut().write = true;
                             }
                         }
+                        Pat::Expr(n) => {
+                            self.access_visit_expr(n, &AccessKind::Write);
+                        },
                         _ => {}
                     },
                     _ => {}
-                },
-                _ => {}
+                }
+                self.access_visit_expr(&n.right, &AccessKind::Read);
             },
-            Expr::Call(n) => match &n.callee {
-                ExprOrSuper::Expr(n) => match &**n {
-                    Expr::Ident(id) => {
-                        if let Some(local) = self.is_builtin_match(&id.sym) {
-                            local.access_mut().execute = true;
-                        }
-                    }
-                    Expr::Member(_) => {}
+            // Update is a write access
+            Expr::Update(n) => {
+                self.access_visit_expr(&*n.arg, &AccessKind::Write);
+            },
+            // Execute access is a function call
+            Expr::Call(n) => {
+                match &n.callee {
+                    ExprOrSuper::Expr(n) => {
+                        self.access_visit_expr(n, &AccessKind::Execute);
+                    },
                     _ => {}
-                },
-                _ => {}
+                }
             },
             _ => {}
         }
