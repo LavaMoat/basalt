@@ -1,6 +1,6 @@
 {
   "resources": {
-    "builtin-esm": {
+    "named-require": {
       "builtin": {
         "fs.readSync": true,
         "path.join": true

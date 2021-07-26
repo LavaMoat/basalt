@@ -103,18 +103,17 @@ impl BuiltinFinder {
 
     /// Determine if a word matches a previously located builtin module local
     /// symbol. For member expressions pass the first word in the expression.
-    fn is_builtin_match(&mut self, sym: &JsWord) -> Option<&mut Local> {
-        for builtin in self.candidates.iter_mut() {
-            let mut matched = builtin.locals.iter_mut().find(|local| {
+    fn is_builtin_match(&mut self, sym: &JsWord) -> Option<(&Local, JsWord)> {
+        for builtin in self.candidates.iter() {
+            let mut matched = builtin.locals.iter().find(|local| {
                 let word = match local {
                     Local::Default(word) => word,
                     Local::Named(word) => word,
                 };
                 word == sym
             });
-
             if let Some(local) = matched.take() {
-                return Some(local);
+                return Some((local, builtin.source.clone()));
             }
         }
         None
@@ -123,10 +122,14 @@ impl BuiltinFinder {
     fn access_visit_expr(&mut self, n: &Expr, kind: &AccessKind) {
         match n {
             Expr::Ident(n) => {
-                if let Some(_) = self.is_builtin_match(&n.sym) {
+                if let Some((local, source)) = self.is_builtin_match(&n.sym) {
+                    let words_key = match local {
+                        Local::Named(word) => vec![source.clone(), word.clone()],
+                        Local::Default(word) => vec![word.clone()],
+                    };
                     let entry = self
                         .access
-                        .entry(vec![n.sym.clone()])
+                        .entry(words_key)
                         .or_insert(Default::default());
                     match kind {
                         AccessKind::Read => {
@@ -275,10 +278,14 @@ impl VisitAll for BuiltinFinder {
                 match &n.left {
                     PatOrExpr::Pat(n) => match &**n {
                         Pat::Ident(n) => {
-                            if let Some(_) = self.is_builtin_match(&n.id.sym) {
+                            if let Some((local, source)) = self.is_builtin_match(&n.id.sym) {
+                                let words_key = match local {
+                                    Local::Named(word) => vec![source.clone(), word.clone()],
+                                    Local::Default(word) => vec![word.clone()],
+                                };
                                 let entry = self
                                     .access
-                                    .entry(vec![n.id.sym.clone()])
+                                    .entry(words_key)
                                     .or_insert(Default::default());
                                 entry.write = true;
                             }

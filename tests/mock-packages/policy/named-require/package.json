@@ -1,5 +1,5 @@
 {
-  "name": "test-policy-builtin-esm",
+  "name": "named-require",
   "version": "1.0.0",
   "description": "",
   "module": "index.js",

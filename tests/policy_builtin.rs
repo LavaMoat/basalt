@@ -19,7 +19,7 @@ fn load_policy_test(dir: &str) -> Result<(String, String)> {
 fn policy_builtin_esm() -> Result<()> {
     let (expected, result) = load_policy_test("tests/policy/builtin/esm")?;
     //println!("{}", result);
-    assert_eq!(expected.trim_end(), result);
+    assert_eq!(expected, result);
     Ok(())
 }
 
@@ -27,6 +27,22 @@ fn policy_builtin_esm() -> Result<()> {
 fn policy_builtin_cjs() -> Result<()> {
     let (expected, result) = load_policy_test("tests/policy/builtin/cjs")?;
     //println!("{}", result);
-    assert_eq!(expected.trim_end(), result);
+    assert_eq!(expected, result);
+    Ok(())
+}
+
+#[test]
+fn policy_builtin_named_import() -> Result<()> {
+    let (expected, result) = load_policy_test("tests/policy/builtin/named-import")?;
+    //println!("{}", result);
+    assert_eq!(expected, result);
+    Ok(())
+}
+
+#[test]
+fn policy_builtin_named_require() -> Result<()> {
+    let (expected, result) = load_policy_test("tests/policy/builtin/named-require")?;
+    //println!("{}", result);
+    assert_eq!(expected, result);
     Ok(())
 }

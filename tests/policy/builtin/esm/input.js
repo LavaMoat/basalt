@@ -1,1 +1,1 @@
-import 'test-policy-builtin-esm';
+import 'builtin-esm';

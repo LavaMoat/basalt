@@ -1,1 +1,1 @@
-require('test-policy-builtin-cjs');
+require('builtin-cjs');

@@ -2,10 +2,12 @@
 
 set -e;
 
-for file in ./tests/mock-packages/*; do
+DIRS=$(find tests -name 'package.json');
+
+for pkg in $DIRS; do
+  file=$(dirname "$pkg");
   if test -d "$file"; then
     name=$(basename "$file");
-    #yarn add file:$file
     (cd "$file" && yarn link)
     yarn link $name
   fi

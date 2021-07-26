@@ -1,5 +1,5 @@
 {
-  "name": "test-policy-builtin-cjs",
+  "name": "named-import",
   "version": "1.0.0",
   "description": "",
   "module": "index.js",
