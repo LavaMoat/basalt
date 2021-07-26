@@ -24,7 +24,13 @@ rustup override unset
 
 ## Test
 
-To run the tests first install dependencies with `yarn install` or `npm install` then run:
+To run the tests first install dependencies with `yarn install` then link the mock packages:
+
+```
+./link-test-packages.sh
+```
+
+Afterwards you can run the tests:
 
 ```
 cargo +nightly test -- --nocapture
