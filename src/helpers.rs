@@ -24,7 +24,9 @@ fn walk_member_expr<'a>(n: &'a MemberExpr, members: &mut Vec<&'a JsWord>) {
         }
     }
 
-    if n.computed { return };
+    if n.computed {
+        return;
+    };
 
     match &*n.prop {
         Expr::Ident(id) => {

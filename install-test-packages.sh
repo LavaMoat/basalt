@@ -2,10 +2,9 @@
 
 set -e;
 
-for file in tests/mock-packages/*; do
+for file in ./tests/mock-packages/*; do
   if test -d "$file"; then
     name=$(basename "$file");
-    (cd "$file" && yarn link)
-    yarn link $name
+    yarn add file:$file
   fi
 done

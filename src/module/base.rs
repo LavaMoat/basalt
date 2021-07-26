@@ -7,6 +7,8 @@ pub fn module_base_directory(
     specifier: &str,
     path: &PathBuf,
 ) -> Option<PathBuf> {
+    // FIXME: refactor to walk looking for the nearest `package.json` file
+
     let mut sys_path = path.to_string_lossy().to_string();
     if cfg!(target_os = "windows") {
         sys_path = sys_path.replace("\\", "/");

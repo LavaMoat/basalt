@@ -27,7 +27,7 @@ rustup override unset
 To run the tests first install dependencies with `yarn install` then link the mock packages:
 
 ```
-./link-test-packages.sh
+./install-test-packages.sh
 ```
 
 Afterwards you can run the tests:

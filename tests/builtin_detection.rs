@@ -27,7 +27,7 @@ fn builtins(deps: Vec<DependencyDescriptor>) -> Vec<DependencyDescriptor> {
 
 #[test]
 fn builtins_esm() -> Result<()> {
-    let deps = builtins(load("tests/builtins/esm/input.js")?);
+    let deps = builtins(load("tests/builtin-detection/esm/input.js")?);
     assert_eq!(2, deps.len());
     assert_eq!("zlib", deps.get(0).unwrap().specifier.as_ref());
     assert_eq!("http", deps.get(1).unwrap().specifier.as_ref());
@@ -36,7 +36,7 @@ fn builtins_esm() -> Result<()> {
 
 #[test]
 fn builtins_commonjs() -> Result<()> {
-    let deps = builtins(load("tests/builtins/commonjs/input.js")?);
+    let deps = builtins(load("tests/builtin-detection/commonjs/input.js")?);
     assert_eq!(2, deps.len());
     assert_eq!("zlib", deps.get(0).unwrap().specifier.as_ref());
     assert_eq!("http", deps.get(1).unwrap().specifier.as_ref());

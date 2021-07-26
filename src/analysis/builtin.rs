@@ -296,31 +296,31 @@ impl VisitAll for BuiltinFinder {
                 match &n.left {
                     PatOrExpr::Pat(n) => match &**n {
                         Pat::Ident(n) => {
-                            if let Some(local) = self.is_builtin_match(&n.id.sym) {
+                            if let Some(local) =
+                                self.is_builtin_match(&n.id.sym)
+                            {
                                 local.access_mut().write = true;
                             }
                         }
                         Pat::Expr(n) => {
                             self.access_visit_expr(n, &AccessKind::Write);
-                        },
+                        }
                         _ => {}
                     },
                     _ => {}
                 }
                 self.access_visit_expr(&n.right, &AccessKind::Read);
-            },
+            }
             // Update is a write access
             Expr::Update(n) => {
                 self.access_visit_expr(&*n.arg, &AccessKind::Write);
-            },
+            }
             // Execute access is a function call
-            Expr::Call(n) => {
-                match &n.callee {
-                    ExprOrSuper::Expr(n) => {
-                        self.access_visit_expr(n, &AccessKind::Execute);
-                    },
-                    _ => {}
+            Expr::Call(n) => match &n.callee {
+                ExprOrSuper::Expr(n) => {
+                    self.access_visit_expr(n, &AccessKind::Execute);
                 }
+                _ => {}
             },
             _ => {}
         }
