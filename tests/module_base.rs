@@ -16,7 +16,7 @@ fn module_base_package() -> Result<()> {
     let resolved = resolver.resolve(&base, spec)?;
     match &resolved {
         FileName::Real(module_path) => {
-            let module_base = module_base_directory(spec, module_path);
+            let module_base = module_base_directory(module_path);
             assert_eq!(expected, module_base);
         }
         _ => {}
@@ -35,7 +35,7 @@ fn module_base_scoped_package() -> Result<()> {
     let resolved = resolver.resolve(&base, spec)?;
     match &resolved {
         FileName::Real(module_path) => {
-            let module_base = module_base_directory(spec, module_path);
+            let module_base = module_base_directory(module_path);
             assert_eq!(expected, module_base);
         }
         _ => {}
@@ -54,7 +54,7 @@ fn module_base_package_nested_file() -> Result<()> {
     let resolved = resolver.resolve(&base, spec)?;
     match &resolved {
         FileName::Real(module_path) => {
-            let module_base = module_base_directory(spec, module_path);
+            let module_base = module_base_directory(module_path);
             assert_eq!(expected, module_base);
         }
         _ => {}

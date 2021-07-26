@@ -26,9 +26,6 @@ use crate::{
 /// This needs to determine a base path for each module so that we
 /// can group modules to the package that they belong to in order
 /// to convert a list of all modules into a collection of packages.
-///
-/// FIXME: When a package is a symbolic link resolving the package base path
-/// will fail.
 pub struct PolicyBuilder {
     entry: PathBuf,
     resolver: Box<dyn Resolve>,
@@ -68,8 +65,7 @@ impl PolicyBuilder {
             if is_dependent_module(&dep.spec) {
                 match dep.file_name {
                     FileName::Real(path) => {
-                        if let Some(module_base) =
-                            module_base_directory(&dep.spec, &path)
+                        if let Some(module_base) = module_base_directory(&path)
                         {
                             self.package_buckets
                                 .entry((dep.spec.clone(), module_base))
