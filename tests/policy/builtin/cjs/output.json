@@ -1,0 +1,10 @@
+{
+  "resources": {
+    "test-policy-builtin-cjs": {
+      "builtin": {
+        "fs.readSync": true,
+        "path.join": true
+      }
+    }
+  }
+}

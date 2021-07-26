@@ -9,7 +9,7 @@ use swc_atoms::JsWord;
 use swc_ecma_ast::*;
 use swc_ecma_visit::{Node, VisitAll, VisitAllWith};
 
-use indexmap::IndexSet;
+use indexmap::{IndexMap, IndexSet};
 
 use super::dependencies::is_builtin_module;
 use crate::{
@@ -27,45 +27,16 @@ enum AccessKind {
 
 #[derive(Debug, Hash, Eq, PartialEq, Clone)]
 enum Local {
-    Default(JsWord, Access),
+    Default(JsWord),
     // Named locals will need to be converted to fully qualified
     // module paths, eg: `readSync` would become the canonical `fs.readSync`
-    Named(JsWord, Access),
-}
-
-impl Local {
-    fn access_mut(&mut self) -> &mut Access {
-        match self {
-            Self::Default(_, access) => access,
-            Self::Named(_, access) => access,
-        }
-    }
+    Named(JsWord),
 }
 
 #[derive(Debug, Hash, Eq, PartialEq, Clone)]
 struct Builtin {
     source: JsWord,
     locals: Vec<Local>,
-}
-
-impl Builtin {
-    fn canonical_symbols(&self) -> IndexSet<JsWord> {
-        let mut out: IndexSet<JsWord> = Default::default();
-        for local in self.locals.iter() {
-            match local {
-                Local::Default(word, _) => {
-                    out.insert(word.clone());
-                }
-                Local::Named(word, _) => {
-                    out.insert(JsWord::from(format!(
-                        "{}.{}",
-                        self.source, word
-                    )));
-                }
-            }
-        }
-        out
-    }
 }
 
 /// Visit a module and generate the set of access
@@ -78,20 +49,22 @@ impl BuiltinAnalysis {
     pub fn analyze(&self, module: &Module) -> IndexSet<JsWord> {
         let mut finder = BuiltinFinder {
             candidates: Default::default(),
+            access: Default::default(),
         };
         module.visit_all_children_with(&mut finder);
-
-        println!("{:#?}", finder.candidates);
-
-        self.compute(finder.candidates)
+        self.compute(finder.access)
     }
 
     /// Compute the builtins.
-    fn compute(&self, candidates: Vec<Builtin>) -> IndexSet<JsWord> {
+    fn compute(
+        &self,
+        access: IndexMap<Vec<JsWord>, Access>,
+    ) -> IndexSet<JsWord> {
         let mut out: IndexSet<JsWord> = Default::default();
-        for builtin_module in candidates.iter() {
-            let symbols = builtin_module.canonical_symbols();
-            out = out.union(&symbols).cloned().collect();
+        for (words, _access) in access {
+            let words: Vec<String> =
+                words.into_iter().map(|w| w.as_ref().to_string()).collect();
+            out.insert(JsWord::from(words.join(".")));
         }
         out
     }
@@ -100,6 +73,7 @@ impl BuiltinAnalysis {
 /// Find the imports and require calls to built in modules.
 struct BuiltinFinder {
     candidates: Vec<Builtin>,
+    access: IndexMap<Vec<JsWord>, Access>,
 }
 
 impl BuiltinFinder {
@@ -133,8 +107,8 @@ impl BuiltinFinder {
         for builtin in self.candidates.iter_mut() {
             let mut matched = builtin.locals.iter_mut().find(|local| {
                 let word = match local {
-                    Local::Default(word, _) => word,
-                    Local::Named(word, _) => word,
+                    Local::Default(word) => word,
+                    Local::Named(word) => word,
                 };
                 word == sym
             });
@@ -149,16 +123,20 @@ impl BuiltinFinder {
     fn access_visit_expr(&mut self, n: &Expr, kind: &AccessKind) {
         match n {
             Expr::Ident(n) => {
-                if let Some(local) = self.is_builtin_match(&n.sym) {
+                if let Some(_) = self.is_builtin_match(&n.sym) {
+                    let entry = self
+                        .access
+                        .entry(vec![n.sym.clone()])
+                        .or_insert(Default::default());
                     match kind {
                         AccessKind::Read => {
-                            local.access_mut().read = true;
+                            entry.read = true;
                         }
                         AccessKind::Write => {
-                            local.access_mut().write = true;
+                            entry.write = true;
                         }
                         AccessKind::Execute => {
-                            local.access_mut().execute = true;
+                            entry.execute = true;
                         }
                     }
                 }
@@ -166,16 +144,22 @@ impl BuiltinFinder {
             Expr::Member(n) => {
                 let members = member_expr_words(n);
                 if let Some(word) = members.get(0) {
-                    if let Some(local) = self.is_builtin_match(word) {
+                    if let Some(_) = self.is_builtin_match(word) {
+                        let words = members.into_iter().cloned().collect();
+                        let entry = self
+                            .access
+                            .entry(words)
+                            .or_insert(Default::default());
+
                         match kind {
                             AccessKind::Read => {
-                                local.access_mut().read = true;
+                                entry.read = true;
                             }
                             AccessKind::Write => {
-                                local.access_mut().write = true;
+                                entry.write = true;
                             }
                             AccessKind::Execute => {
-                                local.access_mut().execute = true;
+                                entry.execute = true;
                             }
                         }
                     }
@@ -237,13 +221,13 @@ impl VisitAll for BuiltinFinder {
             for spec in n.specifiers.iter() {
                 let local = match spec {
                     ImportSpecifier::Default(n) => {
-                        Local::Default(n.local.sym.clone(), Default::default())
+                        Local::Default(n.local.sym.clone())
                     }
                     ImportSpecifier::Named(n) => {
-                        Local::Named(n.local.sym.clone(), Default::default())
+                        Local::Named(n.local.sym.clone())
                     }
                     ImportSpecifier::Namespace(n) => {
-                        Local::Default(n.local.sym.clone(), Default::default())
+                        Local::Default(n.local.sym.clone())
                     }
                 };
                 if !builtin.locals.contains(&local) {
@@ -264,10 +248,7 @@ impl VisitAll for BuiltinFinder {
                     };
                     builtin.locals = match &n.name {
                         Pat::Ident(ident) => {
-                            vec![Local::Default(
-                                ident.id.sym.clone(),
-                                Default::default(),
-                            )]
+                            vec![Local::Default(ident.id.sym.clone())]
                         }
                         _ => {
                             let mut names = Vec::new();
@@ -275,9 +256,7 @@ impl VisitAll for BuiltinFinder {
                             names
                                 .into_iter()
                                 .cloned()
-                                .map(|sym| {
-                                    Local::Named(sym, Default::default())
-                                })
+                                .map(|sym| Local::Named(sym))
                                 .collect()
                         }
                     };
@@ -296,10 +275,12 @@ impl VisitAll for BuiltinFinder {
                 match &n.left {
                     PatOrExpr::Pat(n) => match &**n {
                         Pat::Ident(n) => {
-                            if let Some(local) =
-                                self.is_builtin_match(&n.id.sym)
-                            {
-                                local.access_mut().write = true;
+                            if let Some(_) = self.is_builtin_match(&n.id.sym) {
+                                let entry = self
+                                    .access
+                                    .entry(vec![n.id.sym.clone()])
+                                    .or_insert(Default::default());
+                                entry.write = true;
                             }
                         }
                         Pat::Expr(n) => {

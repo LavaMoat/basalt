@@ -1,0 +1,10 @@
+{
+  "resources": {
+    "test-policy-builtin-esm": {
+      "builtin": {
+        "fs.readSync": true,
+        "path.join": true
+      }
+    }
+  }
+}
