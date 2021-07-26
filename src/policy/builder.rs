@@ -123,7 +123,8 @@ impl PolicyBuilder {
                             }
 
                             // Compute and aggregate builtins
-                            let builtins: BuiltinAnalysis = Default::default();
+                            let builtins =
+                                BuiltinAnalysis::new(Default::default());
                             //node.module.visit_all_children_with(&mut builtins);
                             let module_builtins =
                                 builtins.analyze(&*node.module);

@@ -18,6 +18,11 @@ use crate::{
 };
 
 const REQUIRE: &str = "require";
+const CONSOLE: &str = "console";
+const PROCESS: &str = "process";
+
+const PERF_HOOKS: &str = "perf_hooks";
+const PERFORMANCE: &str = "performance";
 
 enum AccessKind {
     Read,
@@ -39,18 +44,58 @@ struct Builtin {
     locals: Vec<Local>,
 }
 
+/// Options for builtin analysis.
+#[derive(Debug)]
+pub struct BuiltinOptions {
+    /// Expose the nodejs global buitin modules (eg: `console` and `process`) automatically.
+    node_global_builtins: bool,
+}
+
+impl Default for BuiltinOptions {
+    fn default() -> Self {
+        Self {
+            node_global_builtins: true,
+        }
+    }
+}
+
 /// Visit a module and generate the set of access
 /// to builtin packages.
 #[derive(Default)]
-pub struct BuiltinAnalysis;
+pub struct BuiltinAnalysis {
+    options: BuiltinOptions,
+}
 
 impl BuiltinAnalysis {
+    /// Create a builtin analysis.
+    pub fn new(options: BuiltinOptions) -> Self {
+        Self { options }
+    }
+
     /// Analyze and compute the builtins for a module.
     pub fn analyze(&self, module: &Module) -> IndexSet<JsWord> {
         let mut finder = BuiltinFinder {
             candidates: Default::default(),
             access: Default::default(),
         };
+
+        if self.options.node_global_builtins {
+            finder.candidates.push(Builtin {
+                source: JsWord::from(PROCESS),
+                locals: vec![Local::Default(JsWord::from(PROCESS))],
+            });
+
+            finder.candidates.push(Builtin {
+                source: JsWord::from(CONSOLE),
+                locals: vec![Local::Default(JsWord::from(CONSOLE))],
+            });
+
+            finder.candidates.push(Builtin {
+                source: JsWord::from(PERF_HOOKS),
+                locals: vec![Local::Default(JsWord::from(PERFORMANCE))],
+            });
+        }
+
         module.visit_all_children_with(&mut finder);
         self.compute(finder.access)
     }
@@ -124,7 +169,7 @@ impl BuiltinFinder {
             Expr::Ident(n) => {
                 if let Some((local, source)) = self.is_builtin_match(&n.sym) {
                     let words_key = match local {
-                        Local::Named(word) => vec![source.clone(), word.clone()],
+                        Local::Named(word) => vec![source, word.clone()],
                         Local::Default(word) => vec![word.clone()],
                     };
                     let entry = self
@@ -147,11 +192,16 @@ impl BuiltinFinder {
             Expr::Member(n) => {
                 let members = member_expr_words(n);
                 if let Some(word) = members.get(0) {
-                    if let Some(_) = self.is_builtin_match(word) {
-                        let words = members.into_iter().cloned().collect();
+                    if let Some((local, source)) = self.is_builtin_match(word) {
+                        let mut words_key: Vec<JsWord> =
+                            members.into_iter().cloned().collect();
+                        if let Local::Named(_) = local {
+                            words_key.insert(0, source);
+                        }
+
                         let entry = self
                             .access
-                            .entry(words)
+                            .entry(words_key)
                             .or_insert(Default::default());
 
                         match kind {
@@ -278,9 +328,13 @@ impl VisitAll for BuiltinFinder {
                 match &n.left {
                     PatOrExpr::Pat(n) => match &**n {
                         Pat::Ident(n) => {
-                            if let Some((local, source)) = self.is_builtin_match(&n.id.sym) {
+                            if let Some((local, source)) =
+                                self.is_builtin_match(&n.id.sym)
+                            {
                                 let words_key = match local {
-                                    Local::Named(word) => vec![source.clone(), word.clone()],
+                                    Local::Named(word) => {
+                                        vec![source, word.clone()]
+                                    }
                                     Local::Default(word) => vec![word.clone()],
                                 };
                                 let entry = self

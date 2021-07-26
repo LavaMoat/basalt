@@ -1,0 +1,10 @@
+{
+  "resources": {
+    "named-deep": {
+      "builtin": {
+        "process.env.DEEP1": true,
+        "process.env.DEEP2": true
+      }
+    }
+  }
+}
