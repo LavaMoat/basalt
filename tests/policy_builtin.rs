@@ -2,7 +2,9 @@ use std::path::PathBuf;
 
 use anyhow::Result;
 
-use basalt::policy::builder::PolicyBuilder;
+use basalt::{
+    policy::builder::PolicyBuilder,
+};
 
 fn load_policy_test(dir: &str) -> Result<(String, String)> {
     let expected =
