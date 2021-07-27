@@ -87,3 +87,53 @@ readSync('foo.txt');"#;
     assert_eq!(true, access.execute);
     Ok(())
 }
+
+#[test]
+fn policy_builtin_access_read_var_init() -> Result<()> {
+    let code = r#"const foo = process.env.FOO;"#;
+    let result = analyze(code)?;
+    assert_eq!(1, result.len());
+    let access = result.get(&JsWord::from("process.env.FOO")).unwrap();
+    assert_eq!(true, access.read);
+    Ok(())
+}
+
+#[test]
+fn policy_builtin_access_read_assign() -> Result<()> {
+    let code = r#"let foo; foo = process.env.FOO;"#;
+    let result = analyze(code)?;
+    assert_eq!(1, result.len());
+    let access = result.get(&JsWord::from("process.env.FOO")).unwrap();
+    assert_eq!(true, access.read);
+    Ok(())
+}
+
+#[test]
+fn policy_builtin_access_read_paren() -> Result<()> {
+    let code = r#"const foo = (process.env.FOO || '');"#;
+    let result = analyze(code)?;
+    assert_eq!(1, result.len());
+    let access = result.get(&JsWord::from("process.env.FOO")).unwrap();
+    assert_eq!(true, access.read);
+    Ok(())
+}
+
+#[test]
+fn policy_builtin_access_read_function_return() -> Result<()> {
+    let code = r#"function foo() { return process.env.FOO; }"#;
+    let result = analyze(code)?;
+    assert_eq!(1, result.len());
+    let access = result.get(&JsWord::from("process.env.FOO")).unwrap();
+    assert_eq!(true, access.read);
+    Ok(())
+}
+
+#[test]
+fn policy_builtin_access_read_yield() -> Result<()> {
+    let code = r#"function* foo() { yield process.env.FOO; }"#;
+    let result = analyze(code)?;
+    assert_eq!(1, result.len());
+    let access = result.get(&JsWord::from("process.env.FOO")).unwrap();
+    assert_eq!(true, access.read);
+    Ok(())
+}

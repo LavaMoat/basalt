@@ -261,6 +261,36 @@ impl BuiltinFinder {
             _ => {}
         }
     }
+
+    // This should not be necessary in theory.
+    // SEE: https://github.com/swc-project/swc/issues/1967
+    fn access_visit_stmt(&mut self, n: &Stmt) {
+        //println!("Visit stmt {:#?}", n);
+        match n {
+            Stmt::Return(n) => {
+                if let Some(arg) = &n.arg {
+                    self.access_visit_expr(&*arg, &AccessKind::Read);
+                }
+            }
+            Stmt::Decl(n) => match &n {
+                Decl::Fn(n) => {
+                    if let Some(body) = &n.function.body {
+                        self.access_visit_stmt(&Stmt::Block(body.clone()));
+                    }
+                }
+                _ => {}
+            }
+            Stmt::Block(n) => {
+                for n in &n.stmts {
+                    self.access_visit_stmt(n);
+                }
+            }
+            Stmt::Expr(n) => {
+                self.access_visit_expr(&n.expr, &AccessKind::Read);
+            }
+            _ => {}
+        }
+    }
 }
 
 impl VisitAll for BuiltinFinder {
@@ -319,6 +349,10 @@ impl VisitAll for BuiltinFinder {
                 self.access_visit_expr(&*init, &AccessKind::Read);
             }
         }
+    }
+
+    fn visit_stmt(&mut self, n: &Stmt, _: &dyn Node) {
+        self.access_visit_stmt(n);
     }
 
     fn visit_expr(&mut self, n: &Expr, _: &dyn Node) {
