@@ -128,9 +128,9 @@ impl PolicyBuilder {
                             //node.module.visit_all_children_with(&mut builtins);
                             let module_builtins =
                                 builtins.analyze(&*node.module);
-                            for atom in module_builtins {
+                            for (word, _access) in module_builtins {
                                 analysis.builtin.insert(
-                                    atom.as_ref().to_string(),
+                                    word.as_ref().to_string(),
                                     true.into(),
                                 );
                             }

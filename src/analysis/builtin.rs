@@ -9,7 +9,7 @@ use swc_atoms::JsWord;
 use swc_ecma_ast::*;
 use swc_ecma_visit::{Node, VisitAll, VisitAllWith};
 
-use indexmap::{IndexMap, IndexSet};
+use indexmap::IndexMap;
 
 use super::dependencies::is_builtin_module;
 use crate::{
@@ -73,7 +73,7 @@ impl BuiltinAnalysis {
     }
 
     /// Analyze and compute the builtins for a module.
-    pub fn analyze(&self, module: &Module) -> IndexSet<JsWord> {
+    pub fn analyze(&self, module: &Module) -> IndexMap<JsWord, Access> {
         let mut finder = BuiltinFinder {
             candidates: Default::default(),
             access: Default::default(),
@@ -104,12 +104,12 @@ impl BuiltinAnalysis {
     fn compute(
         &self,
         access: IndexMap<Vec<JsWord>, Access>,
-    ) -> IndexSet<JsWord> {
-        let mut out: IndexSet<JsWord> = Default::default();
-        for (words, _access) in access {
+    ) -> IndexMap<JsWord, Access> {
+        let mut out: IndexMap<JsWord, Access> = Default::default();
+        for (words, access) in access {
             let words: Vec<String> =
                 words.into_iter().map(|w| w.as_ref().to_string()).collect();
-            out.insert(JsWord::from(words.join(".")));
+            out.insert(JsWord::from(words.join(".")), access.clone());
         }
         out
     }
