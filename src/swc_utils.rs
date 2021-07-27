@@ -68,6 +68,37 @@ pub fn load_file<P: AsRef<Path>>(
     ))
 }
 
+/// Parse a module from a string.
+pub fn load_code<S: AsRef<str>>(
+    code: S,
+    file_name: Option<FileName>,
+) -> Result<(FileName, Arc<SourceMap>, Module)> {
+    let (sm, handler) = get_handler();
+    let fm = sm.new_source_file(
+        file_name.unwrap_or(FileName::Custom("unknown.js".to_string())),
+        code.as_ref().into(),
+    );
+
+    let file_name = fm.name.clone();
+
+    let mut parser = get_parser(&*fm);
+    for e in parser.take_errors() {
+        e.into_diagnostic(&handler).emit();
+    }
+
+    Ok((
+        file_name,
+        sm,
+        parser
+            .parse_module()
+            .map_err(|e| {
+                // Unrecoverable fatal error occurred
+                e.into_diagnostic(&handler).emit()
+            })
+            .expect("Failed to parse module"),
+    ))
+}
+
 /*
 pub(crate) fn get_compiler() -> (Arc<SourceMap>, Arc<Compiler>) {
     let sm: Arc<SourceMap> = Arc::new(Default::default());
