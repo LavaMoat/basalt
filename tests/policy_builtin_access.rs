@@ -3,9 +3,7 @@ use indexmap::IndexMap;
 use swc_atoms::JsWord;
 
 use basalt::{
-    access::Access,
-    analysis::builtin::BuiltinAnalysis,
-    swc_utils::load_code,
+    access::Access, analysis::builtin::BuiltinAnalysis, swc_utils::load_code,
 };
 
 fn analyze(code: &str) -> Result<IndexMap<JsWord, Access>> {

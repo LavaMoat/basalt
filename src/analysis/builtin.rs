@@ -278,8 +278,36 @@ impl BuiltinFinder {
                         self.access_visit_stmt(&Stmt::Block(body.clone()));
                     }
                 }
+                Decl::Class(n) => {
+                    if let Some(super_class) = &n.class.super_class {
+                        self.access_visit_expr(super_class, &AccessKind::Read);
+                    }
+
+                    for member in &n.class.body {
+                        match member {
+                            ClassMember::Constructor(n) => {
+                                if let Some(body) = &n.body {
+                                    self.access_visit_stmt(&Stmt::Block(body.clone()));
+                                }
+                            }
+                            ClassMember::Method(n) => {
+                                if let Some(body) = &n.function.body {
+                                    self.access_visit_stmt(&Stmt::Block(body.clone()));
+                                }
+                            }
+                            _ => {}
+                        }
+                    }
+                }
+                Decl::Var(n) => {
+                    for decl in &n.decls {
+                        if let Some(init) = &decl.init {
+                            self.access_visit_expr(init, &AccessKind::Read);
+                        }
+                    }
+                }
                 _ => {}
-            }
+            },
             Stmt::Block(n) => {
                 for n in &n.stmts {
                     self.access_visit_stmt(n);
