@@ -500,11 +500,25 @@ impl BuiltinAnalyzer {
     }
 
     fn access_visit_fn(&mut self, n: &Function) {
-        // TODO: handle function parameters
+        for param in &n.params {
+            self.access_visit_pat(&param.pat);
+        }
         if let Some(body) = &n.body {
             for n in &body.stmts {
                 self.access_visit_stmt(n);
             }
+        }
+    }
+
+    fn access_visit_pat(&mut self, n: &Pat) {
+        // FIXME: Handle other variants
+        match n {
+            Pat::Assign(n) => {
+                self.access_visit_expr(&*n.right, &AccessKind::Read);
+            }
+            // Needed for for..of and for..in loops
+            Pat::Expr(n) => self.access_visit_expr(n, &AccessKind::Read),
+            _ => {}
         }
     }
 
@@ -518,20 +532,22 @@ impl BuiltinAnalyzer {
 
     fn access_visit_var_decl_or_pat(&mut self, n: &VarDeclOrPat) {
         match n {
-            VarDeclOrPat::VarDecl(decl) => {
-                self.access_visit_var_decl(decl);
+            VarDeclOrPat::VarDecl(n) => {
+                self.access_visit_var_decl(n);
             }
-            _ => {}
+            VarDeclOrPat::Pat(n) => {
+                self.access_visit_pat(n);
+            }
         }
     }
 
     fn access_visit_var_decl_or_expr(&mut self, n: &VarDeclOrExpr) {
         match n {
-            VarDeclOrExpr::VarDecl(decl) => {
-                self.access_visit_var_decl(decl);
+            VarDeclOrExpr::VarDecl(n) => {
+                self.access_visit_var_decl(n);
             }
-            VarDeclOrExpr::Expr(expr) => {
-                self.access_visit_expr(expr, &AccessKind::Read);
+            VarDeclOrExpr::Expr(n) => {
+                self.access_visit_expr(n, &AccessKind::Read);
             }
         }
     }
