@@ -358,8 +358,6 @@ impl BuiltinAnalyzer {
         }
     }
 
-    // This should not be necessary in theory.
-    // SEE: https://github.com/swc-project/swc/issues/1967
     fn access_visit_stmt(&mut self, n: &Stmt) {
         match n {
             Stmt::Return(n) => {
@@ -369,9 +367,7 @@ impl BuiltinAnalyzer {
             }
             Stmt::Decl(n) => match &n {
                 Decl::Fn(n) => {
-                    if let Some(body) = &n.function.body {
-                        self.access_visit_stmt(&Stmt::Block(body.clone()));
-                    }
+                    self.access_visit_fn(&n.function);
                 }
                 Decl::Class(n) => {
                     if let Some(super_class) = &n.class.super_class {
@@ -382,19 +378,27 @@ impl BuiltinAnalyzer {
                         match member {
                             ClassMember::Constructor(n) => {
                                 if let Some(body) = &n.body {
-                                    self.access_visit_stmt(&Stmt::Block(
-                                        body.clone(),
-                                    ));
+                                    for n in &body.stmts {
+                                        self.access_visit_stmt(n);
+                                    }
                                 }
                             }
                             ClassMember::Method(n) => {
-                                if let Some(body) = &n.function.body {
-                                    self.access_visit_stmt(&Stmt::Block(
-                                        body.clone(),
-                                    ));
+                                self.access_visit_fn(&n.function);
+                            }
+                            ClassMember::PrivateMethod(n) => {
+                                self.access_visit_fn(&n.function);
+                            }
+                            ClassMember::ClassProp(n) => {
+                                if let Some(n) = &n.value {
+                                    self.access_visit_expr(n, &AccessKind::Read);
                                 }
                             }
-                            // FIXME
+                            ClassMember::PrivateProp(n) => {
+                                if let Some(n) = &n.value {
+                                    self.access_visit_expr(n, &AccessKind::Read);
+                                }
+                            }
                             _ => {}
                         }
                     }
@@ -416,7 +420,69 @@ impl BuiltinAnalyzer {
             Stmt::Expr(n) => {
                 self.access_visit_expr(&n.expr, &AccessKind::Read);
             }
+            Stmt::With(n) => {
+                self.access_visit_expr(&*n.obj, &AccessKind::Read);
+                self.access_visit_stmt(&*n.body);
+            }
+            Stmt::Labeled(n) => {
+                self.access_visit_stmt(&*n.body);
+            }
+            Stmt::If(n) => {
+                self.access_visit_expr(&*n.test, &AccessKind::Read);
+                self.access_visit_stmt(&*n.cons);
+                if let Some(alt) = &n.alt {
+                    self.access_visit_stmt(&*alt);
+                }
+            }
+            Stmt::Switch(n) => {
+                self.access_visit_expr(&*n.discriminant, &AccessKind::Read);
+                for case in &n.cases {
+                    if let Some(test) = &case.test {
+                        self.access_visit_expr(&*test, &AccessKind::Read);
+                    }
+                    for stmt in &case.cons {
+                        self.access_visit_stmt(stmt);
+                    }
+                }
+            }
+            Stmt::Throw(n) => {
+                self.access_visit_expr(&*n.arg, &AccessKind::Read);
+            }
+            Stmt::Try(n) => {
+                for n in &n.block.stmts {
+                    self.access_visit_stmt(n);
+                }
+
+                if let Some(handler) = &n.handler {
+                    for n in &handler.body.stmts {
+                        self.access_visit_stmt(n);
+                    }
+                }
+
+                if let Some(finalizer) = &n.finalizer {
+                    for n in &finalizer.stmts {
+                        self.access_visit_stmt(n);
+                    }
+                }
+            }
+            Stmt::While(n) => {
+                self.access_visit_expr(&*n.test, &AccessKind::Read);
+                self.access_visit_stmt(&*n.body);
+            }
+            Stmt::DoWhile(n) => {
+                self.access_visit_expr(&*n.test, &AccessKind::Read);
+                self.access_visit_stmt(&*n.body);
+            }
             _ => {}
+        }
+    }
+
+    fn access_visit_fn(&mut self, n: &Function) {
+        // TODO: handle function parameters
+        if let Some(body) = &n.body {
+            for n in &body.stmts {
+                self.access_visit_stmt(n);
+            }
         }
     }
 }
