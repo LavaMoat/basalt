@@ -7,7 +7,7 @@
 //!
 use swc_atoms::JsWord;
 use swc_ecma_ast::*;
-use swc_ecma_visit::{Node, VisitAll, VisitAllWith};
+use swc_ecma_visit::{Node, Visit, VisitWith};
 
 use indexmap::IndexMap;
 
@@ -96,7 +96,7 @@ impl BuiltinAnalysis {
             });
         }
 
-        module.visit_all_children_with(&mut finder);
+        module.visit_children_with(&mut finder);
         self.compute(finder.access)
     }
 
@@ -225,6 +225,7 @@ impl BuiltinFinder {
             // Execute access is a function call
             Expr::Call(n) => match &n.callee {
                 ExprOrSuper::Expr(n) => {
+                    //println!("GOT CALL EXPRESSION CALLEE");
                     self.access_visit_expr(n, &AccessKind::Execute);
                 }
                 _ => {}
@@ -242,7 +243,6 @@ impl BuiltinFinder {
                 self.access_visit_expr(&n.arg, kind);
             }
             Expr::Await(n) => {
-                println!("GOT AWAIT EXPRESSION {:#?}", n.arg);
                 self.access_visit_expr(&n.arg, kind);
             }
             Expr::Yield(n) => {
@@ -327,7 +327,7 @@ impl BuiltinFinder {
                 }
             }
             Stmt::Expr(n) => {
-                println!("Got statement expression...");
+                //println!("Got statement expression {:#?}", n);
                 self.access_visit_expr(&n.expr, &AccessKind::Read);
             }
             _ => {}
@@ -335,7 +335,7 @@ impl BuiltinFinder {
     }
 }
 
-impl VisitAll for BuiltinFinder {
+impl Visit for BuiltinFinder {
     fn visit_import_decl(&mut self, n: &ImportDecl, _: &dyn Node) {
         if is_builtin_module(n.src.value.as_ref()) {
             let mut builtin = Builtin {
@@ -394,12 +394,6 @@ impl VisitAll for BuiltinFinder {
     }
 
     fn visit_stmt(&mut self, n: &Stmt, _: &dyn Node) {
-        match n {
-            Stmt::Expr(n) => {
-                println!("Got statement expression...from visitor!!!");
-            }
-            _ => {}
-        }
         self.access_visit_stmt(n);
     }
 
