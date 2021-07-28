@@ -5,9 +5,18 @@
 //! under the assumption that built in modules would never
 //! be designed for side effects.
 //!
+//! Due to [a bug](https://github.com/swc-project/swc/issues/1967) with
+//! visiting all expressions when implementing this analysis currently this
+//! is done as two passes; the first to gather import and require local symbols
+//! and the second to detect usage and infer the access kind (RWX).
+//!
+//! Note that in the case of require calls that are shadowed
+//! by an inner lexical scope then this analysis will result in false
+//! positives.
+//!
 use swc_atoms::JsWord;
 use swc_ecma_ast::*;
-use swc_ecma_visit::{Node, Visit, VisitWith};
+use swc_ecma_visit::{Node, Visit, VisitAll, VisitAllWith, VisitWith};
 
 use indexmap::IndexMap;
 
@@ -76,7 +85,6 @@ impl BuiltinAnalysis {
     pub fn analyze(&self, module: &Module) -> IndexMap<JsWord, Access> {
         let mut finder = BuiltinFinder {
             candidates: Default::default(),
-            access: Default::default(),
         };
 
         if self.options.node_global_builtins {
@@ -96,8 +104,16 @@ impl BuiltinAnalysis {
             });
         }
 
-        module.visit_children_with(&mut finder);
-        self.compute(finder.access)
+        module.visit_all_children_with(&mut finder);
+
+        let mut analyzer = BuiltinAnalyzer {
+            candidates: finder.candidates,
+            access: Default::default(),
+        };
+
+        module.visit_children_with(&mut analyzer);
+
+        self.compute(analyzer.access)
     }
 
     /// Compute the builtins.
@@ -118,34 +134,72 @@ impl BuiltinAnalysis {
 /// Find the imports and require calls to built in modules.
 struct BuiltinFinder {
     candidates: Vec<Builtin>,
-    access: IndexMap<Vec<JsWord>, Access>,
 }
 
-impl BuiltinFinder {
-    // Detect an expression that is a call to `require()`.
-    //
-    // The call must have a single argument and the argument
-    // must be a string literal.
-    fn is_require_expression<'a>(&self, n: &'a Expr) -> Option<&'a JsWord> {
-        if let Expr::Call(call) = n {
-            if call.args.len() == 1 {
-                if let ExprOrSuper::Expr(n) = &call.callee {
-                    if let Expr::Ident(id) = &**n {
-                        if id.sym.as_ref() == REQUIRE {
-                            let arg = call.args.get(0).unwrap();
-                            if let Expr::Lit(lit) = &*arg.expr {
-                                if let Lit::Str(s) = lit {
-                                    return Some(&s.value);
-                                }
-                            }
-                        }
+impl VisitAll for BuiltinFinder {
+    fn visit_import_decl(&mut self, n: &ImportDecl, _: &dyn Node) {
+        if is_builtin_module(n.src.value.as_ref()) {
+            let mut builtin = Builtin {
+                source: n.src.value.clone(),
+                locals: Default::default(),
+            };
+
+            for spec in n.specifiers.iter() {
+                let local = match spec {
+                    ImportSpecifier::Default(n) => {
+                        Local::Default(n.local.sym.clone())
                     }
+                    ImportSpecifier::Named(n) => {
+                        Local::Named(n.local.sym.clone())
+                    }
+                    ImportSpecifier::Namespace(n) => {
+                        Local::Default(n.local.sym.clone())
+                    }
+                };
+                if !builtin.locals.contains(&local) {
+                    builtin.locals.push(local);
+                }
+            }
+            self.candidates.push(builtin);
+        }
+    }
+
+    fn visit_var_declarator(&mut self, n: &VarDeclarator, _: &dyn Node) {
+        if let Some(init) = &n.init {
+            if let Some(name) = is_require_expression(init) {
+                if is_builtin_module(name.as_ref()) {
+                    let mut builtin = Builtin {
+                        source: name.clone(),
+                        locals: Default::default(),
+                    };
+                    builtin.locals = match &n.name {
+                        Pat::Ident(ident) => {
+                            vec![Local::Default(ident.id.sym.clone())]
+                        }
+                        _ => {
+                            let mut names = Vec::new();
+                            pattern_words(&n.name, &mut names);
+                            names
+                                .into_iter()
+                                .cloned()
+                                .map(|sym| Local::Named(sym))
+                                .collect()
+                        }
+                    };
+                    self.candidates.push(builtin);
                 }
             }
         }
-        None
     }
+}
 
+/// Analyze the imports and require calls to built in modules.
+struct BuiltinAnalyzer {
+    candidates: Vec<Builtin>,
+    access: IndexMap<Vec<JsWord>, Access>,
+}
+
+impl BuiltinAnalyzer {
     /// Determine if a word matches a previously located builtin module local
     /// symbol. For member expressions pass the first word in the expression.
     fn is_builtin_match(&mut self, sym: &JsWord) -> Option<(&Local, JsWord)> {
@@ -223,14 +277,44 @@ impl BuiltinFinder {
                 self.access_visit_expr(&*n.arg, &AccessKind::Write);
             }
             // Execute access is a function call
-            Expr::Call(n) => match &n.callee {
-                ExprOrSuper::Expr(n) => {
-                    //println!("GOT CALL EXPRESSION CALLEE");
-                    self.access_visit_expr(n, &AccessKind::Execute);
+            Expr::Call(call) => {
+                if is_require_expression(n).is_none() {
+                    match &call.callee {
+                        ExprOrSuper::Expr(n) => {
+                            self.access_visit_expr(n, &AccessKind::Execute);
+                        }
+                        _ => {}
+                    }
                 }
-                _ => {}
-            },
+            }
+            // Write access on left-hand side of an assignment
             Expr::Assign(n) => {
+                match &n.left {
+                    PatOrExpr::Pat(n) => match &**n {
+                        Pat::Ident(n) => {
+                            if let Some((local, source)) =
+                                self.is_builtin_match(&n.id.sym)
+                            {
+                                let words_key = match local {
+                                    Local::Named(word) => {
+                                        vec![source, word.clone()]
+                                    }
+                                    Local::Default(word) => vec![word.clone()],
+                                };
+                                let entry = self
+                                    .access
+                                    .entry(words_key)
+                                    .or_insert(Default::default());
+                                entry.write = true;
+                            }
+                        }
+                        Pat::Expr(n) => {
+                            self.access_visit_expr(n, &AccessKind::Write);
+                        }
+                        _ => {}
+                    },
+                    _ => {}
+                }
                 self.access_visit_expr(&n.right, kind);
             }
             Expr::Paren(n) => {
@@ -277,7 +361,6 @@ impl BuiltinFinder {
     // This should not be necessary in theory.
     // SEE: https://github.com/swc-project/swc/issues/1967
     fn access_visit_stmt(&mut self, n: &Stmt) {
-        //println!("Visit stmt {:#?}", n);
         match n {
             Stmt::Return(n) => {
                 if let Some(arg) = &n.arg {
@@ -299,12 +382,16 @@ impl BuiltinFinder {
                         match member {
                             ClassMember::Constructor(n) => {
                                 if let Some(body) = &n.body {
-                                    self.access_visit_stmt(&Stmt::Block(body.clone()));
+                                    self.access_visit_stmt(&Stmt::Block(
+                                        body.clone(),
+                                    ));
                                 }
                             }
                             ClassMember::Method(n) => {
                                 if let Some(body) = &n.function.body {
-                                    self.access_visit_stmt(&Stmt::Block(body.clone()));
+                                    self.access_visit_stmt(&Stmt::Block(
+                                        body.clone(),
+                                    ));
                                 }
                             }
                             // FIXME
@@ -327,7 +414,6 @@ impl BuiltinFinder {
                 }
             }
             Stmt::Expr(n) => {
-                //println!("Got statement expression {:#?}", n);
                 self.access_visit_expr(&n.expr, &AccessKind::Read);
             }
             _ => {}
@@ -335,112 +421,32 @@ impl BuiltinFinder {
     }
 }
 
-impl Visit for BuiltinFinder {
-    fn visit_import_decl(&mut self, n: &ImportDecl, _: &dyn Node) {
-        if is_builtin_module(n.src.value.as_ref()) {
-            let mut builtin = Builtin {
-                source: n.src.value.clone(),
-                locals: Default::default(),
-            };
-
-            for spec in n.specifiers.iter() {
-                let local = match spec {
-                    ImportSpecifier::Default(n) => {
-                        Local::Default(n.local.sym.clone())
-                    }
-                    ImportSpecifier::Named(n) => {
-                        Local::Named(n.local.sym.clone())
-                    }
-                    ImportSpecifier::Namespace(n) => {
-                        Local::Default(n.local.sym.clone())
-                    }
-                };
-                if !builtin.locals.contains(&local) {
-                    builtin.locals.push(local);
-                }
-            }
-            self.candidates.push(builtin);
-        }
-    }
-
-    fn visit_var_declarator(&mut self, n: &VarDeclarator, _: &dyn Node) {
-        if let Some(init) = &n.init {
-            if let Some(name) = self.is_require_expression(init) {
-                if is_builtin_module(name.as_ref()) {
-                    let mut builtin = Builtin {
-                        source: name.clone(),
-                        locals: Default::default(),
-                    };
-                    builtin.locals = match &n.name {
-                        Pat::Ident(ident) => {
-                            vec![Local::Default(ident.id.sym.clone())]
-                        }
-                        _ => {
-                            let mut names = Vec::new();
-                            pattern_words(&n.name, &mut names);
-                            names
-                                .into_iter()
-                                .cloned()
-                                .map(|sym| Local::Named(sym))
-                                .collect()
-                        }
-                    };
-                    self.candidates.push(builtin);
-                }
-            } else {
-                self.access_visit_expr(&*init, &AccessKind::Read);
-            }
-        }
-    }
-
+impl Visit for BuiltinAnalyzer {
     fn visit_stmt(&mut self, n: &Stmt, _: &dyn Node) {
         self.access_visit_stmt(n);
     }
+}
 
-    fn visit_expr(&mut self, n: &Expr, _: &dyn Node) {
-        match n {
-            // Write access on left-hand side of an assignment
-            Expr::Assign(n) => {
-                match &n.left {
-                    PatOrExpr::Pat(n) => match &**n {
-                        Pat::Ident(n) => {
-                            if let Some((local, source)) =
-                                self.is_builtin_match(&n.id.sym)
-                            {
-                                let words_key = match local {
-                                    Local::Named(word) => {
-                                        vec![source, word.clone()]
-                                    }
-                                    Local::Default(word) => vec![word.clone()],
-                                };
-                                let entry = self
-                                    .access
-                                    .entry(words_key)
-                                    .or_insert(Default::default());
-                                entry.write = true;
+// Detect an expression that is a call to `require()`.
+//
+// The call must have a single argument and the argument
+// must be a string literal.
+fn is_require_expression<'a>(n: &'a Expr) -> Option<&'a JsWord> {
+    if let Expr::Call(call) = n {
+        if call.args.len() == 1 {
+            if let ExprOrSuper::Expr(n) = &call.callee {
+                if let Expr::Ident(id) = &**n {
+                    if id.sym.as_ref() == REQUIRE {
+                        let arg = call.args.get(0).unwrap();
+                        if let Expr::Lit(lit) = &*arg.expr {
+                            if let Lit::Str(s) = lit {
+                                return Some(&s.value);
                             }
                         }
-                        Pat::Expr(n) => {
-                            self.access_visit_expr(n, &AccessKind::Write);
-                        }
-                        _ => {}
-                    },
-                    _ => {}
+                    }
                 }
-                self.access_visit_expr(&n.right, &AccessKind::Read);
             }
-            // Update is a write access
-            Expr::Update(n) => {
-                self.access_visit_expr(&*n.arg, &AccessKind::Write);
-            }
-            // Execute access is a function call
-            Expr::Call(n) => match &n.callee {
-                ExprOrSuper::Expr(n) => {
-                    self.access_visit_expr(n, &AccessKind::Execute);
-                }
-                _ => {}
-            },
-            _ => {}
         }
     }
+    None
 }
