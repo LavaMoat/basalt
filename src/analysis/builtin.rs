@@ -473,6 +473,28 @@ impl BuiltinAnalyzer {
                 self.access_visit_expr(&*n.test, &AccessKind::Read);
                 self.access_visit_stmt(&*n.body);
             }
+            Stmt::For(n) => {
+                if let Some(init) = &n.init {
+                    self.access_visit_var_decl_or_expr(init);
+                }
+                if let Some(test) = &n.test {
+                    self.access_visit_expr(&*test, &AccessKind::Read);
+                }
+                if let Some(update) = &n.update {
+                    self.access_visit_expr(&*update, &AccessKind::Read);
+                }
+                self.access_visit_stmt(&*n.body);
+            }
+            Stmt::ForIn(n) => {
+                self.access_visit_var_decl_or_pat(&n.left);
+                self.access_visit_expr(&*n.right, &AccessKind::Read);
+                self.access_visit_stmt(&*n.body);
+            }
+            Stmt::ForOf(n) => {
+                self.access_visit_var_decl_or_pat(&n.left);
+                self.access_visit_expr(&*n.right, &AccessKind::Read);
+                self.access_visit_stmt(&*n.body);
+            }
             _ => {}
         }
     }
@@ -482,6 +504,34 @@ impl BuiltinAnalyzer {
         if let Some(body) = &n.body {
             for n in &body.stmts {
                 self.access_visit_stmt(n);
+            }
+        }
+    }
+
+    fn access_visit_var_decl(&mut self, n: &VarDecl) {
+        for decl in &n.decls {
+            if let Some(init) = &decl.init {
+                self.access_visit_expr(init, &AccessKind::Read);
+            }
+        }
+    }
+
+    fn access_visit_var_decl_or_pat(&mut self, n: &VarDeclOrPat) {
+        match n {
+            VarDeclOrPat::VarDecl(decl) => {
+                self.access_visit_var_decl(decl);
+            }
+            _ => {}
+        }
+    }
+
+    fn access_visit_var_decl_or_expr(&mut self, n: &VarDeclOrExpr) {
+        match n {
+            VarDeclOrExpr::VarDecl(decl) => {
+                self.access_visit_var_decl(decl);
+            }
+            VarDeclOrExpr::Expr(expr) => {
+                self.access_visit_expr(expr, &AccessKind::Read);
             }
         }
     }
