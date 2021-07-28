@@ -192,15 +192,13 @@ fn policy_builtin_access_read_tagged_tpl() -> Result<()> {
     Ok(())
 }
 
-// TODO
-/*
 #[test]
 fn policy_builtin_access_execute_await() -> Result<()> {
     let code = r#"import {readFile} from 'fs/promises'; async function foo() { await readFile('foo.txt') }"#;
     let result = analyze(code)?;
+    println!("Result {:#?}", result);
     assert_eq!(1, result.len());
     let access = result.get(&JsWord::from("fs/promises.readFile")).unwrap();
-    assert_eq!(true, access.read);
+    assert_eq!(true, access.execute);
     Ok(())
 }
-*/

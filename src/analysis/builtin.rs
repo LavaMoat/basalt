@@ -218,6 +218,17 @@ impl BuiltinFinder {
                     }
                 }
             }
+            // Update is a write access
+            Expr::Update(n) => {
+                self.access_visit_expr(&*n.arg, &AccessKind::Write);
+            }
+            // Execute access is a function call
+            Expr::Call(n) => match &n.callee {
+                ExprOrSuper::Expr(n) => {
+                    self.access_visit_expr(n, &AccessKind::Execute);
+                }
+                _ => {}
+            },
             Expr::Assign(n) => {
                 self.access_visit_expr(&n.right, kind);
             }
@@ -231,6 +242,7 @@ impl BuiltinFinder {
                 self.access_visit_expr(&n.arg, kind);
             }
             Expr::Await(n) => {
+                println!("GOT AWAIT EXPRESSION {:#?}", n.arg);
                 self.access_visit_expr(&n.arg, kind);
             }
             Expr::Yield(n) => {
@@ -295,6 +307,7 @@ impl BuiltinFinder {
                                     self.access_visit_stmt(&Stmt::Block(body.clone()));
                                 }
                             }
+                            // FIXME
                             _ => {}
                         }
                     }
@@ -314,6 +327,7 @@ impl BuiltinFinder {
                 }
             }
             Stmt::Expr(n) => {
+                println!("Got statement expression...");
                 self.access_visit_expr(&n.expr, &AccessKind::Read);
             }
             _ => {}
@@ -380,6 +394,12 @@ impl VisitAll for BuiltinFinder {
     }
 
     fn visit_stmt(&mut self, n: &Stmt, _: &dyn Node) {
+        match n {
+            Stmt::Expr(n) => {
+                println!("Got statement expression...from visitor!!!");
+            }
+            _ => {}
+        }
         self.access_visit_stmt(n);
     }
 
