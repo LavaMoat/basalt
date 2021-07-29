@@ -1,14 +1,13 @@
 use anyhow::Result;
-use std::path::Path;
 
 use swc_common::comments::SingleThreadedComments;
 use swc_ecma_dep_graph::{analyze_dependencies, DependencyDescriptor};
 
 use basalt::analysis::dependencies::is_builtin_module;
-use basalt::swc_utils::load_file;
+use basalt::swc_utils::load_code;
 
-fn load<P: AsRef<Path>>(file: P) -> Result<Vec<DependencyDescriptor>> {
-    let (_file_name, source_map, module) = load_file(file)?;
+fn load(code: &str) -> Result<Vec<DependencyDescriptor>> {
+    let (_file_name, source_map, module) = load_code(code, None)?;
     let comments: SingleThreadedComments = Default::default();
     Ok(analyze_dependencies(&module, &source_map, &comments))
 }
@@ -27,7 +26,14 @@ fn builtins(deps: Vec<DependencyDescriptor>) -> Vec<DependencyDescriptor> {
 
 #[test]
 fn builtins_esm() -> Result<()> {
-    let deps = builtins(load("tests/builtin-detection/esm/input.js")?);
+    let code = r#"
+        import * as foo from './foo';
+        import {a, b, c} from './abc.js';
+        import zlib from 'zlib';
+        import React from 'react';
+        import http from 'http';"#;
+    let deps = builtins(load(code)?);
+
     assert_eq!(2, deps.len());
     assert_eq!("zlib", deps.get(0).unwrap().specifier.as_ref());
     assert_eq!("http", deps.get(1).unwrap().specifier.as_ref());
@@ -36,7 +42,13 @@ fn builtins_esm() -> Result<()> {
 
 #[test]
 fn builtins_commonjs() -> Result<()> {
-    let deps = builtins(load("tests/builtin-detection/commonjs/input.js")?);
+    let code = r#"
+        const foo = require('./foo');
+        const {a, b, c} = require('./abc.js');
+        const zlib = require('zlib');
+        const React = require('react');
+        const http = require('http');"#;
+    let deps = builtins(load(code)?);
     assert_eq!(2, deps.len());
     assert_eq!("zlib", deps.get(0).unwrap().specifier.as_ref());
     assert_eq!("http", deps.get(1).unwrap().specifier.as_ref());
