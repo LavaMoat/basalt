@@ -694,8 +694,15 @@ impl ScopeBuilder {
         for member in n.body.iter() {
             match member {
                 ClassMember::Constructor(n) => {
-                    // FIXME: handle parameter patterns what are AssignPat which
-                    // FIXME: can point to globals.
+                    for param in &n.params {
+                        if let ParamOrTsParamProp::Param(param) =
+                            param
+                        {
+                            if let Pat::Assign(n) = &param.pat {
+                                self._visit_expr(&*n.right, scope);
+                            }
+                        }
+                    }
 
                     if let Some(body) = &n.body {
                         let block_stmt = Stmt::Block(body.clone());

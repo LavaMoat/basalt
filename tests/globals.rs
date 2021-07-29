@@ -12,152 +12,43 @@ fn analyze(file: PathBuf) -> Result<GlobalAnalysis> {
     Ok(analyzer)
 }
 
-#[test]
-fn globals_scope_block_body() -> Result<()> {
+fn analyze2(dir: &str) -> Result<(String, String)> {
+    let base = PathBuf::from(dir);
+    let expected = base.join("output.json");
+    let input = base.join("input.js");
+
     let expected =
-        std::fs::read_to_string("tests/globals/scope/block-body/output.json")?;
-    let analysis =
-        analyze(PathBuf::from("tests/globals/scope/block-body/input.js"))?;
-    let globals = analysis.compute();
+        std::fs::read_to_string(&expected)?;
+
+    let mut analyzer = GlobalAnalysis::new(Default::default());
+    let (_, _, module) = basalt::swc_utils::load_file(&input)?;
+    module.visit_children_with(&mut analyzer);
+    let globals = analyzer.compute();
     let result = serde_json::to_string_pretty(&globals)?;
-    //println!("{}", result);
-    assert_eq!(expected.trim_end(), result);
-    Ok(())
+    Ok((expected.trim_end().to_owned(), result))
 }
 
-#[test]
-fn globals_scope_function_body() -> Result<()> {
-    let expected = std::fs::read_to_string(
-        "tests/globals/scope/function-body/output.json",
-    )?;
-    let analysis =
-        analyze(PathBuf::from("tests/globals/scope/function-body/input.js"))?;
-    let globals = analysis.compute();
-    let result = serde_json::to_string_pretty(&globals)?;
-    //println!("{}", result);
-    assert_eq!(expected.trim_end(), result);
-    Ok(())
-}
+const SCOPES: &[&str] = &[
+    "tests/globals/scope/block-body",
+    "tests/globals/scope/function-body",
+    "tests/globals/scope/with-body",
+    "tests/globals/scope/switch-case",
+    "tests/globals/scope/while-body",
+    "tests/globals/scope/do-while-body",
+    "tests/globals/scope/for-body",
+    "tests/globals/scope/for-in-body",
+    "tests/globals/scope/for-of-body",
+    "tests/globals/scope/if-else-if-else",
+    "tests/globals/scope/try-catch-finally",
+];
 
 #[test]
-fn globals_scope_with_body() -> Result<()> {
-    let expected =
-        std::fs::read_to_string("tests/globals/scope/with-body/output.json")?;
-    let analysis =
-        analyze(PathBuf::from("tests/globals/scope/with-body/input.js"))?;
-    let globals = analysis.compute();
-    let result = serde_json::to_string_pretty(&globals)?;
-    //println!("{}", result);
-    assert_eq!(expected.trim_end(), result);
-    Ok(())
-}
-
-#[test]
-fn globals_scope_switch_case() -> Result<()> {
-    let expected =
-        std::fs::read_to_string("tests/globals/scope/switch-case/output.json")?;
-    let analysis =
-        analyze(PathBuf::from("tests/globals/scope/switch-case/input.js"))?;
-    let globals = analysis.compute();
-    let result = serde_json::to_string_pretty(&globals)?;
-    //println!("{}", result);
-    assert_eq!(expected.trim_end(), result);
-    Ok(())
-}
-
-#[test]
-fn globals_scope_while_body() -> Result<()> {
-    let expected =
-        std::fs::read_to_string("tests/globals/scope/while-body/output.json")?;
-    let analysis =
-        analyze(PathBuf::from("tests/globals/scope/while-body/input.js"))?;
-    let globals = analysis.compute();
-    let result = serde_json::to_string_pretty(&globals)?;
-    //println!("{}", result);
-    assert_eq!(expected.trim_end(), result);
-    Ok(())
-}
-
-#[test]
-fn globals_scope_do_while_body() -> Result<()> {
-    let expected = std::fs::read_to_string(
-        "tests/globals/scope/do-while-body/output.json",
-    )?;
-    let analysis =
-        analyze(PathBuf::from("tests/globals/scope/do-while-body/input.js"))?;
-    let globals = analysis.compute();
-    let result = serde_json::to_string_pretty(&globals)?;
-    //println!("{}", result);
-    assert_eq!(expected.trim_end(), result);
-    Ok(())
-}
-
-#[test]
-fn globals_scope_for_body() -> Result<()> {
-    let expected =
-        std::fs::read_to_string("tests/globals/scope/for-body/output.json")?;
-    let analysis =
-        analyze(PathBuf::from("tests/globals/scope/for-body/input.js"))?;
-    let globals = analysis.compute();
-    let result = serde_json::to_string_pretty(&globals)?;
-    //println!("{}", result);
-    assert_eq!(expected.trim_end(), result);
-    Ok(())
-}
-
-#[test]
-fn globals_scope_for_in_body() -> Result<()> {
-    let expected =
-        std::fs::read_to_string("tests/globals/scope/for-in-body/output.json")?;
-    let analysis =
-        analyze(PathBuf::from("tests/globals/scope/for-in-body/input.js"))?;
-    let globals = analysis.compute();
-    let result = serde_json::to_string_pretty(&globals)?;
-    //println!("{}", result);
-    assert_eq!(expected.trim_end(), result);
-    Ok(())
-}
-
-#[test]
-fn globals_scope_for_of_body() -> Result<()> {
-    let expected =
-        std::fs::read_to_string("tests/globals/scope/for-of-body/output.json")?;
-    let analysis =
-        analyze(PathBuf::from("tests/globals/scope/for-of-body/input.js"))?;
-    let globals = analysis.compute();
-    let result = serde_json::to_string_pretty(&globals)?;
-    //println!("{}", result);
-    assert_eq!(expected.trim_end(), result);
-    Ok(())
-}
-
-#[test]
-fn globals_scope_if_else_if_else() -> Result<()> {
-    let expected = std::fs::read_to_string(
-        "tests/globals/scope/if-else-if-else/output.json",
-    )?;
-    let analysis = analyze(PathBuf::from(
-        "tests/globals/scope/if-else-if-else/input.js",
-    ))?;
-    let globals = analysis.compute();
-    let result = serde_json::to_string_pretty(&globals)?;
-    //println!("{}", result);
-    assert_eq!(expected.trim_end(), result);
-    Ok(())
-}
-
-#[test]
-fn globals_scope_try_catch_finally() -> Result<()> {
-    let expected = std::fs::read_to_string(
-        "tests/globals/scope/try-catch-finally/output.json",
-    )?;
-    let analysis = analyze(PathBuf::from(
-        "tests/globals/scope/try-catch-finally/input.js",
-    ))?;
-    let globals = analysis.compute();
-    let result = serde_json::to_string_pretty(&globals)?;
-    //println!("{}", result);
-    assert_eq!(expected.trim_end(), result);
+fn globals_scopes() -> Result<()> {
+    for dir in SCOPES {
+        let (expected, result) = analyze2(dir)?;
+        //println!("{}", result);
+        assert_eq!(expected, result);
+    }
     Ok(())
 }
 
@@ -278,11 +169,21 @@ fn globals_expr_unary() -> Result<()> {
 
 #[test]
 fn globals_expr_class() -> Result<()> {
-    // TODO: Restore `output.json` to use the order that the variables
-    // TODO: are declared in `input.js`
     let expected =
         std::fs::read_to_string("tests/globals/expr/class/output.json")?;
     let analysis = analyze(PathBuf::from("tests/globals/expr/class/input.js"))?;
+    let globals = analysis.compute();
+    let result = serde_json::to_string_pretty(&globals)?;
+    //println!("{}", result);
+    assert_eq!(expected.trim_end(), result);
+    Ok(())
+}
+
+#[test]
+fn globals_expr_class_parameters() -> Result<()> {
+    let expected =
+        std::fs::read_to_string("tests/globals/expr/class-parameters/output.json")?;
+    let analysis = analyze(PathBuf::from("tests/globals/expr/class-parameters/input.js"))?;
     let globals = analysis.compute();
     let result = serde_json::to_string_pretty(&globals)?;
     //println!("{}", result);
@@ -615,21 +516,6 @@ fn globals_filter_global_functions() -> Result<()> {
     assert_eq!(expected.trim_end(), result);
     Ok(())
 }
-
-/*
-#[test]
-fn globals_normalize_this() -> Result<()> {
-    let expected =
-        std::fs::read_to_string("tests/globals/normalize/this/output.json")?;
-    let analysis =
-        analyze(PathBuf::from("tests/globals/normalize/this/input.js"))?;
-    let globals = analysis.compute();
-    let result = serde_json::to_string_pretty(&globals)?;
-    //println!("{}", result);
-    assert_eq!(expected.trim_end(), result);
-    Ok(())
-}
-*/
 
 #[test]
 fn globals_normalize_global_this() -> Result<()> {
