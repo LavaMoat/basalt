@@ -135,6 +135,7 @@ impl BuiltinAnalysis {
         for (words, access) in access {
             let words: Vec<String> =
                 words.into_iter().map(|w| w.as_ref().to_string()).collect();
+            //println!("Builtin words: {:#?}", words);
             out.insert(JsWord::from(words.join(".")), access.clone());
         }
         out
@@ -234,7 +235,7 @@ impl BuiltinAnalyzer {
                 if let Some((local, source)) = self.is_builtin_match(&n.sym) {
                     let words_key = match local {
                         Local::Named(word) => vec![source, word.clone()],
-                        Local::Default(word) => vec![word.clone()],
+                        Local::Default(_word) => vec![source],
                     };
                     let entry = self
                         .access
@@ -253,14 +254,19 @@ impl BuiltinAnalyzer {
                     }
                 }
             }
+            Expr::New(n) => {
+                self.access_visit_expr(&*n.callee, &AccessKind::Read);
+            }
             Expr::Member(n) => {
                 let members = member_expr_words(n);
                 if let Some(word) = members.get(0) {
-                    if let Some((local, source)) = self.is_builtin_match(word) {
+                    if let Some((_local, source)) = self.is_builtin_match(word) {
                         let mut words_key: Vec<JsWord> =
                             members.into_iter().cloned().collect();
-                        if let Local::Named(_) = local {
-                            words_key.insert(0, source);
+                        if let Some(word) = words_key.get(0) {
+                            if word != &source {
+                                words_key.insert(0, source);
+                            }
                         }
 
                         let entry = self
@@ -312,7 +318,7 @@ impl BuiltinAnalyzer {
                                     Local::Named(word) => {
                                         vec![source, word.clone()]
                                     }
-                                    Local::Default(word) => vec![word.clone()],
+                                    Local::Default(_word) => vec![source],
                                 };
                                 let entry = self
                                     .access

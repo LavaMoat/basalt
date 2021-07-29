@@ -224,6 +224,7 @@ fn policy_builtin_access_read_block_stmt() -> Result<()> {
 fn policy_builtin_access_read_with() -> Result<()> {
     let code = r#"with(process) { const foo = env.FOO }"#;
     let result = analyze(code)?;
+    println!("{:#?}", result);
     assert_eq!(1, result.len());
     let access = result.get(&JsWord::from("process")).unwrap();
     assert_eq!(true, access.read);

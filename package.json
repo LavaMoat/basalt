@@ -30,6 +30,7 @@
     "import-builtins": "file:./tests/mock-packages/import-builtins",
     "policy-builtin-esm": "file:./tests/mock-packages/policy/builtin-esm",
     "react": "^17.0.2",
-    "require-builtins": "file:./tests/mock-packages/require-builtins"
+    "require-builtins": "file:./tests/mock-packages/require-builtins",
+    "yazl": "^2.5.1"
   }
 }
