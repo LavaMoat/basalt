@@ -14,6 +14,15 @@
 //! by an inner lexical scope then this analysis will result in false
 //! positives.
 //!
+//! Note that `with` blocks are not evaluated relative to the target expression
+//! so:
+//!
+//! ```javascript
+//! with(process) {const foo = env.FOO};
+//! ```
+//!
+//! Will only yield the entire `process` builtin and not the full path (`process.env.FOO`).
+//!
 use swc_atoms::JsWord;
 use swc_ecma_ast::*;
 use swc_ecma_visit::{Node, Visit, VisitAll, VisitAllWith, VisitWith};
