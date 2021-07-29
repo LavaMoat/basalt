@@ -115,6 +115,8 @@ impl BuiltinAnalysis {
 
         module.visit_all_children_with(&mut finder);
 
+        println!("Candidates {:#?}", finder.candidates);
+
         let mut analyzer = BuiltinAnalyzer {
             candidates: finder.candidates,
             access: Default::default(),
@@ -591,16 +593,32 @@ impl Visit for BuiltinAnalyzer {
 // The call must have a single argument and the argument
 // must be a string literal.
 fn is_require_expression<'a>(n: &'a Expr) -> Option<&'a JsWord> {
-    if let Expr::Call(call) = n {
-        if call.args.len() == 1 {
-            if let ExprOrSuper::Expr(n) = &call.callee {
-                if let Expr::Ident(id) = &**n {
-                    if id.sym.as_ref() == REQUIRE {
-                        let arg = call.args.get(0).unwrap();
-                        if let Expr::Lit(lit) = &*arg.expr {
-                            if let Lit::Str(s) = lit {
-                                return Some(&s.value);
-                            }
+    match n {
+        Expr::Call(call) => {
+            return is_require_call(call);
+        }
+        Expr::Member(n) => {
+            // `require('buffer').Buffer`
+            if let ExprOrSuper::Expr(expr) = &n.obj {
+                if let Expr::Call(call) = &**expr {
+                    return is_require_call(call);
+                }
+            }
+        }
+        _ => {}
+    }
+    None
+}
+
+fn is_require_call<'a>(call: &'a CallExpr) -> Option<&'a JsWord> {
+    if call.args.len() == 1 {
+        if let ExprOrSuper::Expr(n) = &call.callee {
+            if let Expr::Ident(id) = &**n {
+                if id.sym.as_ref() == REQUIRE {
+                    let arg = call.args.get(0).unwrap();
+                    if let Expr::Lit(lit) = &*arg.expr {
+                        if let Lit::Str(s) = lit {
+                            return Some(&s.value);
                         }
                     }
                 }

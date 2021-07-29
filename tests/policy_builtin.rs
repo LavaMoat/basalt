@@ -25,7 +25,7 @@ fn policy_builtin_esm() -> Result<()> {
 #[test]
 fn policy_builtin_cjs() -> Result<()> {
     let (expected, result) = load_policy_test("tests/policy/builtin/cjs")?;
-    //println!("{}", result);
+    println!("{}", result);
     assert_eq!(expected, result);
     Ok(())
 }

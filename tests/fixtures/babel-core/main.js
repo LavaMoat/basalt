@@ -8,4 +8,5 @@
 
 //import '@babel/helper-module-transforms';
 //
-import browserslist from 'browserslist';
+//import browserslist from 'browserslist';
+import bufferEqual from 'buffer-equal';
