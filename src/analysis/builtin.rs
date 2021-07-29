@@ -514,6 +514,7 @@ impl BuiltinAnalyzer {
         // FIXME: Handle other variants
         match n {
             Pat::Assign(n) => {
+                // Right hand side of assignment
                 self.access_visit_expr(&*n.right, &AccessKind::Read);
             }
             // Needed for for..of and for..in loops

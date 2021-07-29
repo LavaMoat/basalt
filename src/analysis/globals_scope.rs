@@ -766,6 +766,12 @@ impl ScopeBuilder {
             let param_names: IndexSet<_> =
                 names.into_iter().map(|n| n.clone()).collect();
             locals = locals.union(&param_names).cloned().collect();
+            // Handle arguments with default values
+            //
+            // eg: `function foo(win = window) {}`
+            if let Pat::Assign(n) = &param.pat {
+                self._visit_expr(&*n.right, scope);
+            }
         }
 
         if let Some(ref body) = n.body {
