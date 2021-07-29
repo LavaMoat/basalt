@@ -349,7 +349,7 @@ fn policy_builtin_access_read_class_private_prop() -> Result<()> {
 #[test]
 fn policy_builtin_access_read_class_constructor() -> Result<()> {
     let code = r#"
-        class Foo {
+        class FooBar {
             constructor(prop = process.env.FOO) {
                 const bar = process.env.BAR;
             }
@@ -359,6 +359,32 @@ fn policy_builtin_access_read_class_constructor() -> Result<()> {
     let access = result.get(&JsWord::from("process.env.FOO")).unwrap();
     assert_eq!(true, access.read);
     let access = result.get(&JsWord::from("process.env.BAR")).unwrap();
+    assert_eq!(true, access.read);
+    Ok(())
+}
+
+#[test]
+fn policy_builtin_access_read_class_method() -> Result<()> {
+    let code = r#"
+        class FooBar {
+            doSomething(prop = process.env.FOO) {
+                const bar = process.env.BAR;
+            }
+
+            #doSomethingPrivate(prop = process.env.BAZ) {
+                const bar = process.env.QUX;
+            }
+
+        }"#;
+    let result = analyze(code)?;
+    assert_eq!(4, result.len());
+    let access = result.get(&JsWord::from("process.env.FOO")).unwrap();
+    assert_eq!(true, access.read);
+    let access = result.get(&JsWord::from("process.env.BAR")).unwrap();
+    assert_eq!(true, access.read);
+    let access = result.get(&JsWord::from("process.env.BAZ")).unwrap();
+    assert_eq!(true, access.read);
+    let access = result.get(&JsWord::from("process.env.QUX")).unwrap();
     assert_eq!(true, access.read);
     Ok(())
 }
