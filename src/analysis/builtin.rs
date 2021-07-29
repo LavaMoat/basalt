@@ -389,6 +389,14 @@ impl BuiltinAnalyzer {
                     for member in &n.class.body {
                         match member {
                             ClassMember::Constructor(n) => {
+                                for param in &n.params {
+                                    if let ParamOrTsParamProp::Param(param) =
+                                        param
+                                    {
+                                        self.access_visit_pat(&param.pat);
+                                    }
+                                }
+
                                 if let Some(body) = &n.body {
                                     for n in &body.stmts {
                                         self.access_visit_stmt(n);
@@ -403,12 +411,18 @@ impl BuiltinAnalyzer {
                             }
                             ClassMember::ClassProp(n) => {
                                 if let Some(n) = &n.value {
-                                    self.access_visit_expr(n, &AccessKind::Read);
+                                    self.access_visit_expr(
+                                        n,
+                                        &AccessKind::Read,
+                                    );
                                 }
                             }
                             ClassMember::PrivateProp(n) => {
                                 if let Some(n) = &n.value {
-                                    self.access_visit_expr(n, &AccessKind::Read);
+                                    self.access_visit_expr(
+                                        n,
+                                        &AccessKind::Read,
+                                    );
                                 }
                             }
                             _ => {}

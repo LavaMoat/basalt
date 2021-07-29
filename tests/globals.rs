@@ -331,10 +331,12 @@ fn globals_expr_function() -> Result<()> {
 
 #[test]
 fn globals_expr_function_default_arguments() -> Result<()> {
-    let expected =
-        std::fs::read_to_string("tests/globals/expr/function-default-arguments/output.json")?;
-    let analysis =
-        analyze(PathBuf::from("tests/globals/expr/function-default-arguments/input.js"))?;
+    let expected = std::fs::read_to_string(
+        "tests/globals/expr/function-default-arguments/output.json",
+    )?;
+    let analysis = analyze(PathBuf::from(
+        "tests/globals/expr/function-default-arguments/input.js",
+    ))?;
     let globals = analysis.compute();
     let result = serde_json::to_string_pretty(&globals)?;
     //println!("{}", result);
