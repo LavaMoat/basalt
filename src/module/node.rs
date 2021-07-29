@@ -207,6 +207,8 @@ impl ModuleNode {
                 VisitedModule::Builtin(file_name) => (file_name, None),
             };
 
+            //println!("Visiting {:#?}", file_name);
+
             let cycles = state.parents.iter().find(|p| p == &file_name);
 
             let dependency = VisitedDependency {

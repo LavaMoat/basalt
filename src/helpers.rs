@@ -2,6 +2,8 @@
 use swc_atoms::JsWord;
 use swc_ecma_ast::*;
 
+const REQUIRE: &str = "require";
+
 /// Member expressions have the furthest left of the path
 /// as the deepest expression which is awkward for analysis
 /// so we walk all member expressions and invert them.
@@ -120,4 +122,44 @@ pub fn pattern_words<'a>(pat: &'a Pat, names: &mut Vec<&'a JsWord>) {
         }
         _ => {}
     }
+}
+
+/// Detect an expression that is a call to `require()`.
+///
+/// The call must have a single argument and the argument
+/// must be a string literal.
+pub fn is_require_expr<'a>(n: &'a Expr) -> Option<&'a JsWord> {
+    match n {
+        Expr::Call(call) => {
+            return is_require_call(call);
+        }
+        Expr::Member(n) => {
+            // `require('buffer').Buffer`
+            if let ExprOrSuper::Expr(expr) = &n.obj {
+                if let Expr::Call(call) = &**expr {
+                    return is_require_call(call);
+                }
+            }
+        }
+        _ => {}
+    }
+    None
+}
+
+fn is_require_call<'a>(call: &'a CallExpr) -> Option<&'a JsWord> {
+    if call.args.len() == 1 {
+        if let ExprOrSuper::Expr(n) = &call.callee {
+            if let Expr::Ident(id) = &**n {
+                if id.sym.as_ref() == REQUIRE {
+                    let arg = call.args.get(0).unwrap();
+                    if let Expr::Lit(lit) = &*arg.expr {
+                        if let Lit::Str(s) = lit {
+                            return Some(&s.value);
+                        }
+                    }
+                }
+            }
+        }
+    }
+    None
 }
