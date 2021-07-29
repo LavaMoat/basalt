@@ -695,9 +695,7 @@ impl ScopeBuilder {
             match member {
                 ClassMember::Constructor(n) => {
                     for param in &n.params {
-                        if let ParamOrTsParamProp::Param(param) =
-                            param
-                        {
+                        if let ParamOrTsParamProp::Param(param) = param {
                             if let Pat::Assign(n) = &param.pat {
                                 self._visit_expr(&*n.right, scope);
                             }
