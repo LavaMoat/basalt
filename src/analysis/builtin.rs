@@ -288,6 +288,9 @@ impl BuiltinAnalyzer {
             // Execute access is a function call
             Expr::Call(call) => {
                 if is_require_expression(n).is_none() {
+                    for arg in &call.args {
+                        self.access_visit_expr(&*arg.expr, &AccessKind::Read);
+                    }
                     match &call.callee {
                         ExprOrSuper::Expr(n) => {
                             self.access_visit_expr(n, &AccessKind::Execute);

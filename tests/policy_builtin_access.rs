@@ -291,3 +291,15 @@ fn policy_builtin_access_read_while() -> Result<()> {
     assert_eq!(true, access.read);
     Ok(())
 }
+
+#[test]
+fn policy_builtin_access_read_for() -> Result<()> {
+    let code = r#"for(let i = parseInt(process.env.FOO); i < parseInt(process.env.BAR);i++) {}"#;
+    let result = analyze(code)?;
+    assert_eq!(2, result.len());
+    let access = result.get(&JsWord::from("process.env.FOO")).unwrap();
+    assert_eq!(true, access.read);
+    let access = result.get(&JsWord::from("process.env.BAR")).unwrap();
+    assert_eq!(true, access.read);
+    Ok(())
+}
