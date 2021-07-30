@@ -391,35 +391,38 @@ fn policy_builtin_access_read_class_method() -> Result<()> {
 }
 
 #[test]
-fn policy_builtin_access_yazl() -> Result<()> {
+fn policy_builtin_access_read_function_expression() -> Result<()> {
     let code = r#"
         var fs = require("fs");
-        var Transform = require("stream").Transform;
-        var PassThrough = require("stream").PassThrough;
-        var zlib = require("zlib");
-        var util = require("util");
-        var EventEmitter = require("events").EventEmitter;
-
-        util.inherits(ZipFile, EventEmitter);
-        function ZipFile() {
-          this.outputStream = new PassThrough();
-        }
-
+        function ZipFile() {}
+        // Function expression recursion ->>>
         ZipFile.prototype.addFile = function(realPath, metadataPath, options) {
           fs.stat(realPath, function(err, stats) {});
         }
         "#;
     let result = analyze(code)?;
-    println!("Result: {:#?}", result);
-    //assert_eq!(4, result.len());
-    //let access = result.get(&JsWord::from("process.env.FOO")).unwrap();
-    //assert_eq!(true, access.read);
-    //let access = result.get(&JsWord::from("process.env.BAR")).unwrap();
-    //assert_eq!(true, access.read);
-    //let access = result.get(&JsWord::from("process.env.BAZ")).unwrap();
-    //assert_eq!(true, access.read);
-    //let access = result.get(&JsWord::from("process.env.QUX")).unwrap();
-    //assert_eq!(true, access.read);
+    assert_eq!(1, result.len());
+    let access = result.get(&JsWord::from("fs.stat")).unwrap();
+    assert_eq!(true, access.execute);
     Ok(())
 }
 
+#[test]
+fn policy_builtin_access_require_dot_access() -> Result<()> {
+    let code = r#"
+        var PassThrough = require("stream").PassThrough;
+        var EventEmitter = require("events").EventEmitter;
+        util.inherits(ZipFile, EventEmitter);
+        function ZipFile() {
+          this.outputStream = new PassThrough();
+        }
+        "#;
+    let result = analyze(code)?;
+    println!("Result: {:#?}", result);
+    assert_eq!(2, result.len());
+    let access = result.get(&JsWord::from("events.EventEmitter")).unwrap();
+    assert_eq!(true, access.read);
+    let access = result.get(&JsWord::from("stream.PassThrough")).unwrap();
+    assert_eq!(true, access.read);
+    Ok(())
+}
