@@ -32,7 +32,7 @@ use indexmap::IndexMap;
 use super::dependencies::is_builtin_module;
 use crate::{
     access::Access,
-    helpers::{member_expr_words, pattern_words, is_require_expr},
+    helpers::{is_require_expr, member_expr_words, pattern_words},
 };
 
 const CONSOLE: &str = "console";
@@ -258,11 +258,28 @@ impl BuiltinAnalyzer {
             Expr::Fn(n) => {
                 self.access_visit_fn(&n.function);
             }
+            Expr::Arrow(n) => {
+                for pat in &n.params {
+                    self.access_visit_pat(pat);
+                }
+                match &n.body {
+                    BlockStmtOrExpr::Expr(n) => {
+                        self.access_visit_expr(n, kind);
+                    }
+                    BlockStmtOrExpr::BlockStmt(n) => {
+                        for stmt in &n.stmts {
+                            self.access_visit_stmt(stmt);
+                        }
+                    }
+                }
+            }
             Expr::Member(member) => {
                 if is_require_expr(n).is_none() {
                     let members = member_expr_words(member);
                     if let Some(word) = members.get(0) {
-                        if let Some((_local, source)) = self.is_builtin_match(word) {
+                        if let Some((_local, source)) =
+                            self.is_builtin_match(word)
+                        {
                             let mut words_key: Vec<JsWord> =
                                 members.into_iter().cloned().collect();
                             if let Some(word) = words_key.get(0) {
@@ -595,4 +612,3 @@ impl Visit for BuiltinAnalyzer {
         self.access_visit_stmt(n);
     }
 }
-

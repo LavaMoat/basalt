@@ -425,3 +425,20 @@ fn policy_builtin_access_read_require_dot_access() -> Result<()> {
     assert_eq!(true, access.read);
     Ok(())
 }
+
+#[test]
+fn policy_builtin_access_read_arrow() -> Result<()> {
+    let code = r#"
+        import fs from 'fs';
+        const foo = (stat = fs.stat) => {
+            const statSync = fs.statSync;
+        }
+        "#;
+    let result = analyze(code)?;
+    assert_eq!(2, result.len());
+    let access = result.get(&JsWord::from("fs.stat")).unwrap();
+    assert_eq!(true, access.read);
+    let access = result.get(&JsWord::from("fs.statSync")).unwrap();
+    assert_eq!(true, access.read);
+    Ok(())
+}
