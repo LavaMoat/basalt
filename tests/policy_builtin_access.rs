@@ -8,7 +8,7 @@ use basalt::{
 
 fn analyze(code: &str) -> Result<IndexMap<JsWord, Access>> {
     let (_, _, module) = load_code(code, None)?;
-    let analyzer = BuiltinAnalysis::new(Default::default());
+    let analyzer: BuiltinAnalysis = Default::default();
     Ok(analyzer.analyze(&module))
 }
 
@@ -16,7 +16,9 @@ fn analyze(code: &str) -> Result<IndexMap<JsWord, Access>> {
 
 #[test]
 fn policy_builtin_access_write() -> Result<()> {
-    let code = r#"process.env.FOO = 1;"#;
+    let code = r#"
+        import process from 'process';
+        process.env.FOO = 1;"#;
     let result = analyze(code)?;
     assert_eq!(1, result.len());
     let access = result.get(&JsWord::from("process.env.FOO")).unwrap();
@@ -26,7 +28,9 @@ fn policy_builtin_access_write() -> Result<()> {
 
 #[test]
 fn policy_builtin_access_write_update() -> Result<()> {
-    let code = r#"process.env.FOO++;"#;
+    let code = r#"
+        import process from 'process';
+        process.env.FOO++;"#;
     let result = analyze(code)?;
     assert_eq!(1, result.len());
     let access = result.get(&JsWord::from("process.env.FOO")).unwrap();
@@ -94,7 +98,6 @@ readSync('foo.txt');"#;
 fn policy_builtin_access_execute_await() -> Result<()> {
     let code = r#"import {readFile} from 'fs/promises'; async function foo() { await readFile('foo.txt') }"#;
     let result = analyze(code)?;
-    println!("Result {:#?}", result);
     assert_eq!(1, result.len());
     let access = result.get(&JsWord::from("fs/promises.readFile")).unwrap();
     assert_eq!(true, access.execute);
@@ -122,7 +125,9 @@ fn policy_builtin_access_execute_function_expression() -> Result<()> {
 
 #[test]
 fn policy_builtin_access_read_var_init() -> Result<()> {
-    let code = r#"const foo = process.env.FOO;"#;
+    let code = r#"
+        import process from 'process';
+        const foo = process.env.FOO;"#;
     let result = analyze(code)?;
     assert_eq!(1, result.len());
     let access = result.get(&JsWord::from("process.env.FOO")).unwrap();
@@ -132,7 +137,9 @@ fn policy_builtin_access_read_var_init() -> Result<()> {
 
 #[test]
 fn policy_builtin_access_read_assign() -> Result<()> {
-    let code = r#"let foo; foo = process.env.FOO;"#;
+    let code = r#"
+        import process from 'process';
+        let foo; foo = process.env.FOO;"#;
     let result = analyze(code)?;
     assert_eq!(1, result.len());
     let access = result.get(&JsWord::from("process.env.FOO")).unwrap();
@@ -142,7 +149,9 @@ fn policy_builtin_access_read_assign() -> Result<()> {
 
 #[test]
 fn policy_builtin_access_read_paren() -> Result<()> {
-    let code = r#"const foo = (process.env.FOO || '');"#;
+    let code = r#"
+        import process from 'process';
+        const foo = (process.env.FOO || '');"#;
     let result = analyze(code)?;
     assert_eq!(1, result.len());
     let access = result.get(&JsWord::from("process.env.FOO")).unwrap();
@@ -152,7 +161,9 @@ fn policy_builtin_access_read_paren() -> Result<()> {
 
 #[test]
 fn policy_builtin_access_read_function_return() -> Result<()> {
-    let code = r#"function foo() { return process.env.FOO; }"#;
+    let code = r#"
+        import process from 'process';
+        function foo() { return process.env.FOO; }"#;
     let result = analyze(code)?;
     assert_eq!(1, result.len());
     let access = result.get(&JsWord::from("process.env.FOO")).unwrap();
@@ -162,7 +173,9 @@ fn policy_builtin_access_read_function_return() -> Result<()> {
 
 #[test]
 fn policy_builtin_access_read_yield() -> Result<()> {
-    let code = r#"function* foo() { yield process.env.FOO; }"#;
+    let code = r#"
+        import process from 'process';
+        function* foo() { yield process.env.FOO; }"#;
     let result = analyze(code)?;
     assert_eq!(1, result.len());
     let access = result.get(&JsWord::from("process.env.FOO")).unwrap();
@@ -172,7 +185,9 @@ fn policy_builtin_access_read_yield() -> Result<()> {
 
 #[test]
 fn policy_builtin_access_read_unary() -> Result<()> {
-    let code = r#"const foo = typeof process.env.FOO;"#;
+    let code = r#"
+        import process from 'process';
+        const foo = typeof process.env.FOO;"#;
     let result = analyze(code)?;
     assert_eq!(1, result.len());
     let access = result.get(&JsWord::from("process.env.FOO")).unwrap();
@@ -182,7 +197,9 @@ fn policy_builtin_access_read_unary() -> Result<()> {
 
 #[test]
 fn policy_builtin_access_read_bin() -> Result<()> {
-    let code = r#"const equals = process.env.FOO !== process.env.BAR;"#;
+    let code = r#"
+        import process from 'process';
+        const equals = process.env.FOO !== process.env.BAR;"#;
     let result = analyze(code)?;
     assert_eq!(2, result.len());
     let access = result.get(&JsWord::from("process.env.FOO")).unwrap();
@@ -194,7 +211,9 @@ fn policy_builtin_access_read_bin() -> Result<()> {
 
 #[test]
 fn policy_builtin_access_read_cond() -> Result<()> {
-    let code = r#"process.env.FOO ? process.env.BAR : process.env.QUX;"#;
+    let code = r#"
+        import process from 'process';
+        process.env.FOO ? process.env.BAR : process.env.QUX;"#;
     let result = analyze(code)?;
     assert_eq!(3, result.len());
     let access = result.get(&JsWord::from("process.env.FOO")).unwrap();
@@ -208,7 +227,9 @@ fn policy_builtin_access_read_cond() -> Result<()> {
 
 #[test]
 fn policy_builtin_access_read_tpl() -> Result<()> {
-    let code = r#"const msg = `${process.env.FOO}`"#;
+    let code = r#"
+        import process from 'process';
+        const msg = `${process.env.FOO}`"#;
     let result = analyze(code)?;
     assert_eq!(1, result.len());
     let access = result.get(&JsWord::from("process.env.FOO")).unwrap();
@@ -218,7 +239,9 @@ fn policy_builtin_access_read_tpl() -> Result<()> {
 
 #[test]
 fn policy_builtin_access_read_tagged_tpl() -> Result<()> {
-    let code = r#"const msg = html`${process.env.FOO}`"#;
+    let code = r#"
+        import process from 'process';
+        const msg = html`${process.env.FOO}`"#;
     let result = analyze(code)?;
     assert_eq!(1, result.len());
     let access = result.get(&JsWord::from("process.env.FOO")).unwrap();
@@ -228,8 +251,9 @@ fn policy_builtin_access_read_tagged_tpl() -> Result<()> {
 
 #[test]
 fn policy_builtin_access_read_block_stmt() -> Result<()> {
-    let code =
-        r#"import process from 'process'; { const foo = process.env.FOO; }"#;
+    let code = r#"
+        import process from 'process';
+        { const foo = process.env.FOO; }"#;
     let result = analyze(code)?;
     assert_eq!(1, result.len());
     let access = result.get(&JsWord::from("process.env.FOO")).unwrap();
@@ -239,9 +263,10 @@ fn policy_builtin_access_read_block_stmt() -> Result<()> {
 
 #[test]
 fn policy_builtin_access_read_with() -> Result<()> {
-    let code = r#"with(process) { const foo = env.FOO }"#;
+    let code = r#"
+        import process from 'process';
+        with(process) { const foo = env.FOO }"#;
     let result = analyze(code)?;
-    println!("{:#?}", result);
     assert_eq!(1, result.len());
     let access = result.get(&JsWord::from("process")).unwrap();
     assert_eq!(true, access.read);
@@ -250,7 +275,9 @@ fn policy_builtin_access_read_with() -> Result<()> {
 
 #[test]
 fn policy_builtin_access_read_if() -> Result<()> {
-    let code = r#"if(process.env.FOO) { const bar = process.env.BAR; }"#;
+    let code = r#"
+        import process from 'process';
+        if(process.env.FOO) { const bar = process.env.BAR; }"#;
     let result = analyze(code)?;
     assert_eq!(2, result.len());
     let access = result.get(&JsWord::from("process.env.FOO")).unwrap();
@@ -262,7 +289,9 @@ fn policy_builtin_access_read_if() -> Result<()> {
 
 #[test]
 fn policy_builtin_access_read_switch() -> Result<()> {
-    let code = r#"switch(process.env.FOO) { case process.env.BAR: break; }"#;
+    let code = r#"
+        import process from 'process';
+        switch(process.env.FOO) { case process.env.BAR: break; }"#;
     let result = analyze(code)?;
     assert_eq!(2, result.len());
     let access = result.get(&JsWord::from("process.env.FOO")).unwrap();
@@ -274,7 +303,9 @@ fn policy_builtin_access_read_switch() -> Result<()> {
 
 #[test]
 fn policy_builtin_access_read_throw() -> Result<()> {
-    let code = r#"throw process.env.FOO;"#;
+    let code = r#"
+        import process from 'process';
+        throw process.env.FOO;"#;
     let result = analyze(code)?;
     assert_eq!(1, result.len());
     let access = result.get(&JsWord::from("process.env.FOO")).unwrap();
@@ -285,6 +316,7 @@ fn policy_builtin_access_read_throw() -> Result<()> {
 #[test]
 fn policy_builtin_access_read_try() -> Result<()> {
     let code = r#"
+        import process from 'process';
         try { const foo = process.env.FOO; }
         catch { const bar = process.env.BAR; }
         finally { const qux = process.env.QUX; }"#;
@@ -301,8 +333,9 @@ fn policy_builtin_access_read_try() -> Result<()> {
 
 #[test]
 fn policy_builtin_access_read_while() -> Result<()> {
-    let code =
-        r#"while(process.env.FOO !== '') { const bar = process.env.BAR };"#;
+    let code = r#"
+        import process from 'process';
+        while(process.env.FOO !== '') { const bar = process.env.BAR };"#;
     let result = analyze(code)?;
     assert_eq!(2, result.len());
     let access = result.get(&JsWord::from("process.env.FOO")).unwrap();
@@ -314,7 +347,9 @@ fn policy_builtin_access_read_while() -> Result<()> {
 
 #[test]
 fn policy_builtin_access_read_for() -> Result<()> {
-    let code = r#"for(let i = parseInt(process.env.FOO); i < parseInt(process.env.BAR);i++) {}"#;
+    let code = r#"
+        import process from 'process';
+        for(let i = parseInt(process.env.FOO); i < parseInt(process.env.BAR);i++) {}"#;
     let result = analyze(code)?;
     assert_eq!(2, result.len());
     let access = result.get(&JsWord::from("process.env.FOO")).unwrap();
@@ -326,7 +361,9 @@ fn policy_builtin_access_read_for() -> Result<()> {
 
 #[test]
 fn policy_builtin_access_read_for_in() -> Result<()> {
-    let code = r#"for(let i in process.env.FOO) {}"#;
+    let code = r#"
+        import process from 'process';
+        for(let i in process.env.FOO) {}"#;
     let result = analyze(code)?;
     assert_eq!(1, result.len());
     let access = result.get(&JsWord::from("process.env.FOO")).unwrap();
@@ -336,7 +373,9 @@ fn policy_builtin_access_read_for_in() -> Result<()> {
 
 #[test]
 fn policy_builtin_access_read_for_of() -> Result<()> {
-    let code = r#"for(const i of process.env.FOO) {}"#;
+    let code = r#"
+        import process from 'process';
+        for(const i of process.env.FOO) {}"#;
     let result = analyze(code)?;
     assert_eq!(1, result.len());
     let access = result.get(&JsWord::from("process.env.FOO")).unwrap();
@@ -346,7 +385,9 @@ fn policy_builtin_access_read_for_of() -> Result<()> {
 
 #[test]
 fn policy_builtin_access_read_class_prop() -> Result<()> {
-    let code = r#"class Foo { prop = process.env.FOO; }"#;
+    let code = r#"
+        import process from 'process';
+        class Foo { prop = process.env.FOO; }"#;
     let result = analyze(code)?;
     assert_eq!(1, result.len());
     let access = result.get(&JsWord::from("process.env.FOO")).unwrap();
@@ -356,7 +397,9 @@ fn policy_builtin_access_read_class_prop() -> Result<()> {
 
 #[test]
 fn policy_builtin_access_read_class_private_prop() -> Result<()> {
-    let code = r#"class Foo { #prop = process.env.FOO; }"#;
+    let code = r#"
+        import process from 'process';
+        class Foo { #prop = process.env.FOO; }"#;
     let result = analyze(code)?;
     assert_eq!(1, result.len());
     let access = result.get(&JsWord::from("process.env.FOO")).unwrap();
@@ -367,6 +410,7 @@ fn policy_builtin_access_read_class_private_prop() -> Result<()> {
 #[test]
 fn policy_builtin_access_read_class_constructor() -> Result<()> {
     let code = r#"
+        import process from 'process';
         class FooBar {
             constructor(prop = process.env.FOO) {
                 const bar = process.env.BAR;
@@ -384,6 +428,7 @@ fn policy_builtin_access_read_class_constructor() -> Result<()> {
 #[test]
 fn policy_builtin_access_read_class_method() -> Result<()> {
     let code = r#"
+        import process from 'process';
         class FooBar {
             doSomething(prop = process.env.FOO) {
                 const bar = process.env.BAR;

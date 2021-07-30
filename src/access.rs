@@ -10,3 +10,14 @@ pub struct Access {
     /// Execute (function call) access to the symbol.
     pub execute: bool,
 }
+
+/// Helper for analysis tasks to determine what type of
+/// access to assign when walking AST nodes is complete.
+pub enum AccessKind {
+    /// Assign read access.
+    Read,
+    /// Assign write access.
+    Write,
+    /// Assign execute access.
+    Execute,
+}

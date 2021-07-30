@@ -31,23 +31,11 @@ use indexmap::IndexMap;
 
 use super::dependencies::is_builtin_module;
 use crate::{
-    access::Access,
+    access::{Access, AccessKind},
     helpers::{is_require_expr, member_expr_words, pattern_words},
 };
 
-const CONSOLE: &str = "console";
-const PROCESS: &str = "process";
-
-const PERF_HOOKS: &str = "perf_hooks";
-const PERFORMANCE: &str = "performance";
-
 const FUNCTION_METHODS: [&str; 5] = ["call", "apply", "bind", "toSource", "toString"];
-
-enum AccessKind {
-    Read,
-    Write,
-    Execute,
-}
 
 #[derive(Debug, Hash, Eq, PartialEq, Clone)]
 enum Local {
@@ -64,56 +52,23 @@ struct Builtin {
 }
 
 /// Options for builtin analysis.
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct BuiltinOptions {
     /// Expose the nodejs global buitin modules (eg: `console` and `process`) automatically.
     node_global_builtins: bool,
 }
 
-impl Default for BuiltinOptions {
-    fn default() -> Self {
-        Self {
-            node_global_builtins: true,
-        }
-    }
-}
-
 /// Visit a module and generate the set of access
 /// to builtin packages.
 #[derive(Default)]
-pub struct BuiltinAnalysis {
-    options: BuiltinOptions,
-}
+pub struct BuiltinAnalysis;
 
 impl BuiltinAnalysis {
-    /// Create a builtin analysis.
-    pub fn new(options: BuiltinOptions) -> Self {
-        Self { options }
-    }
-
     /// Analyze and compute the builtins for a module.
     pub fn analyze(&self, module: &Module) -> IndexMap<JsWord, Access> {
         let mut finder = BuiltinFinder {
             candidates: Default::default(),
         };
-
-        if self.options.node_global_builtins {
-            finder.candidates.push(Builtin {
-                source: JsWord::from(PROCESS),
-                locals: vec![Local::Default(JsWord::from(PROCESS))],
-            });
-
-            finder.candidates.push(Builtin {
-                source: JsWord::from(CONSOLE),
-                locals: vec![Local::Default(JsWord::from(CONSOLE))],
-            });
-
-            finder.candidates.push(Builtin {
-                source: JsWord::from(PERF_HOOKS),
-                locals: vec![Local::Default(JsWord::from(PERFORMANCE))],
-            });
-        }
-
         module.visit_all_children_with(&mut finder);
 
         let mut analyzer = BuiltinAnalyzer {

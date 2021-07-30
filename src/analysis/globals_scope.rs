@@ -10,6 +10,11 @@
 //! Member expressions with a dot-delimited path only compare using
 //! the first word in the path.
 //!
+//! Does not handle global variables referenced using the `this` keyword
+//! as that would require cross-module analysis of the `new` keyword to
+//! correctly determine the scope of the the `this` reference. As globals
+//! cannot be referenced using `this` in strict mode this is not a major problem.
+//!
 
 use swc_atoms::JsWord;
 use swc_ecma_ast::*;
