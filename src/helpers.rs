@@ -128,16 +128,20 @@ pub fn pattern_words<'a>(pat: &'a Pat, names: &mut Vec<&'a JsWord>) {
 ///
 /// The call must have a single argument and the argument
 /// must be a string literal.
-pub fn is_require_expr<'a>(n: &'a Expr) -> Option<&'a JsWord> {
+///
+/// The returned boolean indicates if the require is part of a member
+/// expression which means builtin analysis can treat dot access like
+/// object destructuring and indicate that this is not a "default import".
+pub fn is_require_expr<'a>(n: &'a Expr) -> Option<(&'a JsWord, bool)> {
     match n {
         Expr::Call(call) => {
-            return is_require_call(call);
+            return is_require_call(call).map(|o| (o, false));
         }
         Expr::Member(n) => {
             // `require('buffer').Buffer`
             if let ExprOrSuper::Expr(expr) = &n.obj {
                 if let Expr::Call(call) = &**expr {
-                    return is_require_call(call);
+                    return is_require_call(call).map(|o| (o, true));
                 }
             }
         }

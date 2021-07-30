@@ -121,6 +121,25 @@ fn policy_builtin_access_execute_function_expression() -> Result<()> {
     Ok(())
 }
 
+#[test]
+fn policy_builtin_access_execute_require_dot_member_expr() -> Result<()> {
+    let code = r#"
+        var Transform = require("stream").Transform;
+        var util = require("util");
+        util.inherits(ByteCounter, Transform);
+        function ByteCounter(options) {
+          Transform.call(this, options);
+        }
+        "#;
+    let result = analyze(code)?;
+    assert_eq!(2, result.len());
+    let access = result.get(&JsWord::from("util.inherits")).unwrap();
+    assert_eq!(true, access.execute);
+    let access = result.get(&JsWord::from("stream.Transform")).unwrap();
+    assert_eq!(true, access.execute);
+    Ok(())
+}
+
 // READ
 
 #[test]
@@ -487,3 +506,17 @@ fn policy_builtin_access_read_arrow() -> Result<()> {
     assert_eq!(true, access.read);
     Ok(())
 }
+
+#[test]
+fn policy_builtin_access_read_default_import_rename() -> Result<()> {
+    let code = r#"
+        import ps from 'process';
+        const foo = ps.env.FOO;
+        "#;
+    let result = analyze(code)?;
+    assert_eq!(1, result.len());
+    let access = result.get(&JsWord::from("process.env.FOO")).unwrap();
+    assert_eq!(true, access.read);
+    Ok(())
+}
+

@@ -51,13 +51,6 @@ struct Builtin {
     locals: Vec<Local>,
 }
 
-/// Options for builtin analysis.
-#[derive(Debug, Default)]
-pub struct BuiltinOptions {
-    /// Expose the nodejs global buitin modules (eg: `console` and `process`) automatically.
-    node_global_builtins: bool,
-}
-
 /// Visit a module and generate the set of access
 /// to builtin packages.
 #[derive(Default)]
@@ -131,16 +124,24 @@ impl VisitAll for BuiltinFinder {
 
     fn visit_var_declarator(&mut self, n: &VarDeclarator, _: &dyn Node) {
         if let Some(init) = &n.init {
-            if let Some(name) = is_require_expr(init) {
+            if let Some((name, is_member)) = is_require_expr(init) {
                 if is_builtin_module(name.as_ref()) {
                     let mut builtin = Builtin {
                         source: name.clone(),
                         locals: Default::default(),
                     };
                     builtin.locals = match &n.name {
+                        // Looks like a default require statement
+                        // but may have dot access so we test
+                        // is_member.
                         Pat::Ident(ident) => {
-                            vec![Local::Default(ident.id.sym.clone())]
+                            if !is_member {
+                                vec![Local::Default(ident.id.sym.clone())]
+                            } else {
+                                vec![Local::Named(ident.id.sym.clone())]
+                            }
                         }
+                        // Handle object destructuring on LHS of require()
                         _ => {
                             let mut names = Vec::new();
                             pattern_words(&n.name, &mut names);
@@ -234,17 +235,23 @@ impl BuiltinAnalyzer {
                 if is_require_expr(n).is_none() {
                     let members = member_expr_words(member);
                     if let Some(word) = members.get(0) {
-                        if let Some((_local, source)) =
+                        if let Some((local, source)) =
                             self.is_builtin_match(word)
                         {
                             let mut words_key: Vec<JsWord> =
                                 members.into_iter().cloned().collect();
                             if let Some(word) = words_key.get(0) {
                                 if word != &source {
+                                    if let Local::Default(_) = local {
+                                        println!("Removed the word {:#?}", words_key);
+                                        let word = words_key.remove(0);
+                                        println!("Removed the word {:#?}", word);
+                                    }
                                     words_key.insert(0, source);
                                 }
                             }
 
+                            // Strip function methods like `call`, `apply` and `bind` etc.
                             if let AccessKind::Execute = kind {
                                 if let Some(last) = words_key.last() {
                                     if FUNCTION_METHODS.contains(&last.as_ref()) {
