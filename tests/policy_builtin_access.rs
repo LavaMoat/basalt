@@ -520,3 +520,21 @@ fn policy_builtin_access_read_default_import_rename() -> Result<()> {
     Ok(())
 }
 
+// MISC
+
+#[test]
+fn policy_builtin_access_merge() -> Result<()> {
+    let code = r#"
+        import buffer from 'buffer';
+        // Read access
+        const buf1 = buffer.Buffer;
+        // Execute to a nested path
+        const buf2 = buffer.Buffer.from([]);
+        "#;
+    let result = analyze(code)?;
+    assert_eq!(1, result.len());
+    let access = result.get(&JsWord::from("buffer.Buffer")).unwrap();
+    assert_eq!(true, access.read);
+    assert_eq!(true, access.execute);
+    Ok(())
+}

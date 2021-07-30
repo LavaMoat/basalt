@@ -71,7 +71,39 @@ impl BuiltinAnalysis {
 
         module.visit_children_with(&mut analyzer);
 
-        self.compute(analyzer.access)
+        self.compute(self.filter(analyzer.access))
+    }
+
+    /// Filter the list of access removing deep properties when an existing
+    /// parent object already exists.
+    ///
+    /// The parent access is updated with any flags set on the child property access.
+    fn filter(&self, map: IndexMap<Vec<JsWord>, Access>) -> IndexMap<Vec<JsWord>, Access> {
+        let compare = map.clone();
+        let mut updated: IndexMap<Vec<JsWord>, Access> = Default::default();
+        let mut result: IndexMap<Vec<JsWord>, Access> = map
+            .into_iter()
+            .filter(|(k, access)| {
+                for (key, parent_access) in compare.iter() {
+                    if key.len() < k.len() {
+                        if k.starts_with(&key) {
+                            let mut new_access = parent_access.clone();
+                            new_access.merge(&access);
+                            updated.insert(key.clone(), new_access);
+                            return false
+                        }
+                    }
+                }
+                true
+            })
+            .collect();
+
+        // Overwrite with updated access flags
+        for (k,v) in updated {
+            result.insert(k, v);
+        }
+
+        result
     }
 
     /// Compute the builtins.
@@ -168,7 +200,7 @@ struct BuiltinAnalyzer {
 impl BuiltinAnalyzer {
     /// Determine if a word matches a previously located builtin module local
     /// symbol. For member expressions pass the first word in the expression.
-    fn is_builtin_match(&mut self, sym: &JsWord) -> Option<(&Local, JsWord)> {
+    fn is_builtin_match(&self, sym: &JsWord) -> Option<(&Local, JsWord)> {
         for builtin in self.candidates.iter() {
             let mut matched = builtin.locals.iter().find(|local| {
                 let word = match local {
@@ -184,6 +216,25 @@ impl BuiltinAnalyzer {
         None
     }
 
+
+    fn insert_access(&mut self, words_key: Vec<JsWord>, kind: &AccessKind) {
+        let entry = self
+            .access
+            .entry(words_key)
+            .or_insert(Default::default());
+        match kind {
+            AccessKind::Read => {
+                entry.read = true;
+            }
+            AccessKind::Write => {
+                entry.write = true;
+            }
+            AccessKind::Execute => {
+                entry.execute = true;
+            }
+        }
+    }
+
     fn access_visit_expr(&mut self, n: &Expr, kind: &AccessKind) {
         match n {
             Expr::Ident(n) => {
@@ -193,21 +244,8 @@ impl BuiltinAnalyzer {
                     } else {
                         vec![source, n.sym.clone()]
                     };
-                    let entry = self
-                        .access
-                        .entry(words_key)
-                        .or_insert(Default::default());
-                    match kind {
-                        AccessKind::Read => {
-                            entry.read = true;
-                        }
-                        AccessKind::Write => {
-                            entry.write = true;
-                        }
-                        AccessKind::Execute => {
-                            entry.execute = true;
-                        }
-                    }
+
+                    self.insert_access(words_key, kind);
                 }
             }
             Expr::New(n) => {
@@ -260,22 +298,7 @@ impl BuiltinAnalyzer {
                                 }
                             }
 
-                            let entry = self
-                                .access
-                                .entry(words_key)
-                                .or_insert(Default::default());
-
-                            match kind {
-                                AccessKind::Read => {
-                                    entry.read = true;
-                                }
-                                AccessKind::Write => {
-                                    entry.write = true;
-                                }
-                                AccessKind::Execute => {
-                                    entry.execute = true;
-                                }
-                            }
+                            self.insert_access(words_key, kind);
                         }
                     }
                 }
@@ -312,11 +335,8 @@ impl BuiltinAnalyzer {
                                     }
                                     Local::Default(_word) => vec![source],
                                 };
-                                let entry = self
-                                    .access
-                                    .entry(words_key)
-                                    .or_insert(Default::default());
-                                entry.write = true;
+
+                                self.insert_access(words_key, &AccessKind::Write);
                             }
                         }
                         Pat::Expr(n) => {
