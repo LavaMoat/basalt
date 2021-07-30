@@ -101,6 +101,23 @@ fn policy_builtin_access_execute_await() -> Result<()> {
     Ok(())
 }
 
+#[test]
+fn policy_builtin_access_execute_function_expression() -> Result<()> {
+    let code = r#"
+        var fs = require("fs");
+        function ZipFile() {}
+        // Function expression recursion ->>>
+        ZipFile.prototype.addFile = function(realPath) {
+          fs.stat(realPath, function(err, stats) {});
+        }
+        "#;
+    let result = analyze(code)?;
+    assert_eq!(1, result.len());
+    let access = result.get(&JsWord::from("fs.stat")).unwrap();
+    assert_eq!(true, access.execute);
+    Ok(())
+}
+
 // READ
 
 #[test]
@@ -391,24 +408,7 @@ fn policy_builtin_access_read_class_method() -> Result<()> {
 }
 
 #[test]
-fn policy_builtin_access_read_function_expression() -> Result<()> {
-    let code = r#"
-        var fs = require("fs");
-        function ZipFile() {}
-        // Function expression recursion ->>>
-        ZipFile.prototype.addFile = function(realPath, metadataPath, options) {
-          fs.stat(realPath, function(err, stats) {});
-        }
-        "#;
-    let result = analyze(code)?;
-    assert_eq!(1, result.len());
-    let access = result.get(&JsWord::from("fs.stat")).unwrap();
-    assert_eq!(true, access.execute);
-    Ok(())
-}
-
-#[test]
-fn policy_builtin_access_require_dot_access() -> Result<()> {
+fn policy_builtin_access_read_require_dot_access() -> Result<()> {
     let code = r#"
         var PassThrough = require("stream").PassThrough;
         var EventEmitter = require("events").EventEmitter;
@@ -418,7 +418,6 @@ fn policy_builtin_access_require_dot_access() -> Result<()> {
         }
         "#;
     let result = analyze(code)?;
-    println!("Result: {:#?}", result);
     assert_eq!(2, result.len());
     let access = result.get(&JsWord::from("events.EventEmitter")).unwrap();
     assert_eq!(true, access.read);

@@ -114,8 +114,6 @@ impl BuiltinAnalysis {
 
         module.visit_all_children_with(&mut finder);
 
-        //println!("Candidates {:#?}", finder.candidates);
-
         let mut analyzer = BuiltinAnalyzer {
             candidates: finder.candidates,
             access: Default::default(),
@@ -135,7 +133,6 @@ impl BuiltinAnalysis {
         for (words, access) in access {
             let words: Vec<String> =
                 words.into_iter().map(|w| w.as_ref().to_string()).collect();
-            //println!("Builtin words: {:#?}", words);
             out.insert(JsWord::from(words.join(".")), access.clone());
         }
         out
@@ -232,10 +229,11 @@ impl BuiltinAnalyzer {
     fn access_visit_expr(&mut self, n: &Expr, kind: &AccessKind) {
         match n {
             Expr::Ident(n) => {
-                if let Some((local, source)) = self.is_builtin_match(&n.sym) {
-                    let words_key = match local {
-                        Local::Named(word) => vec![source, word.clone()],
-                        Local::Default(_word) => vec![source],
+                if let Some((_local, source)) = self.is_builtin_match(&n.sym) {
+                    let words_key = if source == n.sym {
+                        vec![source]
+                    } else {
+                        vec![source, n.sym.clone()]
                     };
                     let entry = self
                         .access
@@ -260,32 +258,34 @@ impl BuiltinAnalyzer {
             Expr::Fn(n) => {
                 self.access_visit_fn(&n.function);
             }
-            Expr::Member(n) => {
-                let members = member_expr_words(n);
-                if let Some(word) = members.get(0) {
-                    if let Some((_local, source)) = self.is_builtin_match(word) {
-                        let mut words_key: Vec<JsWord> =
-                            members.into_iter().cloned().collect();
-                        if let Some(word) = words_key.get(0) {
-                            if word != &source {
-                                words_key.insert(0, source);
+            Expr::Member(member) => {
+                if is_require_expr(n).is_none() {
+                    let members = member_expr_words(member);
+                    if let Some(word) = members.get(0) {
+                        if let Some((_local, source)) = self.is_builtin_match(word) {
+                            let mut words_key: Vec<JsWord> =
+                                members.into_iter().cloned().collect();
+                            if let Some(word) = words_key.get(0) {
+                                if word != &source {
+                                    words_key.insert(0, source);
+                                }
                             }
-                        }
 
-                        let entry = self
-                            .access
-                            .entry(words_key)
-                            .or_insert(Default::default());
+                            let entry = self
+                                .access
+                                .entry(words_key)
+                                .or_insert(Default::default());
 
-                        match kind {
-                            AccessKind::Read => {
-                                entry.read = true;
-                            }
-                            AccessKind::Write => {
-                                entry.write = true;
-                            }
-                            AccessKind::Execute => {
-                                entry.execute = true;
+                            match kind {
+                                AccessKind::Read => {
+                                    entry.read = true;
+                                }
+                                AccessKind::Write => {
+                                    entry.write = true;
+                                }
+                                AccessKind::Execute => {
+                                    entry.execute = true;
+                                }
                             }
                         }
                     }
