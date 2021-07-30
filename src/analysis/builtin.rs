@@ -257,6 +257,9 @@ impl BuiltinAnalyzer {
             Expr::New(n) => {
                 self.access_visit_expr(&*n.callee, &AccessKind::Read);
             }
+            Expr::Fn(n) => {
+                self.access_visit_fn(&n.function);
+            }
             Expr::Member(n) => {
                 let members = member_expr_words(n);
                 if let Some(word) = members.get(0) {
