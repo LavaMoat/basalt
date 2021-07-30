@@ -41,6 +41,8 @@ const PROCESS: &str = "process";
 const PERF_HOOKS: &str = "perf_hooks";
 const PERFORMANCE: &str = "performance";
 
+const FUNCTION_METHODS: [&str; 5] = ["call", "apply", "bind", "toSource", "toString"];
+
 enum AccessKind {
     Read,
     Write,
@@ -285,6 +287,14 @@ impl BuiltinAnalyzer {
                             if let Some(word) = words_key.get(0) {
                                 if word != &source {
                                     words_key.insert(0, source);
+                                }
+                            }
+
+                            if let AccessKind::Execute = kind {
+                                if let Some(last) = words_key.last() {
+                                    if FUNCTION_METHODS.contains(&last.as_ref()) {
+                                        words_key.pop();
+                                    }
                                 }
                             }
 
