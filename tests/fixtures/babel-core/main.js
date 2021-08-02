@@ -1,5 +1,5 @@
-require('@babel/core');
-//require('@babel/code-frame');
+//require('@babel/core');
+require('@babel/code-frame');
 //require('ansi-styles');
 //require('chalk');
 

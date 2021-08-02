@@ -58,6 +58,7 @@ pub fn var_symbol_words(var: &VarDecl) -> Vec<(&VarDeclarator, Vec<&JsWord>)> {
             Pat::Object(_) => true,
             Pat::Array(_) => true,
             Pat::Rest(_) => true,
+            Pat::Assign(_) => true,
             _ => false,
         })
         .map(|decl| {
@@ -119,6 +120,9 @@ pub fn pattern_words<'a>(pat: &'a Pat, names: &mut Vec<&'a JsWord>) {
         }
         Pat::Rest(rest) => {
             pattern_words(&*rest.arg, names);
+        }
+        Pat::Assign(assign) => {
+            pattern_words(&*assign.left, names);
         }
         _ => {}
     }
