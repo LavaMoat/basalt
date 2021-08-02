@@ -30,6 +30,7 @@ pub(crate) fn get_parser<'a>(
 ) -> Parser<Lexer<'a, StringInput<'a>>> {
     let es_config = EsConfig {
         jsx: true,
+        dynamic_import: true,
         ..Default::default()
     };
 

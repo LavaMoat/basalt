@@ -281,9 +281,7 @@ impl BuiltinAnalyzer {
                             if let Some(word) = words_key.get(0) {
                                 if word != &source {
                                     if let Local::Default(_) = local {
-                                        println!("Removed the word {:#?}", words_key);
-                                        let word = words_key.remove(0);
-                                        println!("Removed the word {:#?}", word);
+                                        words_key.remove(0);
                                     }
                                     words_key.insert(0, source);
                                 }
