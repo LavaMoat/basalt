@@ -18,7 +18,8 @@ use swc_ecma_dep_graph::{analyze_dependencies, DependencyDescriptor};
 use swc_ecma_loader::{resolve::Resolve, resolvers::node::NodeResolver};
 
 use crate::analysis::dependencies::is_builtin_module;
-use crate::module::cache::load_module;
+//use crate::module::cache::load_module;
+use crate::swc_utils::load_file;
 
 /// Cache of visited modules.
 static CACHE: SyncLazy<DashMap<PathBuf, Arc<VisitedModule>>> =
@@ -85,13 +86,19 @@ fn parse_module<P: AsRef<Path>>(
         let module = entry.value();
         return Ok(module.clone());
     }
-    let (module, source_map, file_name) = load_module(file)?;
+
+    let (file_name, source_map, module) = load_file(file.as_ref())?;
+
     let comments: SingleThreadedComments = Default::default();
-    let mut node = ModuleNode::from(module);
+    let mut node = ModuleNode {
+        module: Arc::new(module),
+        dependencies: None,
+        resolved: Default::default(),
+    };
     node.analyze(&source_map, &comments);
     node.resolve(resolver, &file_name)?;
     let module = Arc::new(VisitedModule::Module(
-        (&*file_name).clone(),
+        file_name,
         source_map,
         node,
     ));
@@ -238,16 +245,6 @@ impl ModuleNode {
         state.open.pop();
 
         Ok(())
-    }
-}
-
-impl From<Arc<Module>> for ModuleNode {
-    fn from(module: Arc<Module>) -> Self {
-        ModuleNode {
-            module,
-            dependencies: None,
-            resolved: Vec::new(),
-        }
     }
 }
 

@@ -3,7 +3,7 @@ use std::path::PathBuf;
 use anyhow::Result;
 use structopt::StructOpt;
 
-use basalt::{list, meta, policy, symbols, transform};
+use basalt::{list, meta, parse, policy, symbols, transform};
 
 #[derive(StructOpt)]
 #[structopt(about = "Lavamoat analyzer and bundler")]
@@ -14,6 +14,13 @@ enum BasaltCommands {
         #[structopt(short = "f", long)]
         include_file: bool,
 
+        /// Module entry point
+        #[structopt(parse(from_os_str))]
+        module: PathBuf,
+    },
+
+    /// Parse a dependency graph
+    Parse {
         /// Module entry point
         #[structopt(parse(from_os_str))]
         module: PathBuf,
@@ -70,6 +77,7 @@ fn main() -> Result<()> {
         } => {
             list(module, include_file)?;
         }
+        BasaltCommands::Parse { module } => parse(module)?,
         BasaltCommands::Policy { module } => policy(module)?,
         BasaltCommands::Symbols { module, debug } => symbols(module, debug)?,
         BasaltCommands::Meta { module } => meta(module)?,

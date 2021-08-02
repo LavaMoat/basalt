@@ -6,6 +6,7 @@
 
 use std::io::{self, Read};
 use std::path::PathBuf;
+use std::time::SystemTime;
 
 use anyhow::{bail, Result};
 
@@ -26,6 +27,16 @@ pub use static_module_record::{
 
 use analysis::globals_scope::GlobalAnalysis;
 use policy::builder::PolicyBuilder;
+
+/// Parse all the modules in a dependency graph.
+pub fn parse(file: PathBuf) -> Result<()> {
+    let now = SystemTime::now();
+    let module_count = module::parser::parse(file)?;
+    if let Ok(t) = now.elapsed() {
+        log::info!("Parsed {} module(s) in {:?}", module_count, t);
+    }
+    Ok(())
+}
 
 /// Generate a policy file.
 pub fn policy(file: PathBuf) -> Result<()> {
