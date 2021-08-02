@@ -97,6 +97,20 @@ fn parse_module<P: AsRef<Path>>(
     };
     node.analyze(&source_map, &comments);
     node.resolve(resolver, &file_name)?;
+
+    // Don't bother walking dependencies that have already
+    // been visited.
+    //
+    // Note that without this performance is terrible as lots
+    // of iterations will be performed whilst visiting the dependency
+    // graph.
+    node.resolved = node.resolved.into_iter().filter(|(_, file_name)| {
+        if let FileName::Real(module_path) = &file_name {
+            return CACHE.get(module_path).is_none();
+        }
+        true
+    }).collect();
+
     let module = Arc::new(VisitedModule::Module(
         file_name,
         source_map,
@@ -266,6 +280,7 @@ impl<'a> Iterator for NodeIterator<'a> {
             self.index += 1;
 
             match &resolved.1 {
+
                 FileName::Real(file_name) => {
                     return match parse_file(file_name, &self.resolver) {
                         Ok(parsed) => Some(Ok((

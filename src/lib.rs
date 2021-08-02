@@ -31,9 +31,10 @@ use policy::builder::PolicyBuilder;
 /// Parse all the modules in a dependency graph.
 pub fn parse(file: PathBuf) -> Result<()> {
     let now = SystemTime::now();
-    let module_count = module::parser::parse(file)?;
+    let (parsed_modules, visited_modules) = module::parser::parse(file)?;
     if let Ok(t) = now.elapsed() {
-        log::info!("Parsed {} module(s) in {:?}", module_count, t);
+        log::debug!("Visited {} module(s)", visited_modules);
+        log::info!("Parsed {} module(s) in {:?}", parsed_modules, t);
     }
     Ok(())
 }
