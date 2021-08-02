@@ -104,18 +104,18 @@ fn parse_module<P: AsRef<Path>>(
     // Note that without this performance is terrible as lots
     // of iterations will be performed whilst visiting the dependency
     // graph.
-    node.resolved = node.resolved.into_iter().filter(|(_, file_name)| {
-        if let FileName::Real(module_path) = &file_name {
-            return CACHE.get(module_path).is_none();
-        }
-        true
-    }).collect();
+    node.resolved = node
+        .resolved
+        .into_iter()
+        .filter(|(_, file_name)| {
+            if let FileName::Real(module_path) = &file_name {
+                return CACHE.get(module_path).is_none();
+            }
+            true
+        })
+        .collect();
 
-    let module = Arc::new(VisitedModule::Module(
-        file_name,
-        source_map,
-        node,
-    ));
+    let module = Arc::new(VisitedModule::Module(file_name, source_map, node));
     let entry = CACHE.entry(buf).or_insert(module);
     Ok(entry.value().clone())
 }
@@ -280,7 +280,6 @@ impl<'a> Iterator for NodeIterator<'a> {
             self.index += 1;
 
             match &resolved.1 {
-
                 FileName::Real(file_name) => {
                     return match parse_file(file_name, &self.resolver) {
                         Ok(parsed) => Some(Ok((

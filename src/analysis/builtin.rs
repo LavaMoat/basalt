@@ -35,7 +35,8 @@ use crate::{
     helpers::{is_require_expr, member_expr_words, pattern_words},
 };
 
-const FUNCTION_METHODS: [&str; 5] = ["call", "apply", "bind", "toSource", "toString"];
+const FUNCTION_METHODS: [&str; 5] =
+    ["call", "apply", "bind", "toSource", "toString"];
 
 #[derive(Debug, Hash, Eq, PartialEq, Clone)]
 enum Local {
@@ -78,7 +79,10 @@ impl BuiltinAnalysis {
     /// parent object already exists.
     ///
     /// The parent access is updated with any flags set on the child property access.
-    fn filter(&self, map: IndexMap<Vec<JsWord>, Access>) -> IndexMap<Vec<JsWord>, Access> {
+    fn filter(
+        &self,
+        map: IndexMap<Vec<JsWord>, Access>,
+    ) -> IndexMap<Vec<JsWord>, Access> {
         let compare = map.clone();
         let mut updated: IndexMap<Vec<JsWord>, Access> = Default::default();
         let mut result: IndexMap<Vec<JsWord>, Access> = map
@@ -90,7 +94,7 @@ impl BuiltinAnalysis {
                             let mut new_access = parent_access.clone();
                             new_access.merge(&access);
                             updated.insert(key.clone(), new_access);
-                            return false
+                            return false;
                         }
                     }
                 }
@@ -99,7 +103,7 @@ impl BuiltinAnalysis {
             .collect();
 
         // Overwrite with updated access flags
-        for (k,v) in updated {
+        for (k, v) in updated {
             result.insert(k, v);
         }
 
@@ -216,12 +220,8 @@ impl BuiltinAnalyzer {
         None
     }
 
-
     fn insert_access(&mut self, words_key: Vec<JsWord>, kind: &AccessKind) {
-        let entry = self
-            .access
-            .entry(words_key)
-            .or_insert(Default::default());
+        let entry = self.access.entry(words_key).or_insert(Default::default());
         match kind {
             AccessKind::Read => {
                 entry.read = true;
@@ -290,7 +290,8 @@ impl BuiltinAnalyzer {
                             // Strip function methods like `call`, `apply` and `bind` etc.
                             if let AccessKind::Execute = kind {
                                 if let Some(last) = words_key.last() {
-                                    if FUNCTION_METHODS.contains(&last.as_ref()) {
+                                    if FUNCTION_METHODS.contains(&last.as_ref())
+                                    {
                                         words_key.pop();
                                     }
                                 }
@@ -334,7 +335,10 @@ impl BuiltinAnalyzer {
                                     Local::Default(_word) => vec![source],
                                 };
 
-                                self.insert_access(words_key, &AccessKind::Write);
+                                self.insert_access(
+                                    words_key,
+                                    &AccessKind::Write,
+                                );
                             }
                         }
                         Pat::Expr(n) => {

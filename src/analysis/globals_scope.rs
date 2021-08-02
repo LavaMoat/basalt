@@ -701,9 +701,10 @@ impl ScopeBuilder {
                 ClassMember::Constructor(n) => {
                     for param in &n.params {
                         if let ParamOrTsParamProp::Param(param) = param {
-                            if let Pat::Assign(n) = &param.pat {
-                                self._visit_expr(&*n.right, scope);
-                            }
+                            let mut locals: IndexSet<JsWord> =
+                                Default::default();
+                            self._visit_param(param, scope, &mut locals);
+                            scope.locals = scope.locals.union(&locals).cloned().collect();
                         }
                     }
 
@@ -774,22 +775,33 @@ impl ScopeBuilder {
     ) {
         // Capture function parameters as locals
         for param in n.params.iter() {
-            let mut names = Vec::new();
-            pattern_words(&param.pat, &mut names);
-            let param_names: IndexSet<_> =
-                names.into_iter().map(|n| n.clone()).collect();
-            locals = locals.union(&param_names).cloned().collect();
-            // Handle arguments with default values
-            //
-            // eg: `function foo(win = window) {}`
-            if let Pat::Assign(n) = &param.pat {
-                self._visit_expr(&*n.right, scope);
-            }
+            self._visit_param(param, scope, &mut locals);
         }
 
         if let Some(ref body) = n.body {
             let block_stmt = Stmt::Block(body.clone());
             self._visit_stmt(&block_stmt, scope, Some(locals));
+        }
+    }
+
+    fn _visit_param(
+        &self,
+        n: &Param,
+        scope: &mut Scope,
+        locals: &mut IndexSet<JsWord>,
+    ) {
+        let mut names = Vec::new();
+        pattern_words(&n.pat, &mut names);
+        let param_names: IndexSet<_> =
+            names.into_iter().map(|n| n.clone()).collect();
+        for name in param_names {
+            locals.insert(name);
+        }
+        // Handle arguments with default values
+        //
+        // eg: `function foo(win = window) {}`
+        if let Pat::Assign(n) = &n.pat {
+            self._visit_expr(&*n.right, scope);
         }
     }
 

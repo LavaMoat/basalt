@@ -14,9 +14,15 @@ pub struct Access {
 impl Access {
     /// Merge positive flags from other into this access.
     pub fn merge(&mut self, other: &Access) {
-        if other.read { self.read = true }
-        if other.write { self.write = true }
-        if other.execute { self.execute = true }
+        if other.read {
+            self.read = true
+        }
+        if other.write {
+            self.write = true
+        }
+        if other.execute {
+            self.execute = true
+        }
     }
 }
 

@@ -5,10 +5,8 @@ use anyhow::Result;
 
 use swc_ecma_loader::{resolve::Resolve, resolvers::node::NodeResolver};
 
-use crate::{
-    module::node::{
-        cached_modules, parse_file, VisitedDependency, VisitedModule,
-    },
+use crate::module::node::{
+    cached_modules, parse_file, VisitedDependency, VisitedModule,
 };
 
 /// Parse all the modules in a dependency graph.
@@ -35,7 +33,7 @@ pub fn parse<P: AsRef<Path>>(file: P) -> Result<(usize, usize)> {
     }
 
     // WTF: Visited 29146348 modules!
-     //eprintln!("Visited {} modules!", visited_count);
+    //eprintln!("Visited {} modules!", visited_count);
 
     Ok((cached_modules().len(), visited_count))
 }
