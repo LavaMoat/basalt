@@ -600,11 +600,16 @@ impl ScopeBuilder {
                     }
                 }
             }
-            Expr::Call(n) => match &n.callee {
-                ExprOrSuper::Expr(expr) => {
-                    self._visit_expr(expr, scope);
+            Expr::Call(n) => {
+                match &n.callee {
+                    ExprOrSuper::Expr(expr) => {
+                        self._visit_expr(expr, scope);
+                    }
+                    _ => {}
                 }
-                _ => {}
+                for arg in &n.args {
+                    self._visit_expr(&*arg.expr, scope);
+                }
             },
             Expr::Update(n) => {
                 self._visit_expr(&n.arg, scope);
@@ -704,7 +709,8 @@ impl ScopeBuilder {
                             let mut locals: IndexSet<JsWord> =
                                 Default::default();
                             self._visit_param(param, scope, &mut locals);
-                            scope.locals = scope.locals.union(&locals).cloned().collect();
+                            scope.locals =
+                                scope.locals.union(&locals).cloned().collect();
                         }
                     }
 

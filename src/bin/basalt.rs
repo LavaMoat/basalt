@@ -3,7 +3,7 @@ use std::path::PathBuf;
 use anyhow::Result;
 use structopt::StructOpt;
 
-use basalt::{list, meta, parse, policy, symbols, transform};
+use basalt::{globals, list, meta, parse, policy, transform};
 
 #[derive(StructOpt)]
 #[structopt(about = "Lavamoat analyzer and bundler")]
@@ -33,9 +33,9 @@ enum BasaltCommands {
         module: PathBuf,
     },
 
-    /// Print the symbols for a module
-    Symbols {
-        /// Print only global symbols
+    /// Print the globals for a module
+    Globals {
+        /// Print the scope hierarchy
         #[structopt(short, long)]
         debug: bool,
 
@@ -79,7 +79,7 @@ fn main() -> Result<()> {
         }
         BasaltCommands::Parse { module } => parse(module)?,
         BasaltCommands::Policy { module } => policy(module)?,
-        BasaltCommands::Symbols { module, debug } => symbols(module, debug)?,
+        BasaltCommands::Globals { module, debug } => globals(module, debug)?,
         BasaltCommands::Meta { module } => meta(module)?,
         BasaltCommands::Transform { module, json } => transform(module, json)?,
     }

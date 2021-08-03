@@ -77,11 +77,11 @@ pub fn meta(file: PathBuf) -> Result<()> {
     Ok(())
 }
 
-/// Print the symbols in a module.
+/// Print the globals in a module.
 ///
 /// By default it prints the global symbols in a module, if the
 /// debug option is given the scope tree is printed.
-pub fn symbols(file: PathBuf, debug: bool) -> Result<()> {
+pub fn globals(file: PathBuf, debug: bool) -> Result<()> {
     if !file.is_file() {
         bail!("Module {} does not exist or is not a file", file.display());
     }

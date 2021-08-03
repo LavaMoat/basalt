@@ -21,17 +21,11 @@
       },
       "globals": {
         "add": true,
-        "ast": true,
         "at": true,
-        "babelrc": true,
         "bind": true,
-        "code": true,
-        "config": true,
         "console.log": true,
         "console.log.apply": true,
-        "data": true,
         "defaultResult": true,
-        "descriptor": true,
         "dirname": true,
         "e": true,
         "e.code": true,
@@ -41,36 +35,22 @@
         "err.message": true,
         "every": true,
         "file": true,
-        "file.opts.cwd": true,
-        "file.opts.filename": true,
         "file.request": true,
         "file.resolved": true,
-        "fileHandling": true,
-        "files": true,
         "forEach": true,
         "generateUidIdentifier": true,
         "get": true,
         "has": true,
         "i": true,
-        "ignore": true,
         "import": true,
         "indexOf": true,
         "info.done": true,
-        "inputMap": true,
         "join": true,
-        "key": true,
         "length": true,
         "loose": true,
         "name": true,
         "node": true,
         "options": true,
-        "plugin.generatorOverride": true,
-        "plugin.manipulateOptions": true,
-        "plugin.name": true,
-        "plugin.parserOverride": true,
-        "plugin.post": true,
-        "plugin.pre": true,
-        "plugin.visitor": true,
         "process": true,
         "process.cwd": true,
         "process.env": true,
@@ -121,11 +101,9 @@
         "Buffer.isBuffer": true,
         "add": true,
         "append": true,
-        "ast": true,
         "at": true,
         "auxiliaryCommentAfter": true,
         "auxiliaryCommentBefore": true,
-        "code": true,
         "column": true,
         "compact": true,
         "concise": true,
@@ -135,7 +113,6 @@
         "filename": true,
         "forEach": true,
         "force": true,
-        "format": true,
         "get": true,
         "getCurrentLine": true,
         "has": true,
@@ -146,10 +123,7 @@
         "jsonCompatibleStrings": true,
         "length": true,
         "line": true,
-        "map": true,
         "minified": true,
-        "opts": true,
-        "opts.sourceMaps": true,
         "pop": true,
         "push": true,
         "queue": true,
@@ -288,11 +262,7 @@
     "@babel/helper-module-imports": {
       "globals": {
         "generateUidIdentifier": true,
-        "hub": true,
-        "importedSource": true,
-        "path.find": true,
         "push": true,
-        "scope": true,
         "unshiftContainer": true
       },
       "packages": {
@@ -329,13 +299,6 @@
       }
     },
     "@babel/helper-replace-supers": {
-      "globals": {
-        "opts": true,
-        "opts.file": true,
-        "opts.isLoose": true,
-        "opts.methodPath": true,
-        "opts.superRef": true
-      },
       "packages": {
         "@babel/helper-member-expression-to-functions": true,
         "@babel/helper-optimise-call-expression": true,
@@ -359,11 +322,7 @@
       }
     },
     "@babel/helper-validator-identifier": {},
-    "@babel/helper-validator-option": {
-      "globals": {
-        "descriptor": true
-      }
-    },
+    "@babel/helper-validator-option": {},
     "@babel/helper-wrap-function": {
       "packages": {
         "@babel/helper-function-name": true,
@@ -405,22 +364,12 @@
         "charAt": true,
         "charCodeAt": true,
         "codePointAt": true,
-        "col": true,
         "commentPreviousNode": true,
         "commentPreviousNode.end": true,
         "commentPreviousNode.type": true,
         "commentStack": true,
         "comments": true,
         "comments.push": true,
-        "conf.beforeExpr": true,
-        "conf.binop": true,
-        "conf.isAssign": true,
-        "conf.isLoop": true,
-        "conf.keyword": true,
-        "conf.postfix": true,
-        "conf.prefix": true,
-        "conf.rightAssociative": true,
-        "conf.startsExpr": true,
         "containsEsc": true,
         "context": true,
         "context.length": true,
@@ -432,7 +381,6 @@
         "decoratorStack.pop": true,
         "decoratorStack.push": true,
         "delete": true,
-        "end": true,
         "endLoc": true,
         "error": true,
         "errorRecovery": true,
@@ -443,22 +391,16 @@
         "exportedIdentifiers.indexOf": true,
         "exportedIdentifiers.push": true,
         "exprAllowed": true,
-        "flags": true,
         "forEach": true,
         "functions.indexOf": true,
         "has": true,
         "hasFlowComment": true,
         "inFSharpPipelineDirectBody": true,
-        "inModule": true,
         "inPipeline": true,
         "inPropertyName": true,
         "inType": true,
         "indexOf": true,
-        "input": true,
-        "input.length": true,
         "isDeclareContext": true,
-        "isExpr": true,
-        "label": true,
         "labels": true,
         "labels.length": true,
         "labels.pop": true,
@@ -475,7 +417,6 @@
         "leadingComments.splice": true,
         "length": true,
         "lexical.indexOf": true,
-        "line": true,
         "maybeInArrowParameters": true,
         "moduleError": true,
         "noAnonFunctionType": true,
@@ -485,44 +426,23 @@
         "noArrowParamsConversionAt.pop": true,
         "noArrowParamsConversionAt.push": true,
         "octalPositions.push": true,
-        "options": true,
-        "options.sourceFilename": true,
-        "override": true,
-        "parser": true,
-        "parser.filename": true,
-        "parser.options.ranges": true,
         "pop": true,
-        "pos": true,
         "potentialArrowAt": true,
-        "preserveSpace": true,
         "push": true,
         "ranges": true,
         "set": true,
         "slice": true,
         "soloAwait": true,
         "sourceType": true,
-        "start": true,
         "startLoc": true,
         "startsWith": true,
-        "state.end": true,
-        "state.start": true,
-        "state.type": true,
-        "state.value": true,
         "strict": true,
-        "token": true,
         "tokens": true,
         "tokensLength": true,
         "topicContext": true,
         "topicContext.maxNumOfResolvableTopics": true,
         "topicContext.maxTopicIndex": true,
         "trailingComments.push": true,
-        "type": true,
-        "type.binop": true,
-        "type.isAssign": true,
-        "type.isLoop": true,
-        "type.keyword": true,
-        "type.prefix": true,
-        "type.startsExpr": true,
         "undefinedExports.get": true,
         "undefinedExports.size": true,
         "value": true,
@@ -703,8 +623,6 @@
     "@babel/plugin-transform-block-scoping": {
       "globals": {
         "addHelper": true,
-        "blockPath": true,
-        "blockPath.node": true,
         "buildCodeFrameError": true,
         "delete": true,
         "generateUid": true,
@@ -717,19 +635,11 @@
         "label": true,
         "left": true,
         "length": true,
-        "loopPath": true,
-        "loopPath.node": true,
-        "loopPath.parent": true,
-        "parent": true,
         "parentHasBinding": true,
         "push": true,
         "rename": true,
         "replaceWithMultiple": true,
-        "scope": true,
         "set": true,
-        "state": true,
-        "tdzEnabled": true,
-        "throwIfClosureRequired": true,
         "traverse": true
       },
       "packages": {
@@ -1141,7 +1051,6 @@
     },
     "@babel/traverse": {
       "globals": {
-        "binding": true,
         "blacklist": true,
         "buildError": true,
         "console.log": true,
@@ -1157,8 +1066,6 @@
         "getCode": true,
         "getFunctionParent": true,
         "global": true,
-        "hub": true,
-        "identifier": true,
         "indexOf": true,
         "init": true,
         "isArrowFunctionExpression": true,
@@ -1168,27 +1075,20 @@
         "isVariableDeclarator": true,
         "kind": true,
         "length": true,
-        "newName": true,
         "noScope": true,
         "node": true,
-        "oldName": true,
-        "opts": true,
-        "parent": true,
         "parentPath": true,
-        "path": true,
         "pop": true,
         "process.env.NODE_ENV": true,
         "push": true,
         "queue": true,
         "replaceWith": true,
-        "scope": true,
         "scope.generateUidIdentifier": true,
         "scope.parent.push": true,
         "scope.push": true,
         "set": true,
         "shouldSkip": true,
         "splice": true,
-        "state": true,
         "traverse": true
       },
       "packages": {
@@ -1273,16 +1173,7 @@
         "path.sep": true
       },
       "globals": {
-        "_options": true,
-        "name": true,
-        "process.versions.node.split": true,
-        "stats.isBlockDevice.bind": true,
-        "stats.isCharacterDevice.bind": true,
-        "stats.isDirectory.bind": true,
-        "stats.isFIFO.bind": true,
-        "stats.isFile.bind": true,
-        "stats.isSocket.bind": true,
-        "stats.isSymbolicLink.bind": true
+        "process.versions.node.split": true
       },
       "packages": {
         "@nodelib/fs.stat": true,
@@ -1291,7 +1182,6 @@
     },
     "@nodelib/fs.stat": {
       "globals": {
-        "_options": true,
         "error": true
       }
     },
@@ -1302,9 +1192,6 @@
         "stream.Readable": true
       },
       "globals": {
-        "_options": true,
-        "_root": true,
-        "_settings": true,
         "add": true,
         "emit": true,
         "killAndDrain": true,
@@ -1425,12 +1312,9 @@
     },
     "ansi-wrap": {},
     "anymatch": {
-      "builtin": {
-        "path.sep": true
-      },
       "packages": {
-        "micromatch": true,
-        "normalize-path": true
+        "normalize-path": true,
+        "picomatch": true
       }
     },
     "append-buffer": {
@@ -1477,7 +1361,11 @@
       }
     },
     "array-slice": {},
-    "array-union": {},
+    "array-union": {
+      "packages": {
+        "array-uniq": true
+      }
+    },
     "array-uniq": {
       "globals": {
         "forEach": true,
@@ -1519,11 +1407,18 @@
     },
     "autoprefixer": {
       "globals": {
+        "_step.value": true,
+        "_step4.value": true,
+        "arr2": true,
+        "done": true,
+        "env": true,
         "filter": true,
-        "indexOf": true,
+        "from": true,
+        "includes": true,
         "options.cascade": true,
         "options.flexbox": true,
         "options.grid": true,
+        "process.env.AUTOPREFIXER_GRID": true,
         "props": true,
         "push": true,
         "replace": true,
@@ -1536,63 +1431,68 @@
       "packages": {
         "browserslist": true,
         "caniuse-lite": true,
-        "caniuse-lite/data/features/background-img-opts.js": true,
-        "caniuse-lite/data/features/border-image.js": true,
-        "caniuse-lite/data/features/border-radius.js": true,
-        "caniuse-lite/data/features/calc.js": true,
-        "caniuse-lite/data/features/css-animation.js": true,
-        "caniuse-lite/data/features/css-any-link.js": true,
-        "caniuse-lite/data/features/css-appearance.js": true,
-        "caniuse-lite/data/features/css-backdrop-filter.js": true,
-        "caniuse-lite/data/features/css-boxdecorationbreak.js": true,
-        "caniuse-lite/data/features/css-boxshadow.js": true,
-        "caniuse-lite/data/features/css-clip-path.js": true,
-        "caniuse-lite/data/features/css-crisp-edges.js": true,
-        "caniuse-lite/data/features/css-cross-fade.js": true,
-        "caniuse-lite/data/features/css-deviceadaptation.js": true,
-        "caniuse-lite/data/features/css-element-function.js": true,
+        "caniuse-lite/data/features/background-clip-text": true,
+        "caniuse-lite/data/features/background-img-opts": true,
+        "caniuse-lite/data/features/border-image": true,
+        "caniuse-lite/data/features/border-radius": true,
+        "caniuse-lite/data/features/calc": true,
+        "caniuse-lite/data/features/css-animation": true,
+        "caniuse-lite/data/features/css-any-link": true,
+        "caniuse-lite/data/features/css-appearance": true,
+        "caniuse-lite/data/features/css-backdrop-filter": true,
+        "caniuse-lite/data/features/css-boxdecorationbreak": true,
+        "caniuse-lite/data/features/css-boxshadow": true,
+        "caniuse-lite/data/features/css-clip-path": true,
+        "caniuse-lite/data/features/css-color-adjust": true,
+        "caniuse-lite/data/features/css-crisp-edges": true,
+        "caniuse-lite/data/features/css-cross-fade": true,
+        "caniuse-lite/data/features/css-deviceadaptation": true,
+        "caniuse-lite/data/features/css-element-function": true,
         "caniuse-lite/data/features/css-featurequeries.js": true,
-        "caniuse-lite/data/features/css-filter-function.js": true,
-        "caniuse-lite/data/features/css-filters.js": true,
-        "caniuse-lite/data/features/css-gradients.js": true,
-        "caniuse-lite/data/features/css-grid.js": true,
-        "caniuse-lite/data/features/css-hyphens.js": true,
-        "caniuse-lite/data/features/css-image-set.js": true,
-        "caniuse-lite/data/features/css-logical-props.js": true,
-        "caniuse-lite/data/features/css-masks.js": true,
-        "caniuse-lite/data/features/css-media-resolution.js": true,
-        "caniuse-lite/data/features/css-overscroll-behavior.js": true,
-        "caniuse-lite/data/features/css-placeholder.js": true,
-        "caniuse-lite/data/features/css-read-only-write.js": true,
-        "caniuse-lite/data/features/css-regions.js": true,
-        "caniuse-lite/data/features/css-selection.js": true,
-        "caniuse-lite/data/features/css-shapes.js": true,
-        "caniuse-lite/data/features/css-snappoints.js": true,
-        "caniuse-lite/data/features/css-sticky.js": true,
-        "caniuse-lite/data/features/css-text-align-last.js": true,
-        "caniuse-lite/data/features/css-text-spacing.js": true,
-        "caniuse-lite/data/features/css-transitions.js": true,
-        "caniuse-lite/data/features/css-unicode-bidi.js": true,
-        "caniuse-lite/data/features/css-writing-mode.js": true,
-        "caniuse-lite/data/features/css3-boxsizing.js": true,
-        "caniuse-lite/data/features/css3-cursors-grab.js": true,
-        "caniuse-lite/data/features/css3-cursors-newer.js": true,
-        "caniuse-lite/data/features/css3-tabsize.js": true,
-        "caniuse-lite/data/features/flexbox.js": true,
-        "caniuse-lite/data/features/font-feature.js": true,
-        "caniuse-lite/data/features/font-kerning.js": true,
-        "caniuse-lite/data/features/fullscreen.js": true,
-        "caniuse-lite/data/features/intrinsic-width.js": true,
-        "caniuse-lite/data/features/multicolumn.js": true,
-        "caniuse-lite/data/features/object-fit.js": true,
-        "caniuse-lite/data/features/pointer.js": true,
-        "caniuse-lite/data/features/text-decoration.js": true,
-        "caniuse-lite/data/features/text-emphasis.js": true,
-        "caniuse-lite/data/features/text-overflow.js": true,
-        "caniuse-lite/data/features/text-size-adjust.js": true,
-        "caniuse-lite/data/features/transforms2d.js": true,
-        "caniuse-lite/data/features/transforms3d.js": true,
-        "caniuse-lite/data/features/user-select-none.js": true,
+        "caniuse-lite/data/features/css-filter-function": true,
+        "caniuse-lite/data/features/css-filters": true,
+        "caniuse-lite/data/features/css-gradients": true,
+        "caniuse-lite/data/features/css-grid": true,
+        "caniuse-lite/data/features/css-hyphens": true,
+        "caniuse-lite/data/features/css-image-set": true,
+        "caniuse-lite/data/features/css-logical-props": true,
+        "caniuse-lite/data/features/css-masks": true,
+        "caniuse-lite/data/features/css-media-resolution": true,
+        "caniuse-lite/data/features/css-overscroll-behavior": true,
+        "caniuse-lite/data/features/css-placeholder": true,
+        "caniuse-lite/data/features/css-placeholder-shown": true,
+        "caniuse-lite/data/features/css-read-only-write": true,
+        "caniuse-lite/data/features/css-regions": true,
+        "caniuse-lite/data/features/css-selection": true,
+        "caniuse-lite/data/features/css-shapes": true,
+        "caniuse-lite/data/features/css-snappoints": true,
+        "caniuse-lite/data/features/css-sticky": true,
+        "caniuse-lite/data/features/css-text-align-last": true,
+        "caniuse-lite/data/features/css-text-orientation": true,
+        "caniuse-lite/data/features/css-text-spacing": true,
+        "caniuse-lite/data/features/css-transitions": true,
+        "caniuse-lite/data/features/css-unicode-bidi": true,
+        "caniuse-lite/data/features/css-writing-mode": true,
+        "caniuse-lite/data/features/css3-boxsizing": true,
+        "caniuse-lite/data/features/css3-cursors-grab": true,
+        "caniuse-lite/data/features/css3-cursors-newer": true,
+        "caniuse-lite/data/features/css3-tabsize": true,
+        "caniuse-lite/data/features/flexbox": true,
+        "caniuse-lite/data/features/font-feature": true,
+        "caniuse-lite/data/features/font-kerning": true,
+        "caniuse-lite/data/features/fullscreen": true,
+        "caniuse-lite/data/features/intrinsic-width": true,
+        "caniuse-lite/data/features/multicolumn": true,
+        "caniuse-lite/data/features/object-fit": true,
+        "caniuse-lite/data/features/pointer": true,
+        "caniuse-lite/data/features/text-decoration": true,
+        "caniuse-lite/data/features/text-emphasis": true,
+        "caniuse-lite/data/features/text-overflow": true,
+        "caniuse-lite/data/features/text-size-adjust": true,
+        "caniuse-lite/data/features/transforms2d": true,
+        "caniuse-lite/data/features/transforms3d": true,
+        "caniuse-lite/data/features/user-select-none": true,
+        "colorette": true,
         "normalize-range": true,
         "num2fraction": true,
         "postcss": true,
@@ -1806,7 +1706,6 @@
         "err": true,
         "err.code": true,
         "err.message": true,
-        "opts": true,
         "push": true
       },
       "packages": {
@@ -1892,9 +1791,7 @@
     },
     "braces": {
       "packages": {
-        "expand-range": true,
-        "preserve": true,
-        "repeat-element": true
+        "fill-range": true
       }
     },
     "brfs": {
@@ -2000,17 +1897,25 @@
         "path.resolve": true
       },
       "globals": {
+        "console.warn": true,
+        "indexOf": true,
         "process.env.BROWSERSLIST": true,
         "process.env.BROWSERSLIST_CONFIG": true,
+        "process.env.BROWSERSLIST_DANGEROUS_EXTEND": true,
         "process.env.BROWSERSLIST_DISABLE_CACHE": true,
         "process.env.BROWSERSLIST_ENV": true,
+        "process.env.BROWSERSLIST_IGNORE_OLD_DATA": true,
         "process.env.BROWSERSLIST_STATS": true,
-        "process.env.NODE_ENV": true
+        "process.env.NODE_ENV": true,
+        "process.versions.node": true
       },
       "packages": {
         "caniuse-lite/dist/unpacker/agents": true,
+        "caniuse-lite/dist/unpacker/feature": true,
         "caniuse-lite/dist/unpacker/region": true,
-        "electron-to-chromium/versions": true
+        "electron-to-chromium/versions": true,
+        "node-releases/data/processed/envs.json": true,
+        "node-releases/data/release-schedule/release-schedule.json": true
       }
     },
     "buffer-crc32": {
@@ -2098,7 +2003,6 @@
         "_incrReadyCount": true,
         "_isIgnored": true,
         "_isntIgnored": true,
-        "_opts": true,
         "_remove": true,
         "_symlinkPaths.get": true,
         "_symlinkPaths.has": true,
@@ -2112,16 +2016,11 @@
         "closed": true,
         "console.error": true,
         "delete": true,
-        "dir": true,
         "disableGlobbing": true,
         "error": true,
         "error.code": true,
-        "follow": true,
         "followSymlinks": true,
         "forEach": true,
-        "fsW": true,
-        "fsW._handleError": true,
-        "fsw": true,
         "get": true,
         "ignorePermissionErrors": true,
         "options": true,
@@ -2135,14 +2034,12 @@
         "process.env.CHOKIDAR_USEPOLLING": true,
         "process.nextTick": true,
         "process.version.match": true,
-        "removeWatcher": true,
         "set": true,
         "setTimeout": true,
         "size": true,
         "some": true,
         "useFsEvents": true,
-        "values": true,
-        "watchPath": true
+        "values": true
       },
       "packages": {
         "anymatch": true,
@@ -2166,6 +2063,7 @@
     "clone": {
       "globals": {
         "Buffer": true,
+        "Buffer.allocUnsafe": true,
         "Buffer.isBuffer": true
       }
     },
@@ -2310,18 +2208,10 @@
         "console.error": true,
         "join": true,
         "length": true,
-        "options": true,
-        "options.includePrerelease": true,
-        "options.loose": true,
         "process": true,
         "process.env": true,
         "process.env.NODE_DEBUG": true,
-        "push": true,
-        "version": true,
-        "version.includePrerelease": true,
-        "version.length": true,
-        "version.loose": true,
-        "version.version": true
+        "push": true
       },
       "packages": {
         "semver/functions/cmp": true,
@@ -2333,18 +2223,10 @@
         "console.error": true,
         "join": true,
         "length": true,
-        "options": true,
-        "options.includePrerelease": true,
-        "options.loose": true,
         "process": true,
         "process.env": true,
         "process.env.NODE_DEBUG": true,
-        "push": true,
-        "version": true,
-        "version.includePrerelease": true,
-        "version.length": true,
-        "version.loose": true,
-        "version.version": true
+        "push": true
       },
       "packages": {
         "semver/functions/cmp": true,
@@ -2356,18 +2238,10 @@
         "console.error": true,
         "join": true,
         "length": true,
-        "options": true,
-        "options.includePrerelease": true,
-        "options.loose": true,
         "process": true,
         "process.env": true,
         "process.env.NODE_DEBUG": true,
-        "push": true,
-        "version": true,
-        "version.includePrerelease": true,
-        "version.length": true,
-        "version.loose": true,
-        "version.version": true
+        "push": true
       },
       "packages": {
         "semver/functions/cmp": true,
@@ -2396,8 +2270,6 @@
         "error.message.replace": true,
         "ignoreEmptySearchPlaces": true,
         "loaders": true,
-        "options": true,
-        "options.cache": true,
         "process.cwd": true,
         "searchPlaces": true,
         "stopDir": true,
@@ -2497,44 +2369,46 @@
     },
     "debug": {
       "builtin": {
+        "fs.SyncWriteStream": true,
+        "net.Socket": true,
+        "tty.WriteStream": true,
         "tty.isatty": true,
-        "util.deprecate": true,
-        "util.format": true,
-        "util.inspect": true
+        "util": true
       },
       "globals": {
-        "console.debug": true,
+        "chrome": true,
+        "chrome.storage": true,
+        "chrome.storage.local": true,
+        "console": true,
         "console.log": true,
-        "console.warn": true,
+        "console.log.bind": true,
         "document": true,
         "document.documentElement": true,
         "document.documentElement.style": true,
         "document.documentElement.style.WebkitAppearance": true,
-        "error.message": true,
-        "level": true,
-        "localStorage": true,
+        "err.message": true,
+        "fs.SyncWriteStream": true,
         "navigator": true,
         "navigator.userAgent": true,
+        "net.Socket": true,
         "process": true,
-        "process.__nwjs": true,
-        "process.browser": true,
+        "process.binding": true,
         "process.env.DEBUG": true,
-        "process.stderr.write": true,
+        "process.stderr": true,
+        "process.stdout": true,
         "process.type": true,
-        "toISOString": true,
-        "toLowerCase": true,
+        "toUTCString": true,
         "window": true,
         "window.console": true,
         "window.console.exception": true,
         "window.console.firebug": true,
         "window.console.table": true,
+        "window.localStorage": true,
         "window.process": true,
-        "window.process.__nwjs": true,
         "window.process.type": true
       },
       "packages": {
-        "ms": true,
-        "supports-color": true
+        "ms": true
       }
     },
     "debug-fabulous": {
@@ -2601,8 +2475,11 @@
     },
     "define-property": {
       "packages": {
+        "is-accessor-descriptor": true,
+        "is-buffer": true,
+        "is-data-descriptor": true,
         "is-descriptor": true,
-        "isobject": true
+        "kind-of": true
       }
     },
     "defined": {},
@@ -3084,19 +2961,19 @@
       }
     },
     "fancy-log": {
-      "builtin": {
-        "console.Console": true
-      },
       "globals": {
+        "console.dir.apply": true,
+        "console.error.apply": true,
+        "console.info.apply": true,
+        "console.log.apply": true,
+        "console.warn.apply": true,
         "process.argv.indexOf": true,
-        "process.platform": true,
         "process.stderr.write": true,
         "process.stdout.write": true
       },
       "packages": {
         "ansi-gray": true,
         "color-support": true,
-        "parse-node-version": true,
         "time-stamp": true
       }
     },
@@ -3110,10 +2987,6 @@
         "stream.Readable": true
       },
       "globals": {
-        "_micromatchOptions": true,
-        "_options": true,
-        "_patterns": true,
-        "_settings": true,
         "absolute": true,
         "baseNameMatch": true,
         "braceExpansion": true,
@@ -3132,7 +3005,6 @@
         "globstar": true,
         "has": true,
         "markDirectories": true,
-        "name": true,
         "objectMode": true,
         "onlyDirectories": true,
         "onlyFiles": true,
@@ -3140,13 +3012,6 @@
         "set": true,
         "static": true,
         "stats": true,
-        "stats.isBlockDevice.bind": true,
-        "stats.isCharacterDevice.bind": true,
-        "stats.isDirectory.bind": true,
-        "stats.isFIFO.bind": true,
-        "stats.isFile.bind": true,
-        "stats.isSocket.bind": true,
-        "stats.isSymbolicLink.bind": true,
         "suppressErrors": true,
         "throwErrorOnBrokenSymbolicLink": true,
         "unique": true
@@ -3216,10 +3081,11 @@
     },
     "filename-regex": {},
     "fill-range": {
-      "globals": {
-        "charCodeAt": true
-      },
       "packages": {
+        "extend-shallow": true,
+        "is-extendable": true,
+        "is-number": true,
+        "repeat-string": true,
         "to-regex-range": true
       }
     },
@@ -3438,11 +3304,10 @@
       }
     },
     "glob-parent": {
-      "builtin": {
-        "path.dirname": true
-      },
       "packages": {
-        "is-glob": true
+        "is-extglob": true,
+        "is-glob": true,
+        "path-dirname": true
       }
     },
     "glob-stream": {
@@ -3513,12 +3378,37 @@
     },
     "globals": {},
     "globby": {
+      "builtin": {
+        "fs.Stats": true,
+        "fs.readFile": true,
+        "fs.readFileSync": true,
+        "fs.statSync": true,
+        "path.dirname": true,
+        "path.isAbsolute": true,
+        "path.join": true,
+        "path.posix.join": true,
+        "path.relative": true,
+        "stream.Transform": true,
+        "util.promisify": true
+      },
+      "globals": {
+        "add": true,
+        "concat": true,
+        "forEach": true,
+        "has": true,
+        "process": true,
+        "process.env": true,
+        "process.env.IGNORE_TEST_WIN32": true,
+        "process.platform": true,
+        "push": true
+      },
       "packages": {
         "array-union": true,
-        "glob": true,
-        "object-assign": true,
-        "pify": true,
-        "pinkie-promise": true
+        "dir-glob": true,
+        "fast-glob": true,
+        "ignore": true,
+        "merge2": true,
+        "slash": true
       }
     },
     "globjoin": {
@@ -3885,7 +3775,6 @@
         "_list3$_elementNeedsParens$1": true,
         "_listenToStream$1": true,
         "_options": true,
-        "_opts": true,
         "_parseIdentifier$0": true,
         "_parser$_parseIdentifier$0": true,
         "_precomputed1": true,
@@ -3982,7 +3871,6 @@
         "declaration.children": true,
         "defaultsTo": true,
         "delete": true,
-        "dir": true,
         "disableGlobbing": true,
         "document": true,
         "document.currentScript": true,
@@ -4003,15 +3891,11 @@
         "flags": true,
         "flush$1": true,
         "fold$2": true,
-        "follow": true,
         "followSymlinks": true,
         "forEach": true,
         "forEach$1": true,
         "forSpan$2": true,
         "from": true,
-        "fsW": true,
-        "fsW._handleError": true,
-        "fsw": true,
         "get": true,
         "get$_delegate": true,
         "get$_head": true,
@@ -4089,7 +3973,6 @@
         "push": true,
         "putIfAbsent$2": true,
         "remove$1": true,
-        "removeWatcher": true,
         "run$1$1": true,
         "runGuarded$1": true,
         "scanner": true,
@@ -4135,7 +4018,6 @@
         "warn$2$deprecation": true,
         "warn$4$deprecation$span$trace": true,
         "watch$1": true,
-        "watchPath": true,
         "window": true,
         "window.DataView": true,
         "window.name": true,
@@ -4478,11 +4360,7 @@
         "function-bind": true
       }
     },
-    "has-flag": {
-      "globals": {
-        "process.argv": true
-      }
-    },
+    "has-flag": {},
     "has-symbols": {
       "globals": {
         "global.Symbol": true
@@ -4527,15 +4405,11 @@
       "globals": {
         "concat": true,
         "forEach": true,
-        "ignorecase": true,
-        "negative": true,
-        "origin": true,
         "process": true,
         "process.env": true,
         "process.env.IGNORE_TEST_WIN32": true,
         "process.platform": true,
-        "push": true,
-        "regex": true
+        "push": true
       }
     },
     "import-fresh": {
@@ -4656,6 +4530,7 @@
     },
     "is-data-descriptor": {
       "packages": {
+        "is-buffer": true,
         "kind-of": true
       }
     },
@@ -4672,11 +4547,7 @@
         "is-primitive": true
       }
     },
-    "is-extendable": {
-      "packages": {
-        "is-plain-object": true
-      }
-    },
+    "is-extendable": {},
     "is-extglob": {},
     "is-fullwidth-code-point": {},
     "is-glob": {
@@ -4685,7 +4556,11 @@
       }
     },
     "is-negated-glob": {},
-    "is-number": {},
+    "is-number": {
+      "packages": {
+        "kind-of": true
+      }
+    },
     "is-odd": {
       "packages": {
         "is-number": true
@@ -4756,11 +4631,7 @@
         "process.platform": true
       }
     },
-    "isobject": {
-      "packages": {
-        "isarray": true
-      }
-    },
+    "isobject": {},
     "js-tokens": {},
     "jsesc": {
       "globals": {
@@ -4776,6 +4647,9 @@
       }
     },
     "json-stable-stringify": {
+      "globals": {
+        "join": true
+      },
       "packages": {
         "jsonify": true
       }
@@ -4831,6 +4705,7 @@
       },
       "packages": {
         "inherits": true,
+        "isarray": true,
         "stream-splicer": true
       }
     },
@@ -6268,11 +6143,8 @@
       },
       "globals": {
         "apply": true,
-        "lines.some": true,
         "map": true,
-        "root": true,
-        "style": true,
-        "style.startIndex": true
+        "root": true
       },
       "packages": {
         "postcss/lib/input": true,
@@ -6639,7 +6511,6 @@
         "util.promisify": true
       },
       "globals": {
-        "options": true,
         "pop": true,
         "process.platform": true,
         "push": true
@@ -6763,21 +6634,38 @@
       "builtin": {
         "fs.readFile": true,
         "fs.readFileSync": true,
+        "fs.realpath": true,
+        "fs.realpathSync": true,
         "fs.stat": true,
         "fs.statSync": true,
-        "path": true,
         "path.dirname": true,
         "path.join": true,
+        "path.parse": true,
         "path.relative": true,
         "path.resolve": true
       },
       "globals": {
-        "err": true,
-        "err.code": true,
+        "e": true,
+        "e.code": true,
+        "pkg": true,
+        "pkg.main": true,
         "process.nextTick": true,
         "process.platform": true,
+        "process.versions": true,
+        "process.versions.node": true,
+        "process.versions.node.split": true,
+        "realpathErr": true,
+        "realpathErr.code": true,
+        "split": true,
+        "stat.isDirectory": true,
         "stat.isFIFO": true,
-        "stat.isFile": true
+        "stat.isFile": true,
+        "test": true
+      },
+      "packages": {
+        "has": true,
+        "is-core-module": true,
+        "path-parse": true
       }
     },
     "resolve-from": {
@@ -7186,7 +7074,6 @@
         "_listenToStream$1": true,
         "_number1$_conversionFactor$2": true,
         "_options": true,
-        "_opts": true,
         "_parseIdentifier$0": true,
         "_parser$_parseIdentifier$0": true,
         "_precomputed1": true,
@@ -7281,7 +7168,6 @@
         "declaration.children": true,
         "defaultsTo": true,
         "delete": true,
-        "dir": true,
         "disableGlobbing": true,
         "document": true,
         "document.currentScript": true,
@@ -7302,15 +7188,11 @@
         "flags": true,
         "flush$1": true,
         "fold$2": true,
-        "follow": true,
         "followSymlinks": true,
         "forEach": true,
         "forEach$1": true,
         "forSpan$2": true,
         "from": true,
-        "fsW": true,
-        "fsW._handleError": true,
-        "fsw": true,
         "get": true,
         "get$_delegate": true,
         "get$_head": true,
@@ -7383,7 +7265,6 @@
         "push": true,
         "putIfAbsent$2": true,
         "remove$1": true,
-        "removeWatcher": true,
         "run$1$1": true,
         "runGuarded$1": true,
         "scanner": true,
@@ -7427,7 +7308,6 @@
         "warn$2$deprecation": true,
         "warn$4$deprecation$span$trace": true,
         "watch$1": true,
-        "watchPath": true,
         "window": true,
         "window.DataView": true,
         "window.name": true,
@@ -7496,18 +7376,10 @@
         "console.error": true,
         "join": true,
         "length": true,
-        "options": true,
-        "options.includePrerelease": true,
-        "options.loose": true,
         "process": true,
         "process.env": true,
         "process.env.NODE_DEBUG": true,
-        "push": true,
-        "version": true,
-        "version.includePrerelease": true,
-        "version.length": true,
-        "version.loose": true,
-        "version.version": true
+        "push": true
       }
     },
     "semver/functions/coerce": {
@@ -7515,18 +7387,10 @@
         "console.error": true,
         "join": true,
         "length": true,
-        "options": true,
-        "options.includePrerelease": true,
-        "options.loose": true,
         "process": true,
         "process.env": true,
         "process.env.NODE_DEBUG": true,
-        "push": true,
-        "version": true,
-        "version.includePrerelease": true,
-        "version.length": true,
-        "version.loose": true,
-        "version.version": true
+        "push": true
       }
     },
     "set-value": {
@@ -7893,21 +7757,16 @@
         "concat": true,
         "errorRecoveryTokenDiscardCount": true,
         "ex": true,
-        "fileList": true,
         "first_column": true,
         "first_line": true,
         "flex": true,
         "forEach": true,
         "getFileDescriptor": true,
-        "hashOfConfig": true,
-        "ignorecase": true,
         "join": true,
         "last_column": true,
         "last_line": true,
         "length": true,
-        "negative": true,
         "ntsymbol": true,
-        "origin": true,
         "parseError": true,
         "parseError.call": true,
         "pop": true,
@@ -7930,7 +7789,6 @@
         "range.slice": true,
         "readError": true,
         "readError.code": true,
-        "regex": true,
         "replace": true,
         "slice": true,
         "stack": true,
@@ -8079,8 +7937,7 @@
         "process.nextTick": true
       },
       "packages": {
-        "readable-stream": true,
-        "xtend": true
+        "readable-stream": true
       }
     },
     "through2-filter": {
@@ -8294,21 +8151,19 @@
     "value-or-function": {},
     "vinyl": {
       "builtin": {
+        "buffer.Buffer": true,
         "path": true,
-        "path.normalize": true,
-        "util.inspect.custom": true
+        "stream.PassThrough": true,
+        "stream.Stream": true
       },
       "globals": {
         "isDirectory": true,
-        "isSymbolicLink": true,
+        "pipe": true,
         "process.cwd": true
       },
       "packages": {
         "clone": true,
-        "clone-buffer": true,
         "clone-stats": true,
-        "cloneable-readable": true,
-        "remove-trailing-separator": true,
         "replace-ext": true
       }
     },
@@ -8627,7 +8482,6 @@
       "globals": {
         "Buffer": true,
         "Buffer.from": true,
-        "atLineStart": true,
         "atob": true,
         "btoa": true,
         "comment": true,
@@ -8636,55 +8490,22 @@
         "console.warn": true,
         "context": true,
         "context.root": true,
-        "customTags": true,
-        "deprecatedCustomTags": true,
-        "end": true,
         "error.source": true,
         "every": true,
         "filter": true,
         "find": true,
-        "firstItem": true,
-        "firstItem.context.lineStart": true,
-        "firstItem.props": true,
-        "firstItem.props.length": true,
-        "firstItem.props.slice": true,
-        "firstItem.props.start": true,
-        "firstItem.valueRange": true,
         "forEach": true,
         "global": true,
         "global._YAML_SILENCE_DEPRECATION_WARNINGS": true,
         "global._YAML_SILENCE_WARNINGS": true,
         "global.process": true,
-        "inCollection": true,
-        "inFlow": true,
-        "indent": true,
         "isEmpty": true,
         "items": true,
         "keepCstNodes": true,
         "keepNodeTypes": true,
-        "key": true,
         "length": true,
-        "lineStart": true,
-        "merge": true,
-        "message": true,
         "name": true,
-        "options": true,
-        "orig.atLineStart": true,
-        "orig.inCollection": true,
-        "orig.inFlow": true,
-        "orig.indent": true,
-        "orig.lineStart": true,
-        "orig.parent": true,
-        "orig.root": true,
-        "orig.src": true,
-        "pair": true,
-        "pair.range": true,
-        "pair.value": true,
-        "pair.value.range": true,
-        "parent": true,
-        "prefix": true,
         "prettyErrors": true,
-        "props": true,
         "push": true,
         "range": true,
         "range.end": true,
@@ -8695,7 +8516,6 @@
         "scalarFallback": true,
         "schema": true,
         "setOrigRange": true,
-        "source": true,
         "spaceBefore": true,
         "splice": true,
         "src.slice": true,

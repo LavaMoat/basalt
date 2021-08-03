@@ -39,24 +39,3 @@
 //import 'yazl';
 //
 //import 'yaml';
-//
-class Foo {
-  constructor(firstItem) {
-    super(firstItem.type === PlainValue.Type.SEQ_ITEM ? PlainValue.Type.SEQ : PlainValue.Type.MAP);
-
-    for (let i = firstItem.props.length - 1; i >= 0; --i) {
-      if (firstItem.props[i].start < firstItem.context.lineStart) {
-        // props on previous line are assumed by the collection
-        this.props = firstItem.props.slice(0, i + 1);
-        firstItem.props = firstItem.props.slice(i + 1);
-        const itemRange = firstItem.props[0] || firstItem.valueRange;
-        firstItem.range.start = itemRange.start;
-        break;
-      }
-    }
-
-    this.items = [firstItem];
-    const ec = grabCollectionEndComments(firstItem);
-    if (ec) Array.prototype.push.apply(this.items, ec);
-  }
-}
