@@ -23,8 +23,11 @@
         "add": true,
         "at": true,
         "bind": true,
+        "console": true,
         "console.log": true,
         "console.log.apply": true,
+        "consumer.sources": true,
+        "consumer.sources.length": true,
         "defaultResult": true,
         "dirname": true,
         "e": true,
@@ -33,6 +36,7 @@
         "err": true,
         "err.code": true,
         "err.message": true,
+        "error": true,
         "every": true,
         "file": true,
         "file.request": true,
@@ -40,11 +44,13 @@
         "forEach": true,
         "generateUidIdentifier": true,
         "get": true,
+        "getAllBindings": true,
         "has": true,
         "i": true,
         "import": true,
         "indexOf": true,
         "info.done": true,
+        "j": true,
         "join": true,
         "length": true,
         "loose": true,
@@ -59,7 +65,11 @@
         "process.env.NODE_DEBUG": true,
         "process.env.NODE_ENV": true,
         "push": true,
+        "rangeObj.test": true,
+        "registerDeclaration": true,
         "scope": true,
+        "scope.hasBinding": true,
+        "scope.rename": true,
         "set": true,
         "set.map": true,
         "size": true,
@@ -108,17 +118,21 @@
         "compact": true,
         "concise": true,
         "console.error": true,
+        "consumer.sources": true,
+        "consumer.sources.length": true,
         "decoratorsBeforeExport": true,
         "every": true,
         "filename": true,
         "forEach": true,
         "force": true,
         "get": true,
+        "getCurrentColumn": true,
         "getCurrentLine": true,
         "has": true,
         "hasContent": true,
         "identifierName": true,
         "indexOf": true,
+        "j": true,
         "jsescOption": true,
         "jsonCompatibleStrings": true,
         "length": true,
@@ -130,6 +144,7 @@
         "recordAndTupleSyntaxType": true,
         "reduce": true,
         "removeLastSemicolon": true,
+        "replace": true,
         "retainFunctionParens": true,
         "retainLines": true,
         "set": true,
@@ -139,6 +154,8 @@
         "slice": true,
         "some": true,
         "sort": true,
+        "sourceFileName": true,
+        "sourceFileName.replace": true,
         "toArray": true,
         "toJSON": true,
         "unshift": true,
@@ -177,6 +194,7 @@
     },
     "@babel/helper-compilation-targets": {
       "globals": {
+        "console": true,
         "console.log": true,
         "console.log.apply": true,
         "defaultResult": true,
@@ -188,6 +206,7 @@
         "process.env": true,
         "process.env.NODE_DEBUG": true,
         "push": true,
+        "rangeObj.test": true,
         "set.map": true,
         "some": true,
         "trim": true,
@@ -261,6 +280,7 @@
     },
     "@babel/helper-module-imports": {
       "globals": {
+        "addHelper": true,
         "generateUidIdentifier": true,
         "push": true,
         "unshiftContainer": true
@@ -299,6 +319,11 @@
       }
     },
     "@babel/helper-replace-supers": {
+      "globals": {
+        "bind": true,
+        "objectRef": true,
+        "scope": true
+      },
       "packages": {
         "@babel/helper-member-expression-to-functions": true,
         "@babel/helper-optimise-call-expression": true,
@@ -341,7 +366,10 @@
       "globals": {
         "process.env": true,
         "process.env.TERM": true,
-        "process.platform": true
+        "process.platform": true,
+        "process.stderr": true,
+        "process.stdout": true,
+        "process.versions.node": true
       },
       "packages": {
         "@babel/helper-validator-identifier": true,
@@ -361,6 +389,7 @@
         "allowReturnOutsideFunction": true,
         "allowSuperOutsideMethod": true,
         "allowUndeclaredExports": true,
+        "bind": true,
         "charAt": true,
         "charCodeAt": true,
         "codePointAt": true,
@@ -417,6 +446,7 @@
         "leadingComments.splice": true,
         "length": true,
         "lexical.indexOf": true,
+        "lineStart": true,
         "maybeInArrowParameters": true,
         "moduleError": true,
         "noAnonFunctionType": true,
@@ -426,6 +456,7 @@
         "noArrowParamsConversionAt.pop": true,
         "noArrowParamsConversionAt.push": true,
         "octalPositions.push": true,
+        "plugins": true,
         "pop": true,
         "potentialArrowAt": true,
         "push": true,
@@ -443,6 +474,7 @@
         "topicContext.maxNumOfResolvableTopics": true,
         "topicContext.maxTopicIndex": true,
         "trailingComments.push": true,
+        "undefinedExports": true,
         "undefinedExports.get": true,
         "undefinedExports.size": true,
         "value": true,
@@ -667,6 +699,15 @@
       }
     },
     "@babel/plugin-transform-destructuring": {
+      "globals": {
+        "buildUndefinedNode": true,
+        "e": true,
+        "generateUidIdentifier": true,
+        "generateUidIdentifierBasedOnNode": true,
+        "isPure": true,
+        "isStatic": true,
+        "maybeGenerateMemoised": true
+      },
       "packages": {
         "@babel/core": true,
         "@babel/helper-plugin-utils": true
@@ -833,6 +874,7 @@
     },
     "@babel/plugin-transform-runtime": {
       "globals": {
+        "console": true,
         "console.log.apply": true,
         "defaultResult": true,
         "err": true,
@@ -845,6 +887,7 @@
         "process.env": true,
         "process.env.NODE_DEBUG": true,
         "push": true,
+        "rangeObj.test": true,
         "set.map": true,
         "some": true,
         "trim": true,
@@ -903,6 +946,7 @@
     },
     "@babel/preset-env": {
       "globals": {
+        "console": true,
         "console.log": true,
         "console.log.apply": true,
         "console.warn": true,
@@ -912,10 +956,12 @@
         "length": true,
         "loose": true,
         "process": true,
+        "process.cwd": true,
         "process.env": true,
         "process.env.BABEL_ENV": true,
         "process.env.NODE_DEBUG": true,
         "push": true,
+        "rangeObj.test": true,
         "set.map": true,
         "some": true,
         "trim": true,
@@ -1035,6 +1081,8 @@
     },
     "@babel/template": {
       "globals": {
+        "e": true,
+        "e.message": true,
         "err": true,
         "err.loc": true,
         "err.message": true,
@@ -1051,6 +1099,7 @@
     },
     "@babel/traverse": {
       "globals": {
+        "addHelper": true,
         "blacklist": true,
         "buildError": true,
         "console.log": true,
@@ -1075,6 +1124,7 @@
         "isVariableDeclarator": true,
         "kind": true,
         "length": true,
+        "name": true,
         "noScope": true,
         "node": true,
         "parentPath": true,
@@ -1082,6 +1132,7 @@
         "process.env.NODE_ENV": true,
         "push": true,
         "queue": true,
+        "removeBinding": true,
         "replaceWith": true,
         "scope.generateUidIdentifier": true,
         "scope.parent.push": true,
@@ -1089,7 +1140,8 @@
         "set": true,
         "shouldSkip": true,
         "splice": true,
-        "traverse": true
+        "traverse": true,
+        "type": true
       },
       "packages": {
         "@babel/code-frame": true,
@@ -1106,6 +1158,7 @@
       "globals": {
         "console.trace": true,
         "error": true,
+        "error.message": true,
         "node.key": true,
         "node.property": true,
         "process.env.BABEL_TYPES_8_BREAKING": true
@@ -1127,29 +1180,75 @@
         "fs.existsSync": true,
         "path.join": true,
         "util.inherits": true
+      },
+      "globals": {
+        "console.log": true
       }
     },
     "@gulp-sourcemaps/identity-map": {
       "globals": {
         "add": true,
+        "allowAwaitOutsideFunction": true,
+        "allowImportExportEverywhere": true,
+        "allowReserved": true,
+        "allowReturnOutsideFunction": true,
         "at": true,
+        "charAt": true,
+        "charCodeAt": true,
+        "consumer.sources": true,
+        "consumer.sources.length": true,
+        "containsEsc": true,
         "define": true,
         "define.amd": true,
+        "ecmaVersion": true,
+        "err": true,
         "every": true,
+        "expr": true,
+        "expr.type": true,
         "forEach": true,
         "get": true,
         "has": true,
+        "id": true,
+        "id.name": true,
         "indexOf": true,
+        "isAssign": true,
+        "isLoop": true,
+        "j": true,
+        "keyword": true,
+        "lastIndexOf": true,
         "length": true,
+        "locations": true,
+        "maybeName": true,
+        "next": true,
+        "node": true,
+        "onComment": true,
+        "onInsertedSemicolon": true,
+        "onToken": true,
+        "onTrailingComma": true,
+        "options.ecmaVersion": true,
+        "pop": true,
+        "prefix": true,
+        "preserveParens": true,
+        "program": true,
         "push": true,
+        "raiseRecoverable": true,
+        "ranges": true,
         "set": true,
         "size": true,
         "slice": true,
         "some": true,
         "sort": true,
+        "sourceType": true,
+        "start": true,
+        "startLoc": true,
+        "startPos": true,
+        "test": true,
         "toArray": true,
         "unshift": true,
         "unsortedForEach": true,
+        "value.flags": true,
+        "value.pattern": true,
+        "value.value": true,
         "walkSourceContents": true
       },
       "packages": {
@@ -1173,7 +1272,12 @@
         "path.sep": true
       },
       "globals": {
-        "process.versions.node.split": true
+        "error": true,
+        "followSymbolicLinks": true,
+        "pathSegmentSeparator": true,
+        "process.versions.node.split": true,
+        "stats": true,
+        "throwErrorOnBrokenSymbolicLink": true
       },
       "packages": {
         "@nodelib/fs.stat": true,
@@ -1182,7 +1286,10 @@
     },
     "@nodelib/fs.stat": {
       "globals": {
-        "error": true
+        "error": true,
+        "followSymbolicLink": true,
+        "markSymbolicLink": true,
+        "throwErrorOnBrokenSymbolicLink": true
       }
     },
     "@nodelib/fs.walk": {
@@ -1193,13 +1300,22 @@
       },
       "globals": {
         "add": true,
+        "basePath": true,
+        "bind": true,
+        "concurrency": true,
+        "deepFilter": true,
         "emit": true,
+        "entryFilter": true,
+        "error": true,
+        "errorFilter": true,
+        "fsScandirSettings": true,
         "killAndDrain": true,
         "on": true,
         "onEnd": true,
         "onEntry": true,
         "onError": true,
         "once": true,
+        "pathSegmentSeparator": true,
         "push": true,
         "read": true,
         "setImmediate": true,
@@ -1212,7 +1328,10 @@
     },
     "JSONStream": {
       "globals": {
+        "Buffer": true,
         "Buffer.from": true,
+        "err": true,
+        "json": true,
         "length": true
       },
       "packages": {
@@ -1222,23 +1341,115 @@
     },
     "acorn": {
       "globals": {
+        "allowAwaitOutsideFunction": true,
+        "allowImportExportEverywhere": true,
+        "allowReserved": true,
+        "allowReturnOutsideFunction": true,
+        "charAt": true,
+        "charCodeAt": true,
+        "containsEsc": true,
         "define": true,
-        "define.amd": true
+        "define.amd": true,
+        "ecmaVersion": true,
+        "err": true,
+        "expr": true,
+        "expr.type": true,
+        "id": true,
+        "id.name": true,
+        "indexOf": true,
+        "isAssign": true,
+        "isLoop": true,
+        "keyword": true,
+        "lastIndexOf": true,
+        "length": true,
+        "locations": true,
+        "maybeName": true,
+        "next": true,
+        "node": true,
+        "onComment": true,
+        "onInsertedSemicolon": true,
+        "onToken": true,
+        "onTrailingComma": true,
+        "options.ecmaVersion": true,
+        "pop": true,
+        "prefix": true,
+        "preserveParens": true,
+        "program": true,
+        "push": true,
+        "raiseRecoverable": true,
+        "ranges": true,
+        "slice": true,
+        "sourceType": true,
+        "start": true,
+        "startLoc": true,
+        "startPos": true,
+        "test": true,
+        "value.flags": true,
+        "value.pattern": true,
+        "value.value": true
       }
     },
     "acorn-dynamic-import": {
+      "globals": {
+        "apply": true,
+        "slice": true
+      },
       "packages": {
         "acorn": true
       }
     },
     "acorn-node": {
       "globals": {
+        "allowAwaitOutsideFunction": true,
         "allowImportExportEverywhere": true,
+        "allowReserved": true,
+        "allowReturnOutsideFunction": true,
+        "apply": true,
+        "charAt": true,
         "charCodeAt": true,
+        "containsEsc": true,
         "define": true,
         "define.amd": true,
+        "ecmaVersion": true,
+        "err": true,
+        "expr": true,
+        "expr.type": true,
+        "id": true,
+        "id.name": true,
+        "indexOf": true,
+        "isAssign": true,
+        "isLoop": true,
+        "keyword": true,
+        "lastIndexOf": true,
+        "length": true,
+        "lexical.indexOf": true,
+        "locations": true,
+        "maybeName": true,
+        "next": true,
+        "node": true,
+        "onComment": true,
+        "onInsertedSemicolon": true,
+        "onToken": true,
+        "onTrailingComma": true,
+        "options.ecmaVersion": true,
+        "pop": true,
+        "prefix": true,
+        "preserveParens": true,
+        "program": true,
+        "push": true,
+        "raiseRecoverable": true,
+        "ranges": true,
         "self": true,
-        "slice": true
+        "slice": true,
+        "sourceType": true,
+        "start": true,
+        "startLoc": true,
+        "startPos": true,
+        "test": true,
+        "value.flags": true,
+        "value.pattern": true,
+        "value.value": true,
+        "var.indexOf": true
       },
       "packages": {
         "acorn": true,
@@ -1249,12 +1460,56 @@
     },
     "acorn-node/walk": {
       "globals": {
+        "allowAwaitOutsideFunction": true,
         "allowImportExportEverywhere": true,
+        "allowReserved": true,
+        "allowReturnOutsideFunction": true,
+        "apply": true,
+        "charAt": true,
         "charCodeAt": true,
+        "containsEsc": true,
         "define": true,
         "define.amd": true,
+        "ecmaVersion": true,
+        "err": true,
+        "expr": true,
+        "expr.type": true,
+        "id": true,
+        "id.name": true,
+        "indexOf": true,
+        "isAssign": true,
+        "isLoop": true,
+        "keyword": true,
+        "lastIndexOf": true,
+        "length": true,
+        "lexical.indexOf": true,
+        "locations": true,
+        "maybeName": true,
+        "next": true,
+        "node": true,
+        "onComment": true,
+        "onInsertedSemicolon": true,
+        "onToken": true,
+        "onTrailingComma": true,
+        "options.ecmaVersion": true,
+        "pop": true,
+        "prefix": true,
+        "preserveParens": true,
+        "program": true,
+        "push": true,
+        "raiseRecoverable": true,
+        "ranges": true,
         "self": true,
-        "slice": true
+        "slice": true,
+        "sourceType": true,
+        "start": true,
+        "startLoc": true,
+        "startPos": true,
+        "test": true,
+        "value.flags": true,
+        "value.pattern": true,
+        "value.value": true,
+        "var.indexOf": true
       },
       "packages": {
         "acorn": true,
@@ -1267,6 +1522,7 @@
       "globals": {
         "define": true,
         "define.amd": true,
+        "e": true,
         "self": true
       }
     },
@@ -1307,7 +1563,8 @@
     "ansi-regex": {},
     "ansi-styles": {
       "packages": {
-        "color-convert": true
+        "color-convert": true,
+        "color-name": true
       }
     },
     "ansi-wrap": {},
@@ -1329,12 +1586,7 @@
         "buffer-equal": true
       }
     },
-    "arr-diff": {
-      "packages": {
-        "arr-flatten": true,
-        "array-slice": true
-      }
-    },
+    "arr-diff": {},
     "arr-filter": {
       "packages": {
         "make-iterator": true
@@ -1361,11 +1613,7 @@
       }
     },
     "array-slice": {},
-    "array-union": {
-      "packages": {
-        "array-uniq": true
-      }
-    },
+    "array-union": {},
     "array-uniq": {
       "globals": {
         "forEach": true,
@@ -1380,6 +1628,7 @@
         "domain.create": true
       },
       "globals": {
+        "err": true,
         "process.nextTick": true
       },
       "packages": {
@@ -1408,8 +1657,13 @@
     "autoprefixer": {
       "globals": {
         "_step.value": true,
+        "_step3.value": true,
         "_step4.value": true,
+        "args": true,
         "arr2": true,
+        "bottom": true,
+        "console": true,
+        "console.warn": true,
         "done": true,
         "env": true,
         "filter": true,
@@ -1418,10 +1672,14 @@
         "options.cascade": true,
         "options.flexbox": true,
         "options.grid": true,
+        "process.cwd": true,
         "process.env.AUTOPREFIXER_GRID": true,
         "props": true,
         "push": true,
         "replace": true,
+        "reqs": true,
+        "reqs.length": true,
+        "reqs.pop": true,
         "selected.length": true,
         "selector": true,
         "test": true,
@@ -1502,8 +1760,13 @@
     "autoprefixer/lib/browsers": {
       "globals": {
         "_step.value": true,
+        "_step3.value": true,
         "_step4.value": true,
+        "args": true,
         "arr2": true,
+        "bottom": true,
+        "console": true,
+        "console.warn": true,
         "done": true,
         "env": true,
         "filter": true,
@@ -1512,10 +1775,14 @@
         "options.cascade": true,
         "options.flexbox": true,
         "options.grid": true,
+        "process.cwd": true,
         "process.env.AUTOPREFIXER_GRID": true,
         "props": true,
         "push": true,
         "replace": true,
+        "reqs": true,
+        "reqs.length": true,
+        "reqs.pop": true,
         "selected.length": true,
         "selector": true,
         "test": true,
@@ -1596,8 +1863,13 @@
     "autoprefixer/lib/prefixes": {
       "globals": {
         "_step.value": true,
+        "_step3.value": true,
         "_step4.value": true,
+        "args": true,
         "arr2": true,
+        "bottom": true,
+        "console": true,
+        "console.warn": true,
         "done": true,
         "env": true,
         "filter": true,
@@ -1606,10 +1878,14 @@
         "options.cascade": true,
         "options.flexbox": true,
         "options.grid": true,
+        "process.cwd": true,
         "process.env.AUTOPREFIXER_GRID": true,
         "props": true,
         "push": true,
         "replace": true,
+        "reqs": true,
+        "reqs.length": true,
+        "reqs.pop": true,
         "selected.length": true,
         "selector": true,
         "test": true,
@@ -1706,6 +1982,7 @@
         "err": true,
         "err.code": true,
         "err.message": true,
+        "filename": true,
         "push": true
       },
       "packages": {
@@ -1734,6 +2011,7 @@
         "util.inherits": true
       },
       "globals": {
+        "base": true,
         "hasOwnProperty": true
       },
       "packages": {
@@ -1769,6 +2047,7 @@
         "querystring.querystringParse": true
       },
       "globals": {
+        "Buffer.concat": true,
         "process.nextTick": true
       },
       "packages": {
@@ -1790,8 +2069,26 @@
       }
     },
     "braces": {
+      "globals": {
+        "compile": true,
+        "compiler": true,
+        "parse": true,
+        "parser": true,
+        "queue": true,
+        "queue.pop": true,
+        "snapdragon": true
+      },
       "packages": {
-        "fill-range": true
+        "arr-flatten": true,
+        "array-unique": true,
+        "extend-shallow": true,
+        "fill-range": true,
+        "isobject": true,
+        "repeat-element": true,
+        "snapdragon": true,
+        "snapdragon-node": true,
+        "split-string": true,
+        "to-regex": true
       }
     },
     "brfs": {
@@ -1811,6 +2108,10 @@
       "builtin": {
         "fs.readFileSync": true,
         "path.join": true
+      },
+      "globals": {
+        "__dirname": true,
+        "process.cwd": true
       },
       "packages": {
         "JSONStream": true,
@@ -1834,11 +2135,17 @@
         "path.resolve": true
       },
       "globals": {
+        "__dirname": true,
         "err": true,
         "err.code": true,
         "err.message": true,
+        "info": true,
+        "info.main": true,
+        "pkg": true,
+        "pkg.main": true,
         "process.nextTick": true,
         "process.platform": true,
+        "res": true,
         "stat.isFIFO": true,
         "stat.isFile": true
       },
@@ -1855,6 +2162,7 @@
         "path.resolve": true
       },
       "globals": {
+        "__dirname": true,
         "apply": true,
         "exposeAll": true,
         "hasExports": true,
@@ -1862,6 +2170,7 @@
         "length": true,
         "map": true,
         "on": true,
+        "process.cwd": true,
         "process.nextTick": true,
         "process.platform": true,
         "push": true
@@ -1898,24 +2207,19 @@
       },
       "globals": {
         "console.warn": true,
-        "indexOf": true,
+        "e": true,
+        "e.name": true,
         "process.env.BROWSERSLIST": true,
         "process.env.BROWSERSLIST_CONFIG": true,
-        "process.env.BROWSERSLIST_DANGEROUS_EXTEND": true,
         "process.env.BROWSERSLIST_DISABLE_CACHE": true,
         "process.env.BROWSERSLIST_ENV": true,
-        "process.env.BROWSERSLIST_IGNORE_OLD_DATA": true,
         "process.env.BROWSERSLIST_STATS": true,
-        "process.env.NODE_ENV": true,
-        "process.versions.node": true
+        "process.env.NODE_ENV": true
       },
       "packages": {
         "caniuse-lite/dist/unpacker/agents": true,
-        "caniuse-lite/dist/unpacker/feature": true,
         "caniuse-lite/dist/unpacker/region": true,
-        "electron-to-chromium/versions": true,
-        "node-releases/data/processed/envs.json": true,
-        "node-releases/data/release-schedule/release-schedule.json": true
+        "electron-to-chromium/versions": true
       }
     },
     "buffer-crc32": {
@@ -1964,8 +2268,13 @@
     "caniuse-lite/dist/unpacker/agents": {},
     "caniuse-lite/dist/unpacker/region": {},
     "chalk": {
+      "globals": {
+        "process.env.TERM": true,
+        "process.platform": true
+      },
       "packages": {
         "ansi-styles": true,
+        "escape-string-regexp": true,
         "supports-color": true
       }
     },
@@ -1993,8 +2302,10 @@
       },
       "globals": {
         "_addPathCloser": true,
+        "_addToFsEvents": true,
         "_closeFile": true,
         "_emit": true,
+        "_emitRaw": true,
         "_emitReady": true,
         "_getWatchHelpers": true,
         "_getWatchedDir": true,
@@ -2023,6 +2334,7 @@
         "forEach": true,
         "get": true,
         "ignorePermissionErrors": true,
+        "linkPath": true,
         "options": true,
         "options.depth": true,
         "options.followSymlinks": true,
@@ -2034,6 +2346,7 @@
         "process.env.CHOKIDAR_USEPOLLING": true,
         "process.nextTick": true,
         "process.version.match": true,
+        "realPath": true,
         "set": true,
         "setTimeout": true,
         "size": true,
@@ -2116,7 +2429,8 @@
         "process": true,
         "process.env": true,
         "process.platform": true,
-        "process.stdout": true
+        "process.stdout": true,
+        "ver": true
       }
     },
     "colorette": {
@@ -2138,9 +2452,12 @@
         "Buffer": true,
         "add": true,
         "addGeneratedMappings": true,
+        "addMappings": true,
         "addSourceContent": true,
         "at": true,
         "base64Encode": true,
+        "consumer.sources": true,
+        "consumer.sources.length": true,
         "every": true,
         "forEach": true,
         "get": true,
@@ -2148,6 +2465,7 @@
         "hasOwnProperty": true,
         "indexOf": true,
         "inlineMappingUrl": true,
+        "j": true,
         "length": true,
         "process.platform": true,
         "push": true,
@@ -2270,6 +2588,7 @@
         "error.message.replace": true,
         "ignoreEmptySearchPlaces": true,
         "loaders": true,
+        "packageProp": true,
         "process.cwd": true,
         "searchPlaces": true,
         "stopDir": true,
@@ -2324,10 +2643,26 @@
         "path.dirname": true
       },
       "globals": {
+        "add": true,
         "addMapping": true,
+        "applySourceMap": true,
+        "at": true,
         "column": true,
         "define": true,
-        "line": true
+        "forEach": true,
+        "has": true,
+        "indexOf": true,
+        "inputSourcemaps": true,
+        "length": true,
+        "line": true,
+        "push": true,
+        "setSourceContent": true,
+        "slice": true,
+        "sort": true,
+        "toArray": true,
+        "unshift": true,
+        "unsortedForEach": true,
+        "walkSourceContents": true
       },
       "packages": {
         "amdefine": true,
@@ -2369,46 +2704,46 @@
     },
     "debug": {
       "builtin": {
-        "fs.SyncWriteStream": true,
-        "net.Socket": true,
-        "tty.WriteStream": true,
         "tty.isatty": true,
         "util": true
       },
       "globals": {
-        "chrome": true,
-        "chrome.storage": true,
-        "chrome.storage.local": true,
+        "args": true,
+        "args.replace": true,
+        "args.splice": true,
+        "args.unshift": true,
         "console": true,
         "console.log": true,
-        "console.log.bind": true,
         "document": true,
         "document.documentElement": true,
         "document.documentElement.style": true,
         "document.documentElement.style.WebkitAppearance": true,
-        "err.message": true,
-        "fs.SyncWriteStream": true,
+        "error.message": true,
+        "level": true,
+        "localStorage": true,
         "navigator": true,
         "navigator.userAgent": true,
-        "net.Socket": true,
         "process": true,
-        "process.binding": true,
+        "process.__nwjs": true,
+        "process.browser": true,
+        "process.env": true,
         "process.env.DEBUG": true,
-        "process.stderr": true,
-        "process.stdout": true,
+        "process.stderr.fd": true,
+        "process.stderr.write": true,
         "process.type": true,
-        "toUTCString": true,
+        "toISOString": true,
         "window": true,
         "window.console": true,
         "window.console.exception": true,
         "window.console.firebug": true,
         "window.console.table": true,
-        "window.localStorage": true,
         "window.process": true,
+        "window.process.__nwjs": true,
         "window.process.type": true
       },
       "packages": {
-        "ms": true
+        "ms": true,
+        "supports-color": true
       }
     },
     "debug-fabulous": {
@@ -2419,6 +2754,7 @@
       "globals": {
         "args": true,
         "args.replace": true,
+        "args.splice": true,
         "args.unshift": true,
         "console": true,
         "console.log": true,
@@ -2435,7 +2771,9 @@
         "process": true,
         "process.__nwjs": true,
         "process.browser": true,
+        "process.env": true,
         "process.env.DEBUG": true,
+        "process.stderr.fd": true,
         "process.stderr.write": true,
         "process.type": true,
         "toISOString": true,
@@ -2486,6 +2824,9 @@
     "del": {
       "builtin": {
         "path.resolve": true
+      },
+      "globals": {
+        "err": true
       },
       "packages": {
         "array-union": true,
@@ -2549,6 +2890,7 @@
     "duplexify": {
       "globals": {
         "Buffer": true,
+        "bind": true,
         "destroy": true,
         "ending": true,
         "on": true,
@@ -2614,7 +2956,8 @@
     },
     "es5-ext/array/#/clear": {
       "globals": {
-        "e": true
+        "e": true,
+        "toString": true
       },
       "packages": {
         "es6-symbol": true
@@ -2622,7 +2965,8 @@
     },
     "es5-ext/array/#/e-index-of": {
       "globals": {
-        "e": true
+        "e": true,
+        "toString": true
       },
       "packages": {
         "es6-symbol": true
@@ -2630,7 +2974,8 @@
     },
     "es5-ext/array/to-array": {
       "globals": {
-        "e": true
+        "e": true,
+        "toString": true
       },
       "packages": {
         "es6-symbol": true
@@ -2638,7 +2983,8 @@
     },
     "es5-ext/error/custom": {
       "globals": {
-        "e": true
+        "e": true,
+        "toString": true
       },
       "packages": {
         "es6-symbol": true
@@ -2646,7 +2992,8 @@
     },
     "es5-ext/function/_define-length": {
       "globals": {
-        "e": true
+        "e": true,
+        "toString": true
       },
       "packages": {
         "es6-symbol": true
@@ -2654,7 +3001,8 @@
     },
     "es5-ext/function/is-arguments": {
       "globals": {
-        "e": true
+        "e": true,
+        "toString": true
       },
       "packages": {
         "es6-symbol": true
@@ -2662,7 +3010,8 @@
     },
     "es5-ext/object/assign": {
       "globals": {
-        "e": true
+        "e": true,
+        "toString": true
       },
       "packages": {
         "es6-symbol": true
@@ -2670,7 +3019,8 @@
     },
     "es5-ext/object/copy": {
       "globals": {
-        "e": true
+        "e": true,
+        "toString": true
       },
       "packages": {
         "es6-symbol": true
@@ -2678,7 +3028,8 @@
     },
     "es5-ext/object/is-callable": {
       "globals": {
-        "e": true
+        "e": true,
+        "toString": true
       },
       "packages": {
         "es6-symbol": true
@@ -2686,7 +3037,8 @@
     },
     "es5-ext/object/map": {
       "globals": {
-        "e": true
+        "e": true,
+        "toString": true
       },
       "packages": {
         "es6-symbol": true
@@ -2694,7 +3046,8 @@
     },
     "es5-ext/object/normalize-options": {
       "globals": {
-        "e": true
+        "e": true,
+        "toString": true
       },
       "packages": {
         "es6-symbol": true
@@ -2702,7 +3055,8 @@
     },
     "es5-ext/object/primitive-set": {
       "globals": {
-        "e": true
+        "e": true,
+        "toString": true
       },
       "packages": {
         "es6-symbol": true
@@ -2710,7 +3064,8 @@
     },
     "es5-ext/object/set-prototype-of": {
       "globals": {
-        "e": true
+        "e": true,
+        "toString": true
       },
       "packages": {
         "es6-symbol": true
@@ -2718,7 +3073,8 @@
     },
     "es5-ext/object/valid-callable": {
       "globals": {
-        "e": true
+        "e": true,
+        "toString": true
       },
       "packages": {
         "es6-symbol": true
@@ -2726,7 +3082,8 @@
     },
     "es5-ext/object/valid-object": {
       "globals": {
-        "e": true
+        "e": true,
+        "toString": true
       },
       "packages": {
         "es6-symbol": true
@@ -2734,7 +3091,8 @@
     },
     "es5-ext/object/valid-value": {
       "globals": {
-        "e": true
+        "e": true,
+        "toString": true
       },
       "packages": {
         "es6-symbol": true
@@ -2742,7 +3100,8 @@
     },
     "es5-ext/object/validate-stringifiable-value": {
       "globals": {
-        "e": true
+        "e": true,
+        "toString": true
       },
       "packages": {
         "es6-symbol": true
@@ -2750,7 +3109,8 @@
     },
     "es5-ext/string/#/contains": {
       "globals": {
-        "e": true
+        "e": true,
+        "toString": true
       },
       "packages": {
         "es6-symbol": true
@@ -2758,7 +3118,8 @@
     },
     "es5-ext/string/is-string": {
       "globals": {
-        "e": true
+        "e": true,
+        "toString": true
       },
       "packages": {
         "es6-symbol": true
@@ -2766,7 +3127,8 @@
     },
     "es5-ext/string/random-uniq": {
       "globals": {
-        "e": true
+        "e": true,
+        "toString": true
       },
       "packages": {
         "es6-symbol": true
@@ -2774,13 +3136,23 @@
     },
     "es5-ext/to-short-string-representation": {
       "globals": {
-        "e": true
+        "e": true,
+        "toString": true
       },
       "packages": {
         "es6-symbol": true
       }
     },
     "es6-iterator/for-of": {
+      "globals": {
+        "forEach": true,
+        "indexOf": true,
+        "length": true,
+        "off": true,
+        "push": true,
+        "shift": true,
+        "splice": true
+      },
       "packages": {
         "d": true,
         "d/auto-bind": true,
@@ -2797,6 +3169,15 @@
       }
     },
     "es6-iterator/get": {
+      "globals": {
+        "forEach": true,
+        "indexOf": true,
+        "length": true,
+        "off": true,
+        "push": true,
+        "shift": true,
+        "splice": true
+      },
       "packages": {
         "d": true,
         "d/auto-bind": true,
@@ -2813,6 +3194,11 @@
       }
     },
     "es6-map": {
+      "globals": {
+        "length": true,
+        "push": true,
+        "splice": true
+      },
       "packages": {
         "d": true,
         "es5-ext/array/#/clear": true,
@@ -2829,6 +3215,11 @@
       }
     },
     "es6-set": {
+      "globals": {
+        "length": true,
+        "push": true,
+        "splice": true
+      },
       "packages": {
         "d": true,
         "es5-ext/array/#/clear": true,
@@ -2865,12 +3256,15 @@
       "globals": {
         "add": true,
         "at": true,
+        "consumer.sources": true,
+        "consumer.sources.length": true,
         "every": true,
         "forEach": true,
         "get": true,
         "global.sourceMap.SourceNode": true,
         "has": true,
         "indexOf": true,
+        "j": true,
         "length": true,
         "push": true,
         "set": true,
@@ -2913,6 +3307,10 @@
         "stream.Stream": true
       },
       "globals": {
+        "Buffer.concat": true,
+        "Buffer.isBuffer": true,
+        "console.error": true,
+        "err": true,
         "global.setImmediate": true,
         "process.nextTick": true
       },
@@ -2932,8 +3330,59 @@
       }
     },
     "expand-brackets": {
+      "builtin": {
+        "fs.SyncWriteStream": true,
+        "net.Socket": true,
+        "tty.WriteStream": true,
+        "tty.isatty": true,
+        "util": true
+      },
+      "globals": {
+        "__filename": true,
+        "chrome": true,
+        "chrome.storage": true,
+        "chrome.storage.local": true,
+        "console": true,
+        "console.log": true,
+        "console.log.bind": true,
+        "document": true,
+        "document.documentElement": true,
+        "document.documentElement.style": true,
+        "document.documentElement.style.WebkitAppearance": true,
+        "err.message": true,
+        "fs.SyncWriteStream": true,
+        "navigator": true,
+        "navigator.userAgent": true,
+        "net.Socket": true,
+        "process": true,
+        "process.binding": true,
+        "process.env": true,
+        "process.env.DEBUG": true,
+        "process.env.DEBUG_FD": true,
+        "process.stderr": true,
+        "process.stdout": true,
+        "process.type": true,
+        "strict": true,
+        "toLowerCase": true,
+        "toUTCString": true,
+        "window": true,
+        "window.console": true,
+        "window.console.exception": true,
+        "window.console.firebug": true,
+        "window.console.table": true,
+        "window.localStorage": true,
+        "window.process": true,
+        "window.process.type": true
+      },
       "packages": {
-        "is-posix-bracket": true
+        "debug": true,
+        "define-property": true,
+        "extend-shallow": true,
+        "ms": true,
+        "posix-character-classes": true,
+        "regex-not": true,
+        "snapdragon": true,
+        "to-regex": true
       }
     },
     "expand-range": {
@@ -2962,6 +3411,7 @@
     },
     "fancy-log": {
       "globals": {
+        "console": true,
         "console.dir.apply": true,
         "console.error.apply": true,
         "console.info.apply": true,
@@ -2992,6 +3442,7 @@
         "braceExpansion": true,
         "caseSensitiveMatch": true,
         "concurrency": true,
+        "cwd": true,
         "deep": true,
         "dot": true,
         "dynamic": true,
@@ -3004,10 +3455,12 @@
         "getTransformer": true,
         "globstar": true,
         "has": true,
+        "ignore": true,
         "markDirectories": true,
         "objectMode": true,
         "onlyDirectories": true,
         "onlyFiles": true,
+        "process.cwd": true,
         "push": true,
         "set": true,
         "static": true,
@@ -3042,9 +3495,11 @@
       },
       "globals": {
         "Buffer": true,
+        "addExtension": true,
         "clearInterval": true,
         "close": true,
         "end": true,
+        "io": true,
         "io.pipe": true,
         "messages.on": true,
         "messages.pause": true,
@@ -3073,6 +3528,8 @@
     },
     "file-entry-cache": {
       "globals": {
+        "err": true,
+        "err.code": true,
         "ex": true
       },
       "packages": {
@@ -3094,6 +3551,7 @@
         "util.inherits": true
       },
       "globals": {
+        "Buffer.concat": true,
         "setImmediate": true
       },
       "packages": {
@@ -3108,11 +3566,13 @@
         "path.join": true
       },
       "globals": {
+        "__dirname": true,
         "er": true,
         "er.code": true,
         "er2.code": true,
         "er3.code": true,
         "process.platform": true,
+        "setTimeout": true,
         "st": true,
         "st.isDirectory": true,
         "stats.isDirectory": true
@@ -3185,9 +3645,11 @@
         "err0": true,
         "err0.code": true,
         "process.arch": true,
+        "process.cwd": true,
         "process.platform": true,
         "process.umask": true,
-        "process.versions.node.split": true
+        "process.versions.node.split": true,
+        "setTimeout": true
       },
       "packages": {
         "graceful-fs": true,
@@ -3240,7 +3702,11 @@
     },
     "fsevents": {},
     "function-bind": {},
-    "gensync": {},
+    "gensync": {
+      "globals": {
+        "err": true
+      }
+    },
     "get-assigned-identifiers": {
       "builtin": {
         "assert.equal": true
@@ -3274,6 +3740,7 @@
         "console.error": true,
         "er": true,
         "er.code": true,
+        "er.syscall": true,
         "forEach": true,
         "found": true,
         "length": true,
@@ -3281,6 +3748,7 @@
         "process.nextTick": true,
         "process.platform": true,
         "push": true,
+        "set": true,
         "set.length": true,
         "slice": true
       },
@@ -3369,6 +3837,7 @@
       "globals": {
         "process.env": true,
         "process.env.PREFIX": true,
+        "process.execPath": true,
         "process.platform": true
       },
       "packages": {
@@ -3431,9 +3900,11 @@
         "er": true,
         "er.code": true,
         "global": true,
+        "process": true,
         "process.chdir": true,
         "process.cwd": true,
         "process.env.GRACEFUL_FS_PLATFORM": true,
+        "process.env.NODE_DEBUG": true,
         "process.env.TEST_GRACEFUL_FS_GLOBAL_PATCH": true,
         "process.getuid": true,
         "process.nextTick": true,
@@ -3441,7 +3912,8 @@
         "process.platform": true,
         "process.version.match": true,
         "process.version.substr": true,
-        "push": true
+        "push": true,
+        "setTimeout": true
       }
     },
     "gulp": {
@@ -3473,10 +3945,12 @@
         "after": true,
         "annotation": true,
         "applySourceMap": true,
+        "args": true,
         "at": true,
         "back": true,
         "before": true,
         "between": true,
+        "bottom": true,
         "call.apply": true,
         "children": true,
         "children.reverse": true,
@@ -3484,10 +3958,14 @@
         "console": true,
         "console.error": true,
         "console.warn": true,
+        "consumer.sources": true,
+        "consumer.sources.length": true,
         "e": true,
         "e.message": true,
         "e.name": true,
         "endOfFile": true,
+        "env": true,
+        "err": true,
         "error": true,
         "every": true,
         "filter": true,
@@ -3500,6 +3978,7 @@
         "input.error": true,
         "insertAfter": true,
         "insertBefore": true,
+        "j": true,
         "length": true,
         "map": true,
         "nextToken": true,
@@ -3508,10 +3987,12 @@
         "options.cascade": true,
         "options.flexbox": true,
         "options.grid": true,
+        "opts": true,
         "parent": true,
         "plugins": true,
         "plugins.length": true,
         "postcssPlugin": true,
+        "process.cwd": true,
         "process.env": true,
         "process.env.BROWSERSLIST": true,
         "process.env.BROWSERSLIST_CONFIG": true,
@@ -3521,6 +4002,10 @@
         "process.env.NODE_ENV": true,
         "process.env.TERM": true,
         "process.platform": true,
+        "process.stderr": true,
+        "process.stdout": true,
+        "process.versions.node": true,
+        "processor": true,
         "processor.plugins": true,
         "processor.version": true,
         "props": true,
@@ -3529,9 +4014,14 @@
         "raws.before": true,
         "removeChild": true,
         "replace": true,
+        "reqs": true,
+        "reqs.length": true,
+        "reqs.pop": true,
+        "root": true,
         "selected.length": true,
         "selector": true,
         "set": true,
+        "setImmediate": true,
         "size": true,
         "slice": true,
         "some": true,
@@ -3662,8 +4152,10 @@
         "util.promisify": true
       },
       "globals": {
+        "$function": true,
         "$index": true,
         "$indexSet": true,
+        "$method$": true,
         "$ti._eval$1": true,
         "$ti._rest": true,
         "Buffer": true,
@@ -3682,6 +4174,8 @@
         "_addChild$2$through": true,
         "_addPathCloser": true,
         "_addResult$1": true,
+        "_addToFsEvents": true,
+        "_as": true,
         "_asyncComplete$1": true,
         "_async_evaluate$_addChild$1": true,
         "_async_evaluate$_addChild$2$through": true,
@@ -3693,7 +4187,9 @@
         "_async_evaluate$_environment.getVariable$2$namespace": true,
         "_async_evaluate$_environment.setLocalVariable$3": true,
         "_async_evaluate$_environment.setVariable$4$global": true,
+        "_async_evaluate$_exception$2": true,
         "_async_evaluate$_getFunction$2$namespace": true,
+        "_async_evaluate$_logger": true,
         "_async_evaluate$_runFunctionCallable$3": true,
         "_async_evaluate$_setMultipleVariables$3": true,
         "_async_evaluate$_stackFrame$2": true,
@@ -3708,7 +4204,9 @@
         "_async_evaluate0$_environment.getVariable$2$namespace": true,
         "_async_evaluate0$_environment.setLocalVariable$3": true,
         "_async_evaluate0$_environment.setVariable$4$global": true,
+        "_async_evaluate0$_exception$2": true,
         "_async_evaluate0$_getFunction$2$namespace": true,
+        "_async_evaluate0$_logger": true,
         "_async_evaluate0$_runFunctionCallable$3": true,
         "_async_evaluate0$_setMultipleVariables$3": true,
         "_async_evaluate0$_stackFrame$2": true,
@@ -3716,6 +4214,7 @@
         "_async_import_cache$_resultsCache.$index": true,
         "_async_import_cache0$_resultsCache.$index": true,
         "_buffer.write$1": true,
+        "_child$1": true,
         "_closeFile": true,
         "_collection$_length": true,
         "_collection$_map": true,
@@ -3726,8 +4225,10 @@
         "_content": true,
         "_contents": true,
         "_contents.length": true,
+        "_decodedChars": true,
         "_doneFuture": true,
         "_emit": true,
+        "_emitRaw": true,
         "_emitReady": true,
         "_environment0$_content": true,
         "_eval$1": true,
@@ -3739,6 +4240,8 @@
         "_evaluate$_environment.getVariable$2$namespace": true,
         "_evaluate$_environment.setLocalVariable$3": true,
         "_evaluate$_environment.setVariable$4$global": true,
+        "_evaluate$_exception$2": true,
+        "_evaluate$_logger": true,
         "_evaluate0$_addChild$1": true,
         "_evaluate0$_addChild$2$through": true,
         "_evaluate0$_environment": true,
@@ -3749,11 +4252,15 @@
         "_evaluate0$_environment.getVariable$2$namespace": true,
         "_evaluate0$_environment.setLocalVariable$3": true,
         "_evaluate0$_environment.setVariable$4$global": true,
+        "_evaluate0$_exception$2": true,
         "_evaluate0$_getFunction$2$namespace": true,
+        "_evaluate0$_logger": true,
         "_evaluate0$_runFunctionCallable$3": true,
         "_evaluate0$_setMultipleVariables$3": true,
         "_evaluate0$_stackFrame$2": true,
         "_evaluate0$_withMediaQueries$2": true,
+        "_extender$_extensionForSimple$1": true,
+        "_extensionForSimple$1": true,
         "_fetch$1": true,
         "_from_handlers$_handleData.call$2": true,
         "_from_handlers$_handleDone.call$1": true,
@@ -3770,6 +4277,7 @@
         "_incrReadyCount": true,
         "_is": true,
         "_isIgnored": true,
+        "_isVariableDeclarationLike$0": true,
         "_isntIgnored": true,
         "_list0$_elementNeedsParens$1": true,
         "_list3$_elementNeedsParens$1": true,
@@ -3791,9 +4299,11 @@
         "_rest._as": true,
         "_resultsCache.$index": true,
         "_runFunctionCallable$3": true,
+        "_sass0$_child$1": true,
         "_serialize$_buffer.write$1": true,
         "_serialize0$_writeImportUrl$1": true,
         "_setMultipleVariables$3": true,
+        "_single_unit$_unit": true,
         "_stackFrame$2": true,
         "_statement$0": true,
         "_statement$1$root": true,
@@ -3807,8 +4317,13 @@
         "_symlinkPaths.set": true,
         "_throttle": true,
         "_transitiveModificationTimes.putIfAbsent$2": true,
+        "_unit": true,
         "_unprefixed_map_view$_map": true,
+        "_unprefixed_map_view$_view._unprefixed_map_view$_prefix": true,
+        "_unprefixed_map_view$_view._unprefixed_map_view$_prefix.length": true,
         "_unprefixed_map_view0$_map": true,
+        "_unprefixed_map_view0$_view._unprefixed_map_view0$_prefix": true,
+        "_unprefixed_map_view0$_view._unprefixed_map_view0$_prefix.length": true,
         "_value": true,
         "_view._prefix": true,
         "_withMediaQueries$2": true,
@@ -3837,13 +4352,16 @@
         "call$1$3": true,
         "call$1$4": true,
         "call$2": true,
+        "call$3": true,
         "cancel$0": true,
         "cancelationFuture": true,
         "canonicalMultiplierForUnit$1": true,
         "canonicalize$1": true,
         "children": true,
+        "clause.children": true,
         "clear": true,
         "clearTimeout": true,
+        "cloneCss$0": true,
         "close$0": true,
         "closed": true,
         "compareTo$1": true,
@@ -3851,12 +4369,17 @@
         "completeError$1": true,
         "completeError$2": true,
         "components": true,
+        "condition": true,
+        "condition.value": true,
         "console": true,
         "console.error": true,
         "console.log": true,
+        "constructor.prototype": true,
         "contains$1": true,
         "containsKey$1": true,
+        "contentArguments": true,
         "contents": true,
+        "contents.$index": true,
         "context._isWithinOrEquals$2": true,
         "context.hash$1": true,
         "controller": true,
@@ -3864,6 +4387,7 @@
         "convertGeneral$4": true,
         "count": true,
         "dartExperimentalFixupGetTag": true,
+        "dartMainRunner": true,
         "dartNativeDispatchHooksTransformer": true,
         "dartPrint": true,
         "debug$2": true,
@@ -3880,6 +4404,7 @@
         "e.stack": true,
         "elementAt$1": true,
         "encode$4": true,
+        "err": true,
         "error": true,
         "error.code": true,
         "exec": true,
@@ -3896,10 +4421,12 @@
         "forEach$1": true,
         "forSpan$2": true,
         "from": true,
+        "generate$0": true,
         "get": true,
         "get$_delegate": true,
         "get$_head": true,
         "get$_tail": true,
+        "get$complete": true,
         "get$extender": true,
         "get$first": true,
         "get$isBroadcast": true,
@@ -3917,18 +4444,25 @@
         "getLine$1": true,
         "getVariableNode$2$namespace": true,
         "global": true,
+        "hasDeclarations": true,
         "hasOwnProperty": true,
+        "humanize$1": true,
         "i": true,
         "ignorePermissionErrors": true,
         "importCache.importCanonical$2": true,
+        "importer": true,
         "index": true,
         "indexOf": true,
         "isImplicit": true,
+        "item2": true,
         "join$0": true,
         "join$1": true,
         "length": true,
+        "lineBreak": true,
+        "linkPath": true,
         "listen$3$onDone$onError": true,
         "listen$4$cancelOnError$onDone$onError": true,
+        "listeners": true,
         "load": true,
         "maxSpecificity": true,
         "moveNext$0": true,
@@ -3940,6 +4474,7 @@
         "navigator.userAgent.indexOf": true,
         "number": true,
         "observe": true,
+        "onListen": true,
         "openedOnThisLine": true,
         "options": true,
         "options._collection$_map": true,
@@ -3950,15 +4485,19 @@
         "options.ignoreInitial": true,
         "originalSpan": true,
         "parse$0": true,
+        "parseUseRule$0": true,
+        "parseVariableDeclaration$0": true,
         "parsedSelector": true,
         "peekChar$0": true,
         "persistent": true,
         "pop": true,
         "position": true,
+        "positional.length": true,
         "predicate.call$1": true,
         "prefix": true,
         "print": true,
         "process": true,
+        "process.cwd": true,
         "process.env": true,
         "process.env.CHOKIDAR_INTERVAL": true,
         "process.env.CHOKIDAR_PRINT_FSEVENTS_REQUIRE_ERROR": true,
@@ -3966,22 +4505,32 @@
         "process.env.TERM": true,
         "process.nextTick": true,
         "process.platform": true,
+        "process.stderr": true,
         "process.stderr.write": true,
+        "process.stdout": true,
         "process.version.match": true,
         "process.versions": true,
         "process.versions.hasOwnProperty": true,
+        "process.versions.node": true,
         "push": true,
         "putIfAbsent$2": true,
+        "queries": true,
+        "realPath": true,
         "remove$1": true,
+        "results.$index": true,
         "run$1$1": true,
         "runGuarded$1": true,
+        "scaledWhiteness": true,
         "scanner": true,
         "scanner.expectDone$0": true,
         "scanner.peekChar$0": true,
         "scanner.spanFrom$1": true,
         "scheduleMicrotask$1": true,
         "scope$1$3$semiGlobal$when": true,
+        "selector": true,
+        "selector.components": true,
         "selector.value": true,
+        "separator": true,
         "set": true,
         "set$_head": true,
         "set$_tail": true,
@@ -3994,7 +4543,11 @@
         "span": true,
         "span$2": true,
         "span.file": true,
+        "spanFrom$1": true,
+        "split": true,
+        "stack": true,
         "stackTrace": true,
+        "start": true,
         "string": true,
         "style.get$separator": true,
         "text": true,
@@ -4010,6 +4563,7 @@
         "valuesDone": true,
         "varData": true,
         "variableIdentity$1": true,
+        "variables": true,
         "verify$2": true,
         "version": true,
         "version.length": true,
@@ -4061,6 +4615,7 @@
       "globals": {
         "args": true,
         "args.replace": true,
+        "args.splice": true,
         "args.unshift": true,
         "console": true,
         "console.log": true,
@@ -4080,8 +4635,12 @@
         "process.env.DEBUG": true,
         "process.env.TERM": true,
         "process.platform": true,
+        "process.stderr": true,
+        "process.stderr.fd": true,
         "process.stderr.write": true,
+        "process.stdout": true,
         "process.type": true,
+        "process.versions.node": true,
         "toISOString": true,
         "window": true,
         "window.console": true,
@@ -4115,6 +4674,9 @@
       }
     },
     "gulp-rtlcss": {
+      "globals": {
+        "Buffer.from": true
+      },
       "packages": {
         "plugin-error": true,
         "rtlcss": true,
@@ -4134,9 +4696,54 @@
       "globals": {
         "Buffer": true,
         "Buffer.concat": true,
+        "allowAwaitOutsideFunction": true,
+        "allowImportExportEverywhere": true,
+        "allowReserved": true,
+        "allowReturnOutsideFunction": true,
+        "charAt": true,
+        "charCodeAt": true,
+        "containsEsc": true,
         "define": true,
         "define.amd": true,
-        "toString": true
+        "e": true,
+        "ecmaVersion": true,
+        "err": true,
+        "expr": true,
+        "expr.type": true,
+        "id": true,
+        "id.name": true,
+        "indexOf": true,
+        "isAssign": true,
+        "isLoop": true,
+        "keyword": true,
+        "lastIndexOf": true,
+        "length": true,
+        "locations": true,
+        "maybeName": true,
+        "next": true,
+        "node": true,
+        "onComment": true,
+        "onInsertedSemicolon": true,
+        "onToken": true,
+        "onTrailingComma": true,
+        "options.ecmaVersion": true,
+        "pop": true,
+        "prefix": true,
+        "preserveParens": true,
+        "program": true,
+        "push": true,
+        "raiseRecoverable": true,
+        "ranges": true,
+        "slice": true,
+        "sourceType": true,
+        "start": true,
+        "startLoc": true,
+        "startPos": true,
+        "test": true,
+        "toString": true,
+        "value.flags": true,
+        "value.pattern": true,
+        "value.value": true
       },
       "packages": {
         "@gulp-sourcemaps/identity-map": true,
@@ -4168,28 +4775,42 @@
         "util.inspect": true
       },
       "globals": {
+        "args": true,
+        "bind": true,
+        "buffer": true,
         "buffer.clear": true,
         "buffer.head": true,
         "buffer.push": true,
         "corked": true,
+        "data": true,
+        "data.length": true,
+        "data.slice": true,
         "destroyed": true,
         "ended": true,
+        "err": true,
+        "error": true,
         "errorEmitted": true,
         "flowing": true,
+        "getBuffer": true,
         "global.Uint8Array": true,
+        "highWaterMark": true,
         "info.done": true,
+        "length": true,
         "map": true,
+        "next": true,
         "process.cwd": true,
         "process.env.READABLE_STREAM": true,
         "process.nextTick": true,
         "process.stderr": true,
         "process.stdout": true,
+        "read": true,
         "streams": true,
         "streams.length": true,
         "streams.map": true,
         "streams.reduce": true,
         "toLowerCase": true,
-        "toString": true
+        "toString": true,
+        "value": true
       },
       "packages": {
         "fancy-log": true,
@@ -4221,30 +4842,44 @@
         "util.inspect": true
       },
       "globals": {
+        "Buffer.from": true,
+        "args": true,
+        "bind": true,
+        "buffer": true,
         "buffer.clear": true,
         "buffer.head": true,
         "buffer.push": true,
         "console.error": true,
         "console.log": true,
         "corked": true,
+        "data": true,
+        "data.length": true,
+        "data.slice": true,
         "destroyed": true,
         "ended": true,
+        "err": true,
+        "error": true,
         "errorEmitted": true,
         "flowing": true,
+        "getBuffer": true,
         "global.Uint8Array": true,
+        "highWaterMark": true,
         "info.done": true,
         "length": true,
+        "next": true,
         "process.env.READABLE_STREAM": true,
         "process.nextTick": true,
         "process.stderr": true,
         "process.stdout": true,
         "process.stdout.columns": true,
+        "read": true,
         "streams": true,
         "streams.length": true,
         "streams.map": true,
         "streams.reduce": true,
         "toLowerCase": true,
-        "toString": true
+        "toString": true,
+        "value": true
       },
       "packages": {
         "inherits": true,
@@ -4268,6 +4903,7 @@
       },
       "globals": {
         "charCodeAt": true,
+        "console": true,
         "console.dir.apply": true,
         "console.error.apply": true,
         "console.info.apply": true,
@@ -4279,10 +4915,13 @@
         "nobrackets": true,
         "noextglob": true,
         "process": true,
+        "process.arch": true,
         "process.argv.indexOf": true,
+        "process.cwd": true,
         "process.platform": true,
         "process.stderr.write": true,
         "process.stdout.write": true,
+        "process.version": true,
         "push": true,
         "replace": true,
         "setTimeout": true,
@@ -4360,7 +4999,11 @@
         "function-bind": true
       }
     },
-    "has-flag": {},
+    "has-flag": {
+      "globals": {
+        "process.argv": true
+      }
+    },
     "has-symbols": {
       "globals": {
         "global.Symbol": true
@@ -4421,6 +5064,7 @@
         "path.resolve": true
       },
       "globals": {
+        "__filename": true,
         "err": true,
         "err.code": true
       },
@@ -4433,6 +5077,9 @@
     "imurmurhash": {},
     "indexes-of": {},
     "inflight": {
+      "globals": {
+        "process.nextTick": true
+      },
       "packages": {
         "once": true,
         "wrappy": true
@@ -4457,11 +5104,14 @@
         "add": true,
         "at": true,
         "bind": true,
+        "consumer.sources": true,
+        "consumer.sources.length": true,
         "every": true,
         "forEach": true,
         "get": true,
         "has": true,
         "indexOf": true,
+        "j": true,
         "length": true,
         "push": true,
         "set": true,
@@ -4489,7 +5139,10 @@
       },
       "globals": {
         "Buffer": true,
-        "Buffer.isBuffer": true
+        "Buffer.isBuffer": true,
+        "undeclared.identifiers.indexOf": true,
+        "undeclared.properties": true,
+        "undeclared.properties.indexOf": true
       },
       "packages": {
         "acorn-node": true,
@@ -4508,6 +5161,7 @@
     },
     "is-accessor-descriptor": {
       "packages": {
+        "is-buffer": true,
         "kind-of": true
       }
     },
@@ -4530,7 +5184,6 @@
     },
     "is-data-descriptor": {
       "packages": {
-        "is-buffer": true,
         "kind-of": true
       }
     },
@@ -4556,11 +5209,7 @@
       }
     },
     "is-negated-glob": {},
-    "is-number": {
-      "packages": {
-        "kind-of": true
-      }
-    },
+    "is-number": {},
     "is-odd": {
       "packages": {
         "is-number": true
@@ -4569,9 +5218,15 @@
     "is-path-cwd": {
       "builtin": {
         "path.resolve": true
+      },
+      "globals": {
+        "process.cwd": true
       }
     },
     "is-path-in-cwd": {
+      "globals": {
+        "process.cwd": true
+      },
       "packages": {
         "is-path-inside": true
       }
@@ -4611,6 +5266,9 @@
         "define": true,
         "define.amd": true,
         "global": true,
+        "process": true,
+        "process.env.OSTYPE": true,
+        "process.platform": true,
         "self": true,
         "window": true
       }
@@ -4631,7 +5289,11 @@
         "process.platform": true
       }
     },
-    "isobject": {},
+    "isobject": {
+      "packages": {
+        "isarray": true
+      }
+    },
     "js-tokens": {},
     "jsesc": {
       "globals": {
@@ -4664,13 +5326,19 @@
       "globals": {
         "Buffer.isBuffer": true,
         "err": true,
-        "err.message": true
+        "err.message": true,
+        "err2": true,
+        "err2.message": true
       },
       "packages": {
         "graceful-fs": true
       }
     },
-    "jsonify": {},
+    "jsonify": {
+      "globals": {
+        "slice": true
+      }
+    },
     "jsonparse": {
       "globals": {
         "Buffer": true,
@@ -4681,6 +5349,7 @@
         "match": true,
         "pop": true,
         "push": true,
+        "result": true,
         "result.toString": true,
         "toString": true
       }
@@ -4724,7 +5393,8 @@
         "util.inherits": true
       },
       "globals": {
-        "apply": true
+        "apply": true,
+        "bind": true
       },
       "packages": {
         "readable-stream/passthrough": true
@@ -4754,29 +5424,40 @@
         "data": true,
         "define": true,
         "define.amd": true,
+        "e": true,
+        "func": true,
+        "func.length": true,
         "get": true,
         "global": true,
         "global.Object": true,
         "has": true,
+        "holders": true,
         "holdersCount": true,
         "holdersRight": true,
         "isPartial": true,
         "key": true,
         "length": true,
+        "newEnd": true,
         "partials": true,
         "partialsRight": true,
+        "placeholder": true,
         "previous": true,
         "result": true,
+        "seen": true,
         "self": true,
         "self.Object": true,
         "separator": true,
         "separator.global": true,
+        "separator.source": true,
         "set": true,
         "setLow": true,
         "stacked": true,
         "strSymbols": true,
         "unmasked": true,
-        "value": true
+        "value": true,
+        "wrapper": true,
+        "wrapper.apply": true,
+        "wrapper.thru": true
       }
     },
     "lodash.assign": {},
@@ -4786,6 +5467,7 @@
         "global": true,
         "global.Object": true,
         "has": true,
+        "props": true,
         "self": true,
         "self.Object": true,
         "set": true
@@ -4802,29 +5484,40 @@
         "data": true,
         "define": true,
         "define.amd": true,
+        "e": true,
+        "func": true,
+        "func.length": true,
         "get": true,
         "global": true,
         "global.Object": true,
         "has": true,
+        "holders": true,
         "holdersCount": true,
         "holdersRight": true,
         "isPartial": true,
         "key": true,
         "length": true,
+        "newEnd": true,
         "partials": true,
         "partialsRight": true,
+        "placeholder": true,
         "previous": true,
         "result": true,
+        "seen": true,
         "self": true,
         "self.Object": true,
         "separator": true,
         "separator.global": true,
+        "separator.source": true,
         "set": true,
         "setLow": true,
         "stacked": true,
         "strSymbols": true,
         "unmasked": true,
-        "value": true
+        "value": true,
+        "wrapper": true,
+        "wrapper.apply": true,
+        "wrapper.thru": true
       }
     },
     "lodash/clone": {
@@ -4837,29 +5530,40 @@
         "data": true,
         "define": true,
         "define.amd": true,
+        "e": true,
+        "func": true,
+        "func.length": true,
         "get": true,
         "global": true,
         "global.Object": true,
         "has": true,
+        "holders": true,
         "holdersCount": true,
         "holdersRight": true,
         "isPartial": true,
         "key": true,
         "length": true,
+        "newEnd": true,
         "partials": true,
         "partialsRight": true,
+        "placeholder": true,
         "previous": true,
         "result": true,
+        "seen": true,
         "self": true,
         "self.Object": true,
         "separator": true,
         "separator.global": true,
+        "separator.source": true,
         "set": true,
         "setLow": true,
         "stacked": true,
         "strSymbols": true,
         "unmasked": true,
-        "value": true
+        "value": true,
+        "wrapper": true,
+        "wrapper.apply": true,
+        "wrapper.thru": true
       }
     },
     "lodash/cloneDeep": {
@@ -4872,29 +5576,40 @@
         "data": true,
         "define": true,
         "define.amd": true,
+        "e": true,
+        "func": true,
+        "func.length": true,
         "get": true,
         "global": true,
         "global.Object": true,
         "has": true,
+        "holders": true,
         "holdersCount": true,
         "holdersRight": true,
         "isPartial": true,
         "key": true,
         "length": true,
+        "newEnd": true,
         "partials": true,
         "partialsRight": true,
+        "placeholder": true,
         "previous": true,
         "result": true,
+        "seen": true,
         "self": true,
         "self.Object": true,
         "separator": true,
         "separator.global": true,
+        "separator.source": true,
         "set": true,
         "setLow": true,
         "stacked": true,
         "strSymbols": true,
         "unmasked": true,
-        "value": true
+        "value": true,
+        "wrapper": true,
+        "wrapper.apply": true,
+        "wrapper.thru": true
       }
     },
     "lodash/escapeRegExp": {
@@ -4907,29 +5622,40 @@
         "data": true,
         "define": true,
         "define.amd": true,
+        "e": true,
+        "func": true,
+        "func.length": true,
         "get": true,
         "global": true,
         "global.Object": true,
         "has": true,
+        "holders": true,
         "holdersCount": true,
         "holdersRight": true,
         "isPartial": true,
         "key": true,
         "length": true,
+        "newEnd": true,
         "partials": true,
         "partialsRight": true,
+        "placeholder": true,
         "previous": true,
         "result": true,
+        "seen": true,
         "self": true,
         "self.Object": true,
         "separator": true,
         "separator.global": true,
+        "separator.source": true,
         "set": true,
         "setLow": true,
         "stacked": true,
         "strSymbols": true,
         "unmasked": true,
-        "value": true
+        "value": true,
+        "wrapper": true,
+        "wrapper.apply": true,
+        "wrapper.thru": true
       }
     },
     "lodash/flatten": {
@@ -4942,29 +5668,40 @@
         "data": true,
         "define": true,
         "define.amd": true,
+        "e": true,
+        "func": true,
+        "func.length": true,
         "get": true,
         "global": true,
         "global.Object": true,
         "has": true,
+        "holders": true,
         "holdersCount": true,
         "holdersRight": true,
         "isPartial": true,
         "key": true,
         "length": true,
+        "newEnd": true,
         "partials": true,
         "partialsRight": true,
+        "placeholder": true,
         "previous": true,
         "result": true,
+        "seen": true,
         "self": true,
         "self.Object": true,
         "separator": true,
         "separator.global": true,
+        "separator.source": true,
         "set": true,
         "setLow": true,
         "stacked": true,
         "strSymbols": true,
         "unmasked": true,
-        "value": true
+        "value": true,
+        "wrapper": true,
+        "wrapper.apply": true,
+        "wrapper.thru": true
       }
     },
     "lodash/has": {
@@ -4977,29 +5714,40 @@
         "data": true,
         "define": true,
         "define.amd": true,
+        "e": true,
+        "func": true,
+        "func.length": true,
         "get": true,
         "global": true,
         "global.Object": true,
         "has": true,
+        "holders": true,
         "holdersCount": true,
         "holdersRight": true,
         "isPartial": true,
         "key": true,
         "length": true,
+        "newEnd": true,
         "partials": true,
         "partialsRight": true,
+        "placeholder": true,
         "previous": true,
         "result": true,
+        "seen": true,
         "self": true,
         "self.Object": true,
         "separator": true,
         "separator.global": true,
+        "separator.source": true,
         "set": true,
         "setLow": true,
         "stacked": true,
         "strSymbols": true,
         "unmasked": true,
-        "value": true
+        "value": true,
+        "wrapper": true,
+        "wrapper.apply": true,
+        "wrapper.thru": true
       }
     },
     "lodash/isBoolean": {
@@ -5012,29 +5760,40 @@
         "data": true,
         "define": true,
         "define.amd": true,
+        "e": true,
+        "func": true,
+        "func.length": true,
         "get": true,
         "global": true,
         "global.Object": true,
         "has": true,
+        "holders": true,
         "holdersCount": true,
         "holdersRight": true,
         "isPartial": true,
         "key": true,
         "length": true,
+        "newEnd": true,
         "partials": true,
         "partialsRight": true,
+        "placeholder": true,
         "previous": true,
         "result": true,
+        "seen": true,
         "self": true,
         "self.Object": true,
         "separator": true,
         "separator.global": true,
+        "separator.source": true,
         "set": true,
         "setLow": true,
         "stacked": true,
         "strSymbols": true,
         "unmasked": true,
-        "value": true
+        "value": true,
+        "wrapper": true,
+        "wrapper.apply": true,
+        "wrapper.thru": true
       }
     },
     "lodash/isNumber": {
@@ -5047,29 +5806,40 @@
         "data": true,
         "define": true,
         "define.amd": true,
+        "e": true,
+        "func": true,
+        "func.length": true,
         "get": true,
         "global": true,
         "global.Object": true,
         "has": true,
+        "holders": true,
         "holdersCount": true,
         "holdersRight": true,
         "isPartial": true,
         "key": true,
         "length": true,
+        "newEnd": true,
         "partials": true,
         "partialsRight": true,
+        "placeholder": true,
         "previous": true,
         "result": true,
+        "seen": true,
         "self": true,
         "self.Object": true,
         "separator": true,
         "separator.global": true,
+        "separator.source": true,
         "set": true,
         "setLow": true,
         "stacked": true,
         "strSymbols": true,
         "unmasked": true,
-        "value": true
+        "value": true,
+        "wrapper": true,
+        "wrapper.apply": true,
+        "wrapper.thru": true
       }
     },
     "lodash/isPlainObject": {
@@ -5082,29 +5852,40 @@
         "data": true,
         "define": true,
         "define.amd": true,
+        "e": true,
+        "func": true,
+        "func.length": true,
         "get": true,
         "global": true,
         "global.Object": true,
         "has": true,
+        "holders": true,
         "holdersCount": true,
         "holdersRight": true,
         "isPartial": true,
         "key": true,
         "length": true,
+        "newEnd": true,
         "partials": true,
         "partialsRight": true,
+        "placeholder": true,
         "previous": true,
         "result": true,
+        "seen": true,
         "self": true,
         "self.Object": true,
         "separator": true,
         "separator.global": true,
+        "separator.source": true,
         "set": true,
         "setLow": true,
         "stacked": true,
         "strSymbols": true,
         "unmasked": true,
-        "value": true
+        "value": true,
+        "wrapper": true,
+        "wrapper.apply": true,
+        "wrapper.thru": true
       }
     },
     "lodash/isRegExp": {
@@ -5117,29 +5898,40 @@
         "data": true,
         "define": true,
         "define.amd": true,
+        "e": true,
+        "func": true,
+        "func.length": true,
         "get": true,
         "global": true,
         "global.Object": true,
         "has": true,
+        "holders": true,
         "holdersCount": true,
         "holdersRight": true,
         "isPartial": true,
         "key": true,
         "length": true,
+        "newEnd": true,
         "partials": true,
         "partialsRight": true,
+        "placeholder": true,
         "previous": true,
         "result": true,
+        "seen": true,
         "self": true,
         "self.Object": true,
         "separator": true,
         "separator.global": true,
+        "separator.source": true,
         "set": true,
         "setLow": true,
         "stacked": true,
         "strSymbols": true,
         "unmasked": true,
-        "value": true
+        "value": true,
+        "wrapper": true,
+        "wrapper.apply": true,
+        "wrapper.thru": true
       }
     },
     "lodash/isString": {
@@ -5152,29 +5944,40 @@
         "data": true,
         "define": true,
         "define.amd": true,
+        "e": true,
+        "func": true,
+        "func.length": true,
         "get": true,
         "global": true,
         "global.Object": true,
         "has": true,
+        "holders": true,
         "holdersCount": true,
         "holdersRight": true,
         "isPartial": true,
         "key": true,
         "length": true,
+        "newEnd": true,
         "partials": true,
         "partialsRight": true,
+        "placeholder": true,
         "previous": true,
         "result": true,
+        "seen": true,
         "self": true,
         "self.Object": true,
         "separator": true,
         "separator.global": true,
+        "separator.source": true,
         "set": true,
         "setLow": true,
         "stacked": true,
         "strSymbols": true,
         "unmasked": true,
-        "value": true
+        "value": true,
+        "wrapper": true,
+        "wrapper.apply": true,
+        "wrapper.thru": true
       }
     },
     "lodash/isUndefined": {
@@ -5187,29 +5990,40 @@
         "data": true,
         "define": true,
         "define.amd": true,
+        "e": true,
+        "func": true,
+        "func.length": true,
         "get": true,
         "global": true,
         "global.Object": true,
         "has": true,
+        "holders": true,
         "holdersCount": true,
         "holdersRight": true,
         "isPartial": true,
         "key": true,
         "length": true,
+        "newEnd": true,
         "partials": true,
         "partialsRight": true,
+        "placeholder": true,
         "previous": true,
         "result": true,
+        "seen": true,
         "self": true,
         "self.Object": true,
         "separator": true,
         "separator.global": true,
+        "separator.source": true,
         "set": true,
         "setLow": true,
         "stacked": true,
         "strSymbols": true,
         "unmasked": true,
-        "value": true
+        "value": true,
+        "wrapper": true,
+        "wrapper.apply": true,
+        "wrapper.thru": true
       }
     },
     "lodash/mapValues": {
@@ -5222,29 +6036,40 @@
         "data": true,
         "define": true,
         "define.amd": true,
+        "e": true,
+        "func": true,
+        "func.length": true,
         "get": true,
         "global": true,
         "global.Object": true,
         "has": true,
+        "holders": true,
         "holdersCount": true,
         "holdersRight": true,
         "isPartial": true,
         "key": true,
         "length": true,
+        "newEnd": true,
         "partials": true,
         "partialsRight": true,
+        "placeholder": true,
         "previous": true,
         "result": true,
+        "seen": true,
         "self": true,
         "self.Object": true,
         "separator": true,
         "separator.global": true,
+        "separator.source": true,
         "set": true,
         "setLow": true,
         "stacked": true,
         "strSymbols": true,
         "unmasked": true,
-        "value": true
+        "value": true,
+        "wrapper": true,
+        "wrapper.apply": true,
+        "wrapper.thru": true
       }
     },
     "lodash/max": {
@@ -5257,29 +6082,40 @@
         "data": true,
         "define": true,
         "define.amd": true,
+        "e": true,
+        "func": true,
+        "func.length": true,
         "get": true,
         "global": true,
         "global.Object": true,
         "has": true,
+        "holders": true,
         "holdersCount": true,
         "holdersRight": true,
         "isPartial": true,
         "key": true,
         "length": true,
+        "newEnd": true,
         "partials": true,
         "partialsRight": true,
+        "placeholder": true,
         "previous": true,
         "result": true,
+        "seen": true,
         "self": true,
         "self.Object": true,
         "separator": true,
         "separator.global": true,
+        "separator.source": true,
         "set": true,
         "setLow": true,
         "stacked": true,
         "strSymbols": true,
         "unmasked": true,
-        "value": true
+        "value": true,
+        "wrapper": true,
+        "wrapper.apply": true,
+        "wrapper.thru": true
       }
     },
     "lodash/sortBy": {
@@ -5292,29 +6128,40 @@
         "data": true,
         "define": true,
         "define.amd": true,
+        "e": true,
+        "func": true,
+        "func.length": true,
         "get": true,
         "global": true,
         "global.Object": true,
         "has": true,
+        "holders": true,
         "holdersCount": true,
         "holdersRight": true,
         "isPartial": true,
         "key": true,
         "length": true,
+        "newEnd": true,
         "partials": true,
         "partialsRight": true,
+        "placeholder": true,
         "previous": true,
         "result": true,
+        "seen": true,
         "self": true,
         "self.Object": true,
         "separator": true,
         "separator.global": true,
+        "separator.source": true,
         "set": true,
         "setLow": true,
         "stacked": true,
         "strSymbols": true,
         "unmasked": true,
-        "value": true
+        "value": true,
+        "wrapper": true,
+        "wrapper.apply": true,
+        "wrapper.thru": true
       }
     },
     "lodash/times": {
@@ -5327,29 +6174,40 @@
         "data": true,
         "define": true,
         "define.amd": true,
+        "e": true,
+        "func": true,
+        "func.length": true,
         "get": true,
         "global": true,
         "global.Object": true,
         "has": true,
+        "holders": true,
         "holdersCount": true,
         "holdersRight": true,
         "isPartial": true,
         "key": true,
         "length": true,
+        "newEnd": true,
         "partials": true,
         "partialsRight": true,
+        "placeholder": true,
         "previous": true,
         "result": true,
+        "seen": true,
         "self": true,
         "self.Object": true,
         "separator": true,
         "separator.global": true,
+        "separator.source": true,
         "set": true,
         "setLow": true,
         "stacked": true,
         "strSymbols": true,
         "unmasked": true,
-        "value": true
+        "value": true,
+        "wrapper": true,
+        "wrapper.apply": true,
+        "wrapper.thru": true
       }
     },
     "lodash/trimEnd": {
@@ -5362,29 +6220,40 @@
         "data": true,
         "define": true,
         "define.amd": true,
+        "e": true,
+        "func": true,
+        "func.length": true,
         "get": true,
         "global": true,
         "global.Object": true,
         "has": true,
+        "holders": true,
         "holdersCount": true,
         "holdersRight": true,
         "isPartial": true,
         "key": true,
         "length": true,
+        "newEnd": true,
         "partials": true,
         "partialsRight": true,
+        "placeholder": true,
         "previous": true,
         "result": true,
+        "seen": true,
         "self": true,
         "self.Object": true,
         "separator": true,
         "separator.global": true,
+        "separator.source": true,
         "set": true,
         "setLow": true,
         "stacked": true,
         "strSymbols": true,
         "unmasked": true,
-        "value": true
+        "value": true,
+        "wrapper": true,
+        "wrapper.apply": true,
+        "wrapper.thru": true
       }
     },
     "lodash/truncate": {
@@ -5397,29 +6266,40 @@
         "data": true,
         "define": true,
         "define.amd": true,
+        "e": true,
+        "func": true,
+        "func.length": true,
         "get": true,
         "global": true,
         "global.Object": true,
         "has": true,
+        "holders": true,
         "holdersCount": true,
         "holdersRight": true,
         "isPartial": true,
         "key": true,
         "length": true,
+        "newEnd": true,
         "partials": true,
         "partialsRight": true,
+        "placeholder": true,
         "previous": true,
         "result": true,
+        "seen": true,
         "self": true,
         "self.Object": true,
         "separator": true,
         "separator.global": true,
+        "separator.source": true,
         "set": true,
         "setLow": true,
         "stacked": true,
         "strSymbols": true,
         "unmasked": true,
-        "value": true
+        "value": true,
+        "wrapper": true,
+        "wrapper.apply": true,
+        "wrapper.thru": true
       }
     },
     "lodash/values": {
@@ -5432,29 +6312,40 @@
         "data": true,
         "define": true,
         "define.amd": true,
+        "e": true,
+        "func": true,
+        "func.length": true,
         "get": true,
         "global": true,
         "global.Object": true,
         "has": true,
+        "holders": true,
         "holdersCount": true,
         "holdersRight": true,
         "isPartial": true,
         "key": true,
         "length": true,
+        "newEnd": true,
         "partials": true,
         "partialsRight": true,
+        "placeholder": true,
         "previous": true,
         "result": true,
+        "seen": true,
         "self": true,
         "self.Object": true,
         "separator": true,
         "separator.global": true,
+        "separator.source": true,
         "set": true,
         "setLow": true,
         "stacked": true,
         "strSymbols": true,
         "unmasked": true,
-        "value": true
+        "value": true,
+        "wrapper": true,
+        "wrapper.apply": true,
+        "wrapper.thru": true
       }
     },
     "log-symbols": {
@@ -5548,7 +6439,9 @@
     "mathml-tag-names": {},
     "memoizee": {
       "globals": {
-        "hasOwnProperty.call": true
+        "clearTimeout": true,
+        "hasOwnProperty.call": true,
+        "setTimeout": true
       },
       "packages": {
         "d": true,
@@ -5578,11 +6471,14 @@
       "globals": {
         "add": true,
         "at": true,
+        "consumer.sources": true,
+        "consumer.sources.length": true,
         "every": true,
         "forEach": true,
         "get": true,
         "has": true,
         "indexOf": true,
+        "j": true,
         "length": true,
         "push": true,
         "set": true,
@@ -5608,10 +6504,37 @@
       }
     },
     "micromatch": {
+      "builtin": {
+        "path.sep": true
+      },
+      "globals": {
+        "charCodeAt": true,
+        "match": true,
+        "nobrace": true,
+        "nobraces": true,
+        "nobrackets": true,
+        "noextglob": true,
+        "process": true,
+        "process.platform": true,
+        "push": true,
+        "replace": true,
+        "slice": true,
+        "track": true
+      },
       "packages": {
+        "arr-diff": true,
+        "array-unique": true,
         "braces": true,
-        "picomatch": true,
-        "picomatch/lib/utils": true
+        "expand-brackets": true,
+        "extglob": true,
+        "filename-regex": true,
+        "is-extglob": true,
+        "is-glob": true,
+        "kind-of": true,
+        "normalize-path": true,
+        "object.omit": true,
+        "parse-glob": true,
+        "regex-cache": true
       }
     },
     "minimatch": {
@@ -5624,6 +6547,8 @@
         "pi": true,
         "pl": true,
         "pl.close": true,
+        "pl.open.length": true,
+        "pl.reStart": true,
         "pl.type": true,
         "regExp": true,
         "sp": true
@@ -5667,6 +6592,7 @@
       },
       "globals": {
         "deps": true,
+        "deps.reduce": true,
         "ex": true,
         "ex.message": true,
         "expose": true,
@@ -5674,6 +6600,7 @@
         "modules": true,
         "noParse": true,
         "noParse.indexOf": true,
+        "pkg": true,
         "process.cwd": true,
         "process.env.NODE_PATH": true,
         "process.nextTick": true,
@@ -5681,7 +6608,8 @@
         "push": true,
         "setTimeout": true,
         "some": true,
-        "split": true
+        "split": true,
+        "transformKey": true
       },
       "packages": {
         "browser-resolve": true,
@@ -5708,6 +6636,12 @@
       "builtin": {
         "path.basename": true,
         "path.sep": true
+      },
+      "globals": {
+        "contains": true,
+        "metachar": true,
+        "stack.pop": true,
+        "strictErrors": true
       },
       "packages": {
         "arr-diff": true,
@@ -5838,6 +6772,10 @@
       "builtin": {
         "util.inherits": true
       },
+      "globals": {
+        "bind": true,
+        "push": true
+      },
       "packages": {
         "readable-stream/readable": true
       }
@@ -5951,6 +6889,7 @@
       },
       "globals": {
         "err": true,
+        "length": true,
         "process.platform": true,
         "process.version": true
       }
@@ -5962,6 +6901,7 @@
       },
       "globals": {
         "err": true,
+        "length": true,
         "process.platform": true,
         "process.version": true
       }
@@ -5969,6 +6909,7 @@
     "pify": {},
     "pinkie": {
       "globals": {
+        "e": true,
         "global": true,
         "global.process": true,
         "global.process.emit": true,
@@ -6024,6 +6965,7 @@
         "e.message": true,
         "e.name": true,
         "endOfFile": true,
+        "err": true,
         "error": true,
         "filter": true,
         "from": true,
@@ -6037,16 +6979,19 @@
         "nextToken": true,
         "nodes": true,
         "nodes.length": true,
+        "opts": true,
         "parent": true,
         "plugins": true,
         "plugins.length": true,
         "postcssPlugin": true,
+        "processor": true,
         "processor.plugins": true,
         "processor.version": true,
         "push": true,
         "raws.after": true,
         "raws.before": true,
         "removeChild": true,
+        "root": true,
         "slice": true,
         "source.start": true,
         "sourcesContent": true,
@@ -6106,10 +7051,12 @@
         "after": true,
         "append": true,
         "at": true,
+        "attribute": true,
         "before": true,
         "end": true,
         "end.column": true,
         "end.line": true,
+        "index": true,
         "indexOf": true,
         "insertBefore": true,
         "length": true,
@@ -6119,9 +7066,13 @@
         "push": true,
         "quoteMark": true,
         "removeChild": true,
+        "safe": true,
         "slice": true,
         "source": true,
         "source.end": true,
+        "spaces": true,
+        "spaces.after": true,
+        "spaces.before": true,
         "splice": true,
         "start": true,
         "start.column": true,
@@ -6143,8 +7094,11 @@
       },
       "globals": {
         "apply": true,
+        "error": true,
+        "length": true,
         "map": true,
-        "root": true
+        "root": true,
+        "syntax": true
       },
       "packages": {
         "postcss/lib/input": true,
@@ -6172,11 +7126,16 @@
         "console": true,
         "console.error": true,
         "console.warn": true,
+        "consumer.sources": true,
+        "consumer.sources.length": true,
         "controlChar": true,
         "e": true,
         "e.message": true,
         "e.name": true,
+        "e.stack": true,
+        "e.stack.replace": true,
         "endOfFile": true,
+        "err": true,
         "error": true,
         "every": true,
         "filter": true,
@@ -6189,11 +7148,13 @@
         "input.error": true,
         "insertAfter": true,
         "insertBefore": true,
+        "j": true,
         "length": true,
         "map": true,
         "nextToken": true,
         "nodes": true,
         "nodes.length": true,
+        "opts": true,
         "parent": true,
         "plugins": true,
         "plugins.length": true,
@@ -6203,12 +7164,17 @@
         "process.env.NODE_ENV": true,
         "process.env.TERM": true,
         "process.platform": true,
+        "process.stderr": true,
+        "process.stdout": true,
+        "process.versions.node": true,
+        "processor": true,
         "processor.plugins": true,
         "processor.version": true,
         "push": true,
         "raws.after": true,
         "raws.before": true,
         "removeChild": true,
+        "root": true,
         "set": true,
         "size": true,
         "slice": true,
@@ -6223,6 +7189,7 @@
         "then": true,
         "to": true,
         "toArray": true,
+        "toString": true,
         "unshift": true,
         "unsortedForEach": true,
         "version": true,
@@ -6244,7 +7211,6 @@
     "preserve": {},
     "process-nextick-args": {
       "globals": {
-        "process": true,
         "process.nextTick": true,
         "process.version": true,
         "process.version.indexOf": true
@@ -6253,6 +7219,9 @@
     "pump": {
       "builtin": {
         "fs": true
+      },
+      "globals": {
+        "process.version": true
       },
       "packages": {
         "end-of-stream": true,
@@ -6271,10 +7240,15 @@
         "pump": true
       }
     },
-    "qs": {},
+    "qs": {
+      "globals": {
+        "toUpperCase": true
+      }
+    },
     "quote-stream": {
       "globals": {
-        "Buffer": true
+        "Buffer": true,
+        "Buffer.concat": true
       },
       "packages": {
         "buffer-equal": true,
@@ -6290,12 +7264,19 @@
     },
     "randomcolor": {
       "globals": {
+        "alpha": true,
         "define": true,
-        "define.amd": true
+        "define.amd": true,
+        "hsl": true,
+        "hslColor": true,
+        "hue": true,
+        "rgb.join": true,
+        "rgbColor.join": true
       }
     },
     "raw-body": {
       "globals": {
+        "Buffer.concat": true,
         "process.nextTick": true
       },
       "packages": {
@@ -6311,6 +7292,8 @@
         "path.join": true
       },
       "globals": {
+        "process.argv.slice": true,
+        "process.cwd": true,
         "process.env": true,
         "process.env.HOME": true,
         "process.env.USERPROFILE": true,
@@ -6344,24 +7327,39 @@
         "util.inspect": true
       },
       "globals": {
+        "args": true,
+        "bind": true,
+        "buffer": true,
         "buffer.clear": true,
         "buffer.head": true,
         "buffer.push": true,
         "corked": true,
+        "data": true,
+        "data.length": true,
+        "data.slice": true,
         "destroyed": true,
         "ended": true,
+        "err": true,
+        "error": true,
         "errorEmitted": true,
         "flowing": true,
+        "getBuffer": true,
         "global.Uint8Array": true,
+        "highWaterMark": true,
         "info.done": true,
+        "length": true,
+        "next": true,
         "process.env.READABLE_STREAM": true,
         "process.nextTick": true,
         "process.stderr": true,
         "process.stdout": true,
+        "read": true,
         "streams": true,
         "streams.length": true,
         "streams.map": true,
-        "streams.reduce": true
+        "streams.reduce": true,
+        "toLowerCase": true,
+        "value": true
       },
       "packages": {
         "inherits": true,
@@ -6383,12 +7381,14 @@
         "util.debuglog": true
       },
       "globals": {
+        "bind": true,
         "data": true,
         "destroyed": true,
         "ended": true,
         "errorEmitted": true,
         "flowing": true,
         "global.Uint8Array": true,
+        "highWaterMark": true,
         "name": true,
         "next": true,
         "process": true,
@@ -6399,6 +7399,7 @@
         "process.stdout": true,
         "process.version": true,
         "process.version.indexOf": true,
+        "process.version.slice": true,
         "setImmediate": true,
         "toLowerCase": true,
         "toString": true
@@ -6427,12 +7428,14 @@
         "util.debuglog": true
       },
       "globals": {
+        "bind": true,
         "data": true,
         "destroyed": true,
         "ended": true,
         "errorEmitted": true,
         "flowing": true,
         "global.Uint8Array": true,
+        "highWaterMark": true,
         "name": true,
         "next": true,
         "process": true,
@@ -6443,6 +7446,7 @@
         "process.stdout": true,
         "process.version": true,
         "process.version.indexOf": true,
+        "process.version.slice": true,
         "setImmediate": true,
         "toLowerCase": true,
         "toString": true
@@ -6471,12 +7475,14 @@
         "util.debuglog": true
       },
       "globals": {
+        "bind": true,
         "data": true,
         "destroyed": true,
         "ended": true,
         "errorEmitted": true,
         "flowing": true,
         "global.Uint8Array": true,
+        "highWaterMark": true,
         "name": true,
         "next": true,
         "process": true,
@@ -6487,6 +7493,7 @@
         "process.stdout": true,
         "process.version": true,
         "process.version.indexOf": true,
+        "process.version.slice": true,
         "setImmediate": true,
         "toLowerCase": true,
         "toString": true
@@ -6511,6 +7518,7 @@
         "util.promisify": true
       },
       "globals": {
+        "err": true,
         "pop": true,
         "process.platform": true,
         "push": true
@@ -6531,29 +7539,53 @@
       "globals": {
         "add": true,
         "arg": true,
+        "args": true,
         "argsPath.map": true,
         "argsPath.some": true,
+        "calleePath": true,
+        "calleePath.get": true,
+        "calleePath.node": true,
         "calleePath.node.computed": true,
         "calleePath.node.property": true,
+        "caseLocs": true,
         "cases": true,
         "cases.length": true,
+        "catchEntry": true,
         "catchLoc": true,
         "condition": true,
         "defaultLoc": true,
         "defaultLoc.value": true,
+        "disc": true,
+        "discriminant": true,
         "elseLoc": true,
+        "finallyEntry": true,
+        "finallyEntry.firstLoc": true,
         "finallyLoc": true,
+        "first": true,
         "handler": true,
+        "handler.param.name": true,
         "has": true,
         "hasLeapingArgs": true,
         "injectFirstArg": true,
+        "keyInfoTmpVar": true,
+        "keyIterNextFn": true,
+        "lastIndex": true,
+        "left": true,
         "length": true,
+        "lhs": true,
+        "map": true,
         "newArgs": true,
         "newArgs.map": true,
         "newArgs.unshift": true,
         "newCallee": true,
         "pop": true,
-        "push": true
+        "push": true,
+        "ret": true,
+        "temp": true,
+        "test": true,
+        "tryEntry": true,
+        "tryEntry.firstLoc": true,
+        "update": true
       },
       "packages": {
         "@babel/runtime/helpers/interopRequireDefault": true,
@@ -6576,7 +7608,11 @@
     },
     "regexpu-core": {
       "globals": {
-        "set.add": true
+        "codePoint": true,
+        "max": true,
+        "min": true,
+        "set.add": true,
+        "set.toString": true
       },
       "packages": {
         "regenerate": true,
@@ -6634,38 +7670,24 @@
       "builtin": {
         "fs.readFile": true,
         "fs.readFileSync": true,
-        "fs.realpath": true,
-        "fs.realpathSync": true,
         "fs.stat": true,
         "fs.statSync": true,
+        "path": true,
         "path.dirname": true,
         "path.join": true,
-        "path.parse": true,
         "path.relative": true,
         "path.resolve": true
       },
       "globals": {
-        "e": true,
-        "e.code": true,
+        "err": true,
+        "err.code": true,
         "pkg": true,
         "pkg.main": true,
         "process.nextTick": true,
         "process.platform": true,
-        "process.versions": true,
-        "process.versions.node": true,
-        "process.versions.node.split": true,
-        "realpathErr": true,
-        "realpathErr.code": true,
-        "split": true,
-        "stat.isDirectory": true,
+        "res": true,
         "stat.isFIFO": true,
-        "stat.isFile": true,
-        "test": true
-      },
-      "packages": {
-        "has": true,
-        "is-core-module": true,
-        "path-parse": true
+        "stat.isFile": true
       }
     },
     "resolve-from": {
@@ -6687,6 +7709,7 @@
     },
     "ret": {
       "globals": {
+        "charCodeAt": true,
         "classTokens": true,
         "group": true,
         "group.stack": true,
@@ -6711,6 +7734,7 @@
         "er2.code": true,
         "er3.code": true,
         "process.platform": true,
+        "setTimeout": true,
         "st": true,
         "st.isDirectory": true,
         "stats.isDirectory": true
@@ -6731,12 +7755,14 @@
         "Buffer.from": true,
         "add": true,
         "after": true,
+        "angle": true,
         "annotation": true,
         "applySourceMap": true,
         "at": true,
         "back": true,
         "before": true,
         "between": true,
+        "bind": true,
         "call.apply": true,
         "children": true,
         "children.reverse": true,
@@ -6744,31 +7770,43 @@
         "console": true,
         "console.error": true,
         "console.warn": true,
+        "consumer.sources": true,
+        "consumer.sources.length": true,
         "e": true,
         "e.message": true,
         "e.name": true,
         "endOfFile": true,
+        "err": true,
         "error": true,
         "every": true,
         "filter": true,
         "forEach": true,
         "from": true,
         "get": true,
+        "gradient": true,
         "has": true,
         "indexOf": true,
         "inline": true,
         "input.error": true,
         "insertAfter": true,
         "insertBefore": true,
+        "j": true,
         "length": true,
         "map": true,
+        "match": true,
+        "matrix": true,
+        "matrix3D": true,
+        "negatable": true,
         "nextToken": true,
         "nodes": true,
         "nodes.length": true,
+        "opts": true,
         "parent": true,
+        "percent": true,
         "plugins": true,
         "plugins.length": true,
         "pop": true,
+        "position": true,
         "postcssPlugin": true,
         "process.cwd": true,
         "process.env": true,
@@ -6777,20 +7815,30 @@
         "process.env.TERM": true,
         "process.env.USERPROFILE": true,
         "process.platform": true,
+        "process.stderr": true,
+        "process.stdout": true,
+        "process.versions.node": true,
+        "processor": true,
         "processor.plugins": true,
         "processor.version": true,
         "push": true,
         "raws.after": true,
         "raws.before": true,
         "removeChild": true,
+        "replace": true,
+        "root": true,
+        "rotate3D": true,
         "set": true,
         "size": true,
+        "skewXY": true,
+        "slash": true,
         "slice": true,
         "some": true,
         "sort": true,
         "source.start": true,
         "sourcesContent": true,
         "splice": true,
+        "star": true,
         "start": true,
         "start.column": true,
         "start.line": true,
@@ -6798,13 +7846,17 @@
         "to": true,
         "toArray": true,
         "toString": true,
+        "unit": true,
         "unshift": true,
         "unsortedForEach": true,
+        "url": true,
         "version": true,
         "walk": true,
         "walkSourceContents": true,
+        "white": true,
         "window.atob": true,
-        "window.btoa": true
+        "window.btoa": true,
+        "xKeyword": true
       },
       "packages": {
         "@choojs/findup": true,
@@ -6831,12 +7883,14 @@
         "Buffer.from": true,
         "add": true,
         "after": true,
+        "angle": true,
         "annotation": true,
         "applySourceMap": true,
         "at": true,
         "back": true,
         "before": true,
         "between": true,
+        "bind": true,
         "call.apply": true,
         "children": true,
         "children.reverse": true,
@@ -6844,31 +7898,43 @@
         "console": true,
         "console.error": true,
         "console.warn": true,
+        "consumer.sources": true,
+        "consumer.sources.length": true,
         "e": true,
         "e.message": true,
         "e.name": true,
         "endOfFile": true,
+        "err": true,
         "error": true,
         "every": true,
         "filter": true,
         "forEach": true,
         "from": true,
         "get": true,
+        "gradient": true,
         "has": true,
         "indexOf": true,
         "inline": true,
         "input.error": true,
         "insertAfter": true,
         "insertBefore": true,
+        "j": true,
         "length": true,
         "map": true,
+        "match": true,
+        "matrix": true,
+        "matrix3D": true,
+        "negatable": true,
         "nextToken": true,
         "nodes": true,
         "nodes.length": true,
+        "opts": true,
         "parent": true,
+        "percent": true,
         "plugins": true,
         "plugins.length": true,
         "pop": true,
+        "position": true,
         "postcssPlugin": true,
         "process.cwd": true,
         "process.env": true,
@@ -6877,20 +7943,30 @@
         "process.env.TERM": true,
         "process.env.USERPROFILE": true,
         "process.platform": true,
+        "process.stderr": true,
+        "process.stdout": true,
+        "process.versions.node": true,
+        "processor": true,
         "processor.plugins": true,
         "processor.version": true,
         "push": true,
         "raws.after": true,
         "raws.before": true,
         "removeChild": true,
+        "replace": true,
+        "root": true,
+        "rotate3D": true,
         "set": true,
         "size": true,
+        "skewXY": true,
+        "slash": true,
         "slice": true,
         "some": true,
         "sort": true,
         "source.start": true,
         "sourcesContent": true,
         "splice": true,
+        "star": true,
         "start": true,
         "start.column": true,
         "start.line": true,
@@ -6898,13 +7974,17 @@
         "to": true,
         "toArray": true,
         "toString": true,
+        "unit": true,
         "unshift": true,
         "unsortedForEach": true,
+        "url": true,
         "version": true,
         "walk": true,
         "walkSourceContents": true,
+        "white": true,
         "window.atob": true,
-        "window.btoa": true
+        "window.btoa": true,
+        "xKeyword": true
       },
       "packages": {
         "@choojs/findup": true,
@@ -6929,7 +8009,11 @@
         "buffer": true
       }
     },
-    "safe-json-parse": {},
+    "safe-json-parse": {
+      "globals": {
+        "err": true
+      }
+    },
     "safe-regex": {
       "packages": {
         "ret": true
@@ -6960,8 +8044,10 @@
         "util.promisify": true
       },
       "globals": {
+        "$function": true,
         "$index": true,
         "$indexSet": true,
+        "$method$": true,
         "$ti._eval$1": true,
         "$ti._rest": true,
         "HTMLElement": true,
@@ -6979,6 +8065,8 @@
         "_addChild$2$through": true,
         "_addPathCloser": true,
         "_addResult$1": true,
+        "_addToFsEvents": true,
+        "_as": true,
         "_asyncComplete$1": true,
         "_async_evaluate$_addChild$1": true,
         "_async_evaluate$_addChild$2$through": true,
@@ -6990,7 +8078,9 @@
         "_async_evaluate$_environment.getVariable$2$namespace": true,
         "_async_evaluate$_environment.setLocalVariable$3": true,
         "_async_evaluate$_environment.setVariable$4$global": true,
+        "_async_evaluate$_exception$2": true,
         "_async_evaluate$_getFunction$2$namespace": true,
+        "_async_evaluate$_logger": true,
         "_async_evaluate$_runFunctionCallable$3": true,
         "_async_evaluate$_setMultipleVariables$3": true,
         "_async_evaluate$_stackFrame$2": true,
@@ -7005,7 +8095,9 @@
         "_async_evaluate0$_environment.getVariable$2$namespace": true,
         "_async_evaluate0$_environment.setLocalVariable$3": true,
         "_async_evaluate0$_environment.setVariable$4$global": true,
+        "_async_evaluate0$_exception$2": true,
         "_async_evaluate0$_getFunction$2$namespace": true,
+        "_async_evaluate0$_logger": true,
         "_async_evaluate0$_runFunctionCallable$3": true,
         "_async_evaluate0$_setMultipleVariables$3": true,
         "_async_evaluate0$_stackFrame$2": true,
@@ -7013,6 +8105,7 @@
         "_async_import_cache$_resultsCache.$index": true,
         "_async_import_cache0$_resultsCache.$index": true,
         "_buffer.write$1": true,
+        "_child$1": true,
         "_closeFile": true,
         "_collection$_length": true,
         "_collection$_map": true,
@@ -7024,8 +8117,10 @@
         "_contents": true,
         "_contents.length": true,
         "_conversionFactor$2": true,
+        "_decodedChars": true,
         "_doneFuture": true,
         "_emit": true,
+        "_emitRaw": true,
         "_emitReady": true,
         "_environment0$_content": true,
         "_eval$1": true,
@@ -7037,6 +8132,8 @@
         "_evaluate$_environment.getVariable$2$namespace": true,
         "_evaluate$_environment.setLocalVariable$3": true,
         "_evaluate$_environment.setVariable$4$global": true,
+        "_evaluate$_exception$2": true,
+        "_evaluate$_logger": true,
         "_evaluate0$_addChild$1": true,
         "_evaluate0$_addChild$2$through": true,
         "_evaluate0$_environment": true,
@@ -7047,11 +8144,15 @@
         "_evaluate0$_environment.getVariable$2$namespace": true,
         "_evaluate0$_environment.setLocalVariable$3": true,
         "_evaluate0$_environment.setVariable$4$global": true,
+        "_evaluate0$_exception$2": true,
         "_evaluate0$_getFunction$2$namespace": true,
+        "_evaluate0$_logger": true,
         "_evaluate0$_runFunctionCallable$3": true,
         "_evaluate0$_setMultipleVariables$3": true,
         "_evaluate0$_stackFrame$2": true,
         "_evaluate0$_withMediaQueries$2": true,
+        "_extender$_extensionForSimple$1": true,
+        "_extensionForSimple$1": true,
         "_fetch$1": true,
         "_from_handlers$_handleData.call$2": true,
         "_from_handlers$_handleDone.call$1": true,
@@ -7068,6 +8169,7 @@
         "_incrReadyCount": true,
         "_is": true,
         "_isIgnored": true,
+        "_isVariableDeclarationLike$0": true,
         "_isntIgnored": true,
         "_list0$_elementNeedsParens$1": true,
         "_list3$_elementNeedsParens$1": true,
@@ -7090,6 +8192,7 @@
         "_rest._as": true,
         "_resultsCache.$index": true,
         "_runFunctionCallable$3": true,
+        "_sass0$_child$1": true,
         "_serialize$_buffer.write$1": true,
         "_serialize0$_writeImportUrl$1": true,
         "_setMultipleVariables$3": true,
@@ -7107,7 +8210,11 @@
         "_throttle": true,
         "_transitiveModificationTimes.putIfAbsent$2": true,
         "_unprefixed_map_view$_map": true,
+        "_unprefixed_map_view$_view._unprefixed_map_view$_prefix": true,
+        "_unprefixed_map_view$_view._unprefixed_map_view$_prefix.length": true,
         "_unprefixed_map_view0$_map": true,
+        "_unprefixed_map_view0$_view._unprefixed_map_view0$_prefix": true,
+        "_unprefixed_map_view0$_view._unprefixed_map_view0$_prefix.length": true,
         "_value": true,
         "_view._prefix": true,
         "_withMediaQueries$2": true,
@@ -7136,12 +8243,15 @@
         "call$1$3": true,
         "call$1$4": true,
         "call$2": true,
+        "call$3": true,
         "cancel$0": true,
         "cancelationFuture": true,
         "canonicalize$1": true,
         "children": true,
+        "clause.children": true,
         "clear": true,
         "clearTimeout": true,
+        "cloneCss$0": true,
         "close$0": true,
         "closed": true,
         "compareTo$1": true,
@@ -7149,18 +8259,24 @@
         "completeError$1": true,
         "completeError$2": true,
         "components": true,
+        "condition": true,
+        "condition.value": true,
         "console": true,
         "console.error": true,
         "console.log": true,
+        "constructor.prototype": true,
         "contains$1": true,
         "containsKey$1": true,
+        "contentArguments": true,
         "contents": true,
+        "contents.$index": true,
         "context._isWithinOrEquals$2": true,
         "context.hash$1": true,
         "controller": true,
         "convertGeneral$4": true,
         "count": true,
         "dartExperimentalFixupGetTag": true,
+        "dartMainRunner": true,
         "dartNativeDispatchHooksTransformer": true,
         "dartPrint": true,
         "debug$2": true,
@@ -7177,6 +8293,7 @@
         "e.stack": true,
         "elementAt$1": true,
         "encode$4": true,
+        "err": true,
         "error": true,
         "error.code": true,
         "exec": true,
@@ -7193,10 +8310,12 @@
         "forEach$1": true,
         "forSpan$2": true,
         "from": true,
+        "generate$0": true,
         "get": true,
         "get$_delegate": true,
         "get$_head": true,
         "get$_tail": true,
+        "get$complete": true,
         "get$extender": true,
         "get$first": true,
         "get$isBroadcast": true,
@@ -7214,18 +8333,25 @@
         "getLine$1": true,
         "getVariableNode$2$namespace": true,
         "global": true,
+        "hasDeclarations": true,
         "hasOwnProperty": true,
+        "humanize$1": true,
         "i": true,
         "ignorePermissionErrors": true,
         "importCache.importCanonical$2": true,
+        "importer": true,
         "index": true,
         "indexOf": true,
         "isImplicit": true,
+        "item2": true,
         "join$0": true,
         "join$1": true,
         "length": true,
+        "lineBreak": true,
+        "linkPath": true,
         "listen$3$onDone$onError": true,
         "listen$4$cancelOnError$onDone$onError": true,
+        "listeners": true,
         "load": true,
         "maxSpecificity": true,
         "moveNext$0": true,
@@ -7237,6 +8363,7 @@
         "navigator.userAgent.indexOf": true,
         "number": true,
         "observe": true,
+        "onListen": true,
         "openedOnThisLine": true,
         "options": true,
         "options._collection$_map": true,
@@ -7247,11 +8374,14 @@
         "options.ignoreInitial": true,
         "originalSpan": true,
         "parse$0": true,
+        "parseUseRule$0": true,
+        "parseVariableDeclaration$0": true,
         "parsedSelector": true,
         "peekChar$0": true,
         "persistent": true,
         "pop": true,
         "position": true,
+        "positional.length": true,
         "predicate.call$1": true,
         "prefix": true,
         "print": true,
@@ -7264,16 +8394,23 @@
         "process.version.match": true,
         "push": true,
         "putIfAbsent$2": true,
+        "queries": true,
+        "realPath": true,
         "remove$1": true,
+        "results.$index": true,
         "run$1$1": true,
         "runGuarded$1": true,
+        "scaledWhiteness": true,
         "scanner": true,
         "scanner.expectDone$0": true,
         "scanner.peekChar$0": true,
         "scanner.spanFrom$1": true,
         "scheduleMicrotask$1": true,
         "scope$1$3$semiGlobal$when": true,
+        "selector": true,
+        "selector.components": true,
         "selector.value": true,
+        "separator": true,
         "set": true,
         "set$_head": true,
         "set$_tail": true,
@@ -7285,7 +8422,11 @@
         "span": true,
         "span$2": true,
         "span.file": true,
+        "spanFrom$1": true,
+        "split": true,
+        "stack": true,
         "stackTrace": true,
+        "start": true,
         "string": true,
         "style.get$separator": true,
         "text": true,
@@ -7300,6 +8441,7 @@
         "valuesDone": true,
         "varData": true,
         "variableIdentity$1": true,
+        "variables": true,
         "verify$2": true,
         "version": true,
         "version.length": true,
@@ -7341,6 +8483,7 @@
         "forEachAvailable": true,
         "get": true,
         "has": true,
+        "keys": true,
         "set": true
       },
       "packages": {
@@ -7355,6 +8498,7 @@
     },
     "semver": {
       "globals": {
+        "console": true,
         "console.log.apply": true,
         "defaultResult": true,
         "i": true,
@@ -7365,6 +8509,7 @@
         "process.env": true,
         "process.env.NODE_DEBUG": true,
         "push": true,
+        "rangeObj.test": true,
         "set.map": true,
         "some": true,
         "trim": true,
@@ -7423,10 +8568,17 @@
         "events": true
       },
       "globals": {
+        "process": true,
         "process.__signal_exit_emitter__": true,
         "process.emit": true,
+        "process.exitCode": true,
+        "process.kill": true,
+        "process.listeners": true,
+        "process.on": true,
+        "process.pid": true,
         "process.platform": true,
-        "process.reallyExit": true
+        "process.reallyExit": true,
+        "process.removeListener": true
       }
     },
     "slash": {},
@@ -7449,10 +8601,13 @@
         "util": true
       },
       "globals": {
+        "__filename": true,
         "add": true,
         "addMapping": true,
         "apply": true,
+        "applySourceMap": true,
         "at": true,
+        "bind": true,
         "call": true,
         "capture.apply": true,
         "chrome": true,
@@ -7460,9 +8615,12 @@
         "chrome.storage.local": true,
         "column": true,
         "compile": true,
+        "compilers": true,
         "console": true,
         "console.log": true,
         "console.log.bind": true,
+        "consumer.sources": true,
+        "consumer.sources.length": true,
         "document": true,
         "document.documentElement": true,
         "document.documentElement.style": true,
@@ -7475,6 +8633,8 @@
         "get": true,
         "has": true,
         "indexOf": true,
+        "inputSourcemaps": true,
+        "j": true,
         "length": true,
         "line": true,
         "navigator": true,
@@ -7483,14 +8643,18 @@
         "nodes": true,
         "nodes.push": true,
         "parse": true,
+        "parsers": true,
         "pop": true,
         "process": true,
         "process.binding": true,
+        "process.env": true,
         "process.env.DEBUG": true,
+        "process.env.DEBUG_FD": true,
         "process.stderr": true,
         "process.stdout": true,
         "process.type": true,
         "push": true,
+        "regex": true,
         "set": true,
         "setSourceContent": true,
         "silent": true,
@@ -7531,8 +8695,13 @@
     },
     "snapdragon-node": {
       "globals": {
+        "indexOf": true,
+        "next": true,
+        "nodes": true,
         "pop": true,
+        "prev": true,
         "push": true,
+        "scope": true,
         "shift": true,
         "splice": true,
         "unshift": true
@@ -7546,6 +8715,7 @@
     },
     "snapdragon-util": {
       "globals": {
+        "types": true,
         "types.length": true
       },
       "packages": {
@@ -7557,7 +8727,12 @@
       "globals": {
         "add": true,
         "at": true,
+        "console.debug": true,
+        "consumer.destroy": true,
+        "consumer.sources": true,
+        "consumer.sources.length": true,
         "every": true,
+        "fetch": true,
         "forEach": true,
         "get": true,
         "has": true,
@@ -7572,7 +8747,7 @@
         "toArray": true,
         "unshift": true,
         "unsortedForEach": true,
-        "walkSourceContents": true
+        "withMappingCallback": true
       }
     },
     "source-map-resolve": {
@@ -7613,6 +8788,9 @@
       "builtin": {
         "string_decoder.Decoder": true
       },
+      "globals": {
+        "err": true
+      },
       "packages": {
         "through": true
       }
@@ -7641,6 +8819,7 @@
     },
     "static-module": {
       "globals": {
+        "err": true,
         "wrap": true
       },
       "packages": {
@@ -7751,21 +8930,30 @@
         "path.sep": true
       },
       "globals": {
+        "__dirname": true,
         "assert": true,
         "backtrack_lexer": true,
         "call": true,
         "concat": true,
+        "e": true,
+        "e.hash": true,
+        "e.hash.loc": true,
+        "e.hash.loc.range": true,
         "errorRecoveryTokenDiscardCount": true,
         "ex": true,
+        "fill": true,
         "first_column": true,
         "first_line": true,
         "flex": true,
         "forEach": true,
         "getFileDescriptor": true,
         "join": true,
+        "lang": true,
         "last_column": true,
         "last_line": true,
         "length": true,
+        "lexerErrorsAreRecoverable": true,
+        "map": true,
         "ntsymbol": true,
         "parseError": true,
         "parseError.call": true,
@@ -7795,6 +8983,7 @@
         "substr": true,
         "substring": true,
         "test": true,
+        "toPrecision": true,
         "trackPosition": true
       },
       "packages": {
@@ -7850,7 +9039,10 @@
     "supports-color": {
       "globals": {
         "process.env": true,
-        "process.platform": true
+        "process.platform": true,
+        "process.stderr": true,
+        "process.stdout": true,
+        "process.versions.node": true
       },
       "packages": {
         "has-flag": true
@@ -7899,26 +9091,98 @@
     },
     "terser": {
       "globals": {
+        "Buffer": true,
+        "_dot_throw": true,
+        "_eval": true,
+        "_find_defs": true,
+        "_size": true,
+        "_walk": true,
         "add": true,
+        "all_symbols": true,
         "at": true,
+        "atob": true,
+        "body": true,
+        "btoa": true,
+        "clone": true,
+        "col": true,
+        "consumer.sources": true,
+        "consumer.sources.length": true,
         "define": true,
         "define.amd": true,
+        "definition": true,
+        "drop_side_effect_free": true,
+        "eliminated": true,
+        "equivalent_to": true,
+        "evaluate": true,
         "every": true,
+        "expression": true,
+        "expressions": true,
+        "expressions.slice": true,
+        "figure_out_scope": true,
+        "file": true,
+        "find_variable": true,
+        "fixed": true,
+        "flags": true,
         "forEach": true,
         "get": true,
+        "global": true,
+        "global_defs": true,
         "has": true,
+        "has_side_effects": true,
+        "hoist_declarations": true,
         "indexOf": true,
+        "inline": true,
+        "is_array": true,
+        "is_block_scope": true,
+        "is_boolean": true,
+        "is_call_pure": true,
+        "is_constant_expression": true,
+        "is_number": true,
+        "is_string": true,
+        "j": true,
         "length": true,
+        "line": true,
+        "may_throw": true,
+        "may_throw_on_access": true,
+        "name": true,
+        "name.length": true,
+        "name.name": true,
+        "operator": true,
+        "optimize": true,
+        "passes": true,
+        "pinned": true,
+        "print": true,
+        "print_to_string": true,
+        "pure_funcs": true,
         "push": true,
+        "reduce": true,
+        "references.length": true,
+        "replace": true,
+        "reserved": true,
+        "scope": true,
+        "segments": true,
+        "sequences": true,
         "set": true,
+        "shorthand": true,
         "size": true,
         "slice": true,
         "some": true,
         "sort": true,
+        "source": true,
+        "start.comments_before": true,
+        "timings": true,
         "toArray": true,
+        "toString": true,
+        "top_retain": true,
+        "toplevel": true,
+        "transform": true,
+        "type": true,
         "unshift": true,
         "unsortedForEach": true,
-        "walkSourceContents": true
+        "value": true,
+        "walk": true,
+        "walkSourceContents": true,
+        "warnings": true
       },
       "packages": {
         "source-map": true
@@ -7927,6 +9191,9 @@
     "through": {
       "builtin": {
         "stream.Stream": true
+      },
+      "globals": {
+        "process.nextTick": true
       }
     },
     "through2": {
@@ -7937,10 +9204,14 @@
         "process.nextTick": true
       },
       "packages": {
-        "readable-stream": true
+        "readable-stream": true,
+        "xtend": true
       }
     },
     "through2-filter": {
+      "globals": {
+        "wantStrings": true
+      },
       "packages": {
         "through2": true,
         "xtend": true
@@ -7962,26 +9233,41 @@
         "util": true
       },
       "globals": {
+        "_handle": true,
         "args": true,
         "args.replace": true,
+        "args.splice": true,
         "args.unshift": true,
+        "bind": true,
+        "call": true,
+        "cert": true,
         "console": true,
+        "console.error": true,
         "console.log": true,
+        "dashboard": true,
         "document": true,
         "document.documentElement": true,
         "document.documentElement.style": true,
         "document.documentElement.style.WebkitAppearance": true,
         "error.message": true,
+        "key": true,
         "level": true,
+        "liveCSS": true,
+        "liveImg": true,
         "localStorage": true,
         "navigator": true,
         "navigator.userAgent": true,
+        "on": true,
+        "pfx": true,
         "process": true,
         "process.__nwjs": true,
         "process.browser": true,
+        "process.env": true,
         "process.env.DEBUG": true,
+        "process.stderr.fd": true,
         "process.stderr.write": true,
         "process.type": true,
+        "reloadMissingCSS": true,
         "toISOString": true,
         "window": true,
         "window.console": true,
@@ -8007,6 +9293,7 @@
         "path.resolve": true
       },
       "globals": {
+        "process.cwd": true,
         "process.platform": true
       },
       "packages": {
@@ -8050,6 +9337,7 @@
     },
     "typedarray": {
       "globals": {
+        "_bytes": true,
         "byteLength": true
       }
     },
@@ -8159,7 +9447,8 @@
       "globals": {
         "isDirectory": true,
         "pipe": true,
-        "process.cwd": true
+        "process.cwd": true,
+        "push": true
       },
       "packages": {
         "clone": true,
@@ -8201,10 +9490,12 @@
       },
       "globals": {
         "Buffer": true,
+        "Buffer.concat": true,
         "Buffer.isBuffer": true,
         "isDirectory": true,
         "pipe": true,
         "process.cwd": true,
+        "push": true,
         "setImmediate": true
       },
       "packages": {
@@ -8260,6 +9551,9 @@
       "builtin": {
         "path.resolve": true
       },
+      "globals": {
+        "process.cwd": true
+      },
       "packages": {
         "through2": true,
         "vinyl": true
@@ -8290,11 +9584,14 @@
       "globals": {
         "add": true,
         "at": true,
+        "consumer.sources": true,
+        "consumer.sources.length": true,
         "every": true,
         "forEach": true,
         "get": true,
         "has": true,
         "indexOf": true,
+        "j": true,
         "length": true,
         "push": true,
         "set": true,
@@ -8318,7 +9615,8 @@
       "globals": {
         "clearTimeout": true,
         "ignored": true,
-        "setTimeout": true
+        "setTimeout": true,
+        "toFixed": true
       },
       "packages": {
         "anymatch": true,
@@ -8341,14 +9639,17 @@
         "Buffer.concat": true,
         "activate": true,
         "add": true,
+        "apply": true,
         "binary": true,
         "body": true,
         "clear": true,
         "close": true,
         "continuation": true,
         "copy": true,
+        "e.message": true,
         "eachByte": true,
         "error": true,
+        "error.message": true,
         "execute": true,
         "extensions": true,
         "forEach": true,
@@ -8356,12 +9657,16 @@
         "generateResponse": true,
         "hasOwnProperty": true,
         "headers": true,
+        "headers.origin": true,
+        "host": true,
         "href": true,
+        "i": true,
         "indexOf": true,
         "io.emit": true,
         "isComplete": true,
         "join": true,
         "length": true,
+        "lengthBytes": true,
         "masking": true,
         "maxLength": true,
         "method": true,
@@ -8383,6 +9688,7 @@
         "requireMasking": true,
         "set": true,
         "shift": true,
+        "slice": true,
         "split": true,
         "statusCode": true,
         "test": true,
@@ -8403,11 +9709,13 @@
         "close": true,
         "concat": true,
         "done": true,
+        "err": true,
         "forEach": true,
         "hasOwnProperty": true,
         "incoming": true,
         "length": true,
         "map": true,
+        "name": true,
         "outgoing": true,
         "processIncomingMessage": true,
         "processOutgoingMessage": true,
@@ -8425,7 +9733,7 @@
         "process.env.PATH": true,
         "process.env.PATHEXT": true,
         "process.platform": true,
-        "split": true
+        "test": true
       },
       "packages": {
         "isexe": true
@@ -8486,10 +9794,12 @@
         "btoa": true,
         "comment": true,
         "commentBefore": true,
+        "commentBefore.replace": true,
         "concat": true,
         "console.warn": true,
         "context": true,
         "context.root": true,
+        "error": true,
         "error.source": true,
         "every": true,
         "filter": true,
@@ -8499,11 +9809,13 @@
         "global._YAML_SILENCE_DEPRECATION_WARNINGS": true,
         "global._YAML_SILENCE_WARNINGS": true,
         "global.process": true,
+        "indexOf": true,
         "isEmpty": true,
         "items": true,
         "keepCstNodes": true,
         "keepNodeTypes": true,
         "length": true,
+        "map": true,
         "name": true,
         "prettyErrors": true,
         "push": true,
@@ -8513,9 +9825,11 @@
         "reduce": true,
         "replace": true,
         "resolveNodes": true,
+        "root": true,
         "scalarFallback": true,
         "schema": true,
         "setOrigRange": true,
+        "slice": true,
         "spaceBefore": true,
         "splice": true,
         "src.slice": true,
@@ -8542,7 +9856,8 @@
       "globals": {
         "Buffer": true,
         "Buffer.concat": true,
-        "length": true
+        "length": true,
+        "setImmediate": true
       },
       "packages": {
         "buffer-crc32": true

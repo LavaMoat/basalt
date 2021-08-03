@@ -29,10 +29,10 @@ use swc_ecma_visit::{Node, Visit, VisitAll, VisitAllWith, VisitWith};
 
 use indexmap::IndexMap;
 
-use super::dependencies::is_builtin_module;
 use crate::{
     access::{Access, AccessKind},
-    helpers::{is_require_expr, member_expr_words, pattern_words},
+    analysis::{dependencies::is_builtin_module, member_expr::walk},
+    helpers::{is_require_expr, pattern_words},
 };
 
 const FUNCTION_METHODS: [&str; 5] =
@@ -271,6 +271,7 @@ impl BuiltinAnalyzer {
             }
             Expr::Member(member) => {
                 if is_require_expr(n).is_none() {
+                    // TODO: ensure the first word is Expr::Ident!
                     let members = member_expr_words(member);
                     if let Some(word) = members.get(0) {
                         if let Some((local, source)) =
@@ -606,3 +607,20 @@ impl Visit for BuiltinAnalyzer {
         self.access_visit_stmt(n);
     }
 }
+
+/// Member expressions have the furthest left of the path
+/// as the deepest expression which is awkward for analysis
+/// so we walk all member expressions and invert them.
+pub fn member_expr_words(n: &MemberExpr) -> Vec<&JsWord> {
+    let mut expressions = Vec::new();
+    walk(n, &mut expressions);
+    expressions.iter().filter_map(|e| {
+        match e {
+            Expr::Ident(id) => {
+                Some(&id.sym)
+            }
+            _ => None
+        }
+    }).collect()
+}
+

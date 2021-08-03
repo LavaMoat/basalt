@@ -18,10 +18,11 @@
 
 use swc_atoms::JsWord;
 use swc_ecma_ast::*;
-use swc_ecma_visit::{Node, Visit};
+use swc_ecma_visit::{Node, Visit, VisitWith, VisitAll, VisitAllWith};
 
 use indexmap::IndexSet;
 
+use super::member_expr::walk;
 use crate::helpers::{pattern_words, var_symbol_words};
 
 // SEE: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects
@@ -610,7 +611,7 @@ impl ScopeBuilder {
                 for arg in &n.args {
                     self._visit_expr(&*arg.expr, scope);
                 }
-            },
+            }
             Expr::Update(n) => {
                 self._visit_expr(&n.arg, scope);
             }
@@ -639,18 +640,9 @@ impl ScopeBuilder {
                 self._visit_expr(&n.expr, scope);
             }
             Expr::Member(n) => {
-                if let Some((word, mut parts)) = self.compute_member(n, scope) {
-                    if word.as_ref() == GLOBAL_THIS {
-                        // If it is just a reference to `globalThis` we filter it
-                        if parts.is_empty() {
-                            return;
-                        }
-
-                        let word = parts.remove(0);
-                        self.insert_ident(word, scope, Some(parts));
-                    } else {
-                        self.insert_ident(word, scope, Some(parts));
-                    }
+                let members = self.compute_member2(n, scope);
+                for (word, parts) in members {
+                    self.insert_ident(word, scope, Some(parts));
                 }
             }
             Expr::New(n) => {
@@ -825,6 +817,76 @@ impl ScopeBuilder {
         }
     }
 
+    fn compute_member2(
+        &self,
+        n: &MemberExpr,
+        scope: &mut Scope,
+    ) -> Vec<(JsWord, Vec<JsWord>)> {
+        let mut members = Vec::new();
+
+        let mut expressions = Vec::new();
+        walk(n, &mut expressions);
+
+        if let Some(first) = expressions.get(0) {
+            match first {
+                Expr::This(_) => {
+                    return members;
+                }
+                Expr::Ident(id) => {
+                    if id.sym.as_ref() == GLOBAL_THIS {
+                        expressions.remove(0);
+                    }
+                }
+                _ => {
+                    let mut visit_paren = VisitMemberParen { members: Vec::new() };
+                    n.visit_all_children_with(&mut visit_paren);
+                    for member in visit_paren.members.iter() {
+                        let mut result = self.compute_member2(member, scope);
+                        members.append(&mut result);
+                    }
+                }
+            }
+        }
+
+        if let Some(member_expr) = self.compute_member_words(&mut expressions) {
+            members.push(member_expr);
+        }
+
+        members
+    }
+
+    fn compute_member_words(&self, expressions: &Vec<&Expr>) -> Option<(JsWord, Vec<JsWord>)> {
+        let mut words: Vec<JsWord> = Vec::new();
+        for expr in expressions.iter() {
+            match expr {
+                Expr::Ident(id) => {
+                    words.push(id.sym.clone());
+                }
+                Expr::Call(call) => {
+                    if let ExprOrSuper::Expr(expr) = &call.callee {
+                        match &**expr {
+                            Expr::Ident(id) => {
+                                words.push(id.sym.clone());
+                            }
+                            _ => {}
+                        }
+                    }
+                    break;
+                }
+                _ => {
+                    break
+                },
+            }
+        }
+
+        if words.is_empty() {
+            None
+        } else {
+            Some((words.remove(0), words))
+        }
+    }
+
+    /*
     fn compute_member(
         &self,
         n: &MemberExpr,
@@ -935,6 +997,7 @@ impl ScopeBuilder {
             }
         }
     }
+    */
 
     fn insert_ident(
         &self,
@@ -948,6 +1011,32 @@ impl ScopeBuilder {
             WordOrPath::Word(sym)
         };
         scope.idents.insert(word_or_path);
+    }
+}
+
+// Find nested parentheses in a member expression and then
+// search for nested member expressions within the parentheses.
+struct VisitMemberParen {
+    members: Vec<MemberExpr>,
+}
+
+impl VisitAll for VisitMemberParen {
+    fn visit_paren_expr(&mut self, n: &ParenExpr, _: &dyn Node) {
+        let mut visit_members = VisitNestedMembers { members: Vec::new() };
+        n.visit_children_with(&mut visit_members);
+        for member in visit_members.members.drain(..) {
+            self.members.push(member);
+        }
+    }
+}
+
+struct VisitNestedMembers {
+    members: Vec<MemberExpr>,
+}
+
+impl Visit for VisitNestedMembers {
+    fn visit_member_expr(&mut self, n: &MemberExpr, _: &dyn Node) {
+        self.members.push(n.clone());
     }
 }
 

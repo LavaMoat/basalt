@@ -4,50 +4,6 @@ use swc_ecma_ast::*;
 
 const REQUIRE: &str = "require";
 
-/// Member expressions have the furthest left of the path
-/// as the deepest expression which is awkward for analysis
-/// so we walk all member expressions and invert them.
-pub fn member_expr_words(n: &MemberExpr) -> Vec<&JsWord> {
-    let mut members = Vec::new();
-    walk_member_expr(n, &mut members);
-    members
-}
-
-fn walk_member_expr<'a>(n: &'a MemberExpr, members: &mut Vec<&'a JsWord>) {
-    if let ExprOrSuper::Expr(n) = &n.obj {
-        match &**n {
-            Expr::Ident(id) => {
-                members.push(&id.sym);
-            }
-            Expr::Member(n) => {
-                walk_member_expr(n, members);
-            }
-            _ => walk_nested_member_expr(n, members),
-        }
-    }
-
-    if n.computed {
-        return;
-    };
-
-    match &*n.prop {
-        Expr::Ident(id) => {
-            members.push(&id.sym);
-        }
-        _ => walk_nested_member_expr(&*n.prop, members),
-    }
-}
-
-fn walk_nested_member_expr<'a>(n: &'a Expr, members: &mut Vec<&'a JsWord>) {
-    // TODO: implement this correctly
-    match n {
-        Expr::Member(n) => {
-            walk_member_expr(n, members);
-        }
-        _ => {}
-    }
-}
-
 /// Find the symbol names in a variable declaration so that we can
 /// check for existence in the fixed or live exports map(s).
 pub fn var_symbol_words(var: &VarDecl) -> Vec<(&VarDeclarator, Vec<&JsWord>)> {
