@@ -76,8 +76,9 @@ const EXPRESSIONS: &[&str] = &[
     "tests/globals/expr/class-parameters",
     "tests/globals/expr/array-lit",
     "tests/globals/expr/object-lit",
-    "tests/globals/expr/function",
     "tests/globals/expr/function-default-arguments",
+    "tests/globals/expr/function-param-assign-prev-param",
+    "tests/globals/expr/function",
     "tests/globals/expr/private-name",
     "tests/globals/expr/private-prop",
     "tests/globals/expr/template",
@@ -86,8 +87,6 @@ const EXPRESSIONS: &[&str] = &[
     "tests/globals/expr/binary",
     "tests/globals/expr/optional-chain",
     "tests/globals/expr/member",
-
-    "tests/globals/expr/function-param-assign-prev-param",
 ];
 
 #[test]

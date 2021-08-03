@@ -647,7 +647,7 @@ impl ScopeBuilder {
                 self._visit_expr(&n.expr, scope);
             }
             Expr::Member(n) => {
-                let members = self.compute_member2(n, scope);
+                let members = self.compute_member(n, scope);
                 for (word, parts) in members {
                     self.insert_ident(word, scope, Some(parts));
                 }
@@ -705,11 +705,7 @@ impl ScopeBuilder {
                 ClassMember::Constructor(n) => {
                     for param in &n.params {
                         if let ParamOrTsParamProp::Param(param) = param {
-                            let mut locals: IndexSet<JsWord> =
-                                Default::default();
-                            self._visit_param(param, scope, &mut locals);
-                            scope.locals =
-                                scope.locals.union(&locals).cloned().collect();
+                            self._visit_param(param, scope);
                         }
                     }
 
@@ -776,11 +772,11 @@ impl ScopeBuilder {
         &self,
         n: &Function,
         scope: &mut Scope,
-        mut locals: IndexSet<JsWord>,
+        locals: IndexSet<JsWord>,
     ) {
         // Capture function parameters as locals
         for param in n.params.iter() {
-            self._visit_param(param, scope, &mut locals);
+            self._visit_param(param, scope);
         }
 
         if let Some(ref body) = n.body {
@@ -793,15 +789,20 @@ impl ScopeBuilder {
         &self,
         n: &Param,
         scope: &mut Scope,
-        locals: &mut IndexSet<JsWord>,
     ) {
         let mut names = Vec::new();
         pattern_words(&n.pat, &mut names);
         let param_names: IndexSet<_> =
             names.into_iter().map(|n| n.clone()).collect();
-        for name in param_names {
-            locals.insert(name);
-        }
+
+        // NOTE: Must re-assign locals before checking assign patterns so that
+        // NOTE: later pattern assignments can reference previously declared
+        // NOTE: parameters, eg:
+        // NOTE:
+        // NOTE: function toComputedKey(node, key = node.key || node.property)
+        scope.locals =
+            scope.locals.union(&param_names).cloned().collect();
+
         // Handle arguments with default values
         //
         // eg: `function foo(win = window) {}`
@@ -824,7 +825,7 @@ impl ScopeBuilder {
         }
     }
 
-    fn compute_member2(
+    fn compute_member(
         &self,
         n: &MemberExpr,
         scope: &mut Scope,
@@ -848,7 +849,7 @@ impl ScopeBuilder {
                     let mut visit_paren = VisitMemberParen { members: Vec::new() };
                     n.visit_all_children_with(&mut visit_paren);
                     for member in visit_paren.members.iter() {
-                        let mut result = self.compute_member2(member, scope);
+                        let mut result = self.compute_member(member, scope);
                         members.append(&mut result);
                     }
                 }
@@ -892,119 +893,6 @@ impl ScopeBuilder {
             Some((words.remove(0), words))
         }
     }
-
-    /*
-    fn compute_member(
-        &self,
-        n: &MemberExpr,
-        scope: &mut Scope,
-    ) -> Option<(JsWord, Vec<JsWord>)> {
-        let mut words = Vec::new();
-        let mut members = Vec::new();
-        self._visit_member(n, &mut words, &mut members, scope, false);
-
-        // This is a hack for expressions like:
-        //
-        // `[].slice.call(arguments)`
-        //
-        // Where the array literal is a nested member expression so it is not
-        // the first member expression we encounter when iterating.
-        //
-        // We need to ignore the entire expression so track member expresions
-        // encountered and ignore all the words if the last member expression
-        // object is a literal statement.
-        let keep_words = if let Some(last) = members.last() {
-            match &last.obj {
-                ExprOrSuper::Expr(expr) => match &**expr {
-                    Expr::Array(_) => false,
-                    Expr::Object(_) => false,
-                    Expr::Lit(_) => false,
-                    _ => true,
-                },
-                _ => false,
-            }
-        } else {
-            false
-        };
-
-        if keep_words && !words.is_empty() {
-            let words =
-                words.into_iter().map(|w| w.clone()).collect::<Vec<_>>();
-
-            let mut it = words.into_iter();
-            let sym = it.next().unwrap();
-            let parts: Vec<JsWord> = it.collect();
-            Some((sym, parts))
-        } else {
-            None
-        }
-    }
-
-    fn _visit_member<'a>(
-        &self,
-        n: &'a MemberExpr,
-        words: &mut Vec<&'a JsWord>,
-        members: &mut Vec<&'a MemberExpr>,
-        scope: &mut Scope,
-        compute_prop_break: bool,
-    ) {
-        members.push(n);
-
-        let compute_prop = match &n.obj {
-            ExprOrSuper::Expr(expr) => {
-                self._visit_member_expr(expr, words, members, scope)
-            }
-            _ => false,
-        };
-
-        if !compute_prop_break && compute_prop && !n.computed {
-            self._visit_member_expr(&*n.prop, words, members, scope);
-        }
-    }
-
-    fn _visit_member_expr<'a>(
-        &self,
-        n: &'a Expr,
-        words: &mut Vec<&'a JsWord>,
-        members: &mut Vec<&'a MemberExpr>,
-        scope: &mut Scope,
-    ) -> bool {
-        match n {
-            Expr::Ident(id) => {
-                words.push(&id.sym);
-                true
-            }
-            Expr::Member(n) => {
-                self._visit_member(n, words, members, scope, false);
-                true
-            }
-            Expr::PrivateName(_) => false,
-            Expr::This(_) => false,
-            Expr::Lit(_) => false,
-            Expr::Array(_) => false,
-            Expr::Object(_) => false,
-            Expr::Call(n) => {
-                match &n.callee {
-                    ExprOrSuper::Expr(expr) => match &**expr {
-                        Expr::Ident(id) => {
-                            words.push(&id.sym);
-                        }
-                        Expr::Member(n) => {
-                            self._visit_member(n, words, members, scope, true);
-                        }
-                        _ => {}
-                    },
-                    _ => {}
-                }
-                false
-            }
-            _ => {
-                self._visit_expr(n, scope);
-                true
-            }
-        }
-    }
-    */
 
     fn insert_ident(
         &self,
