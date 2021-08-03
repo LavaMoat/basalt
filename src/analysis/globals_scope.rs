@@ -18,7 +18,7 @@
 
 use swc_atoms::JsWord;
 use swc_ecma_ast::*;
-use swc_ecma_visit::{Node, Visit, VisitWith, VisitAll, VisitAllWith};
+use swc_ecma_visit::{Node, Visit, VisitAll, VisitAllWith, VisitWith};
 
 use indexmap::IndexSet;
 
@@ -28,6 +28,7 @@ use crate::helpers::{pattern_words, var_symbol_words};
 // SEE: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects
 
 const REQUIRE: &str = "require";
+const IMPORT: &str = "import";
 const MODULE: &str = "module";
 const EXPORTS: &str = "exports";
 const GLOBAL_THIS: &str = "globalThis";
@@ -122,6 +123,7 @@ pub struct GlobalOptions {
     filter_require: bool,
     filter_module_exports: bool,
     filter_global_functions: bool,
+    filter_dynamic_import: bool,
 }
 
 impl Default for GlobalOptions {
@@ -132,6 +134,7 @@ impl Default for GlobalOptions {
             filter_require: true,
             filter_module_exports: true,
             filter_global_functions: true,
+            filter_dynamic_import: true,
         }
     }
 }
@@ -222,6 +225,10 @@ impl GlobalAnalysis {
 
         if options.filter_require {
             locals.insert(JsWord::from(REQUIRE));
+        }
+
+        if options.filter_dynamic_import {
+            locals.insert(JsWord::from(IMPORT));
         }
 
         if options.filter_module_exports {
@@ -464,7 +471,9 @@ impl ScopeBuilder {
                         let locals: IndexSet<_> =
                             names.into_iter().map(|n| n.clone()).collect();
                         Some(locals)
-                    } else { None };
+                    } else {
+                        None
+                    };
                     let block_stmt = Stmt::Block(catch_clause.body.clone());
                     let mut next_scope = Scope::new(locals);
                     self._visit_stmt(&block_stmt, &mut next_scope, None);
@@ -785,11 +794,7 @@ impl ScopeBuilder {
         }
     }
 
-    fn _visit_param(
-        &self,
-        n: &Param,
-        scope: &mut Scope,
-    ) {
+    fn _visit_param(&self, n: &Param, scope: &mut Scope) {
         let mut names = Vec::new();
         pattern_words(&n.pat, &mut names);
         let param_names: IndexSet<_> =
@@ -800,8 +805,7 @@ impl ScopeBuilder {
         // NOTE: parameters, eg:
         // NOTE:
         // NOTE: function toComputedKey(node, key = node.key || node.property)
-        scope.locals =
-            scope.locals.union(&param_names).cloned().collect();
+        scope.locals = scope.locals.union(&param_names).cloned().collect();
 
         // Handle arguments with default values
         //
@@ -846,7 +850,9 @@ impl ScopeBuilder {
                     }
                 }
                 _ => {
-                    let mut visit_paren = VisitMemberParen { members: Vec::new() };
+                    let mut visit_paren = VisitMemberParen {
+                        members: Vec::new(),
+                    };
                     n.visit_all_children_with(&mut visit_paren);
                     for member in visit_paren.members.iter() {
                         let mut result = self.compute_member(member, scope);
@@ -863,7 +869,10 @@ impl ScopeBuilder {
         members
     }
 
-    fn compute_member_words(&self, expressions: &Vec<&Expr>) -> Option<(JsWord, Vec<JsWord>)> {
+    fn compute_member_words(
+        &self,
+        expressions: &Vec<&Expr>,
+    ) -> Option<(JsWord, Vec<JsWord>)> {
         let mut words: Vec<JsWord> = Vec::new();
         for expr in expressions.iter() {
             match expr {
@@ -881,9 +890,7 @@ impl ScopeBuilder {
                     }
                     break;
                 }
-                _ => {
-                    break
-                },
+                _ => break,
             }
         }
 
@@ -917,7 +924,9 @@ struct VisitMemberParen {
 
 impl VisitAll for VisitMemberParen {
     fn visit_paren_expr(&mut self, n: &ParenExpr, _: &dyn Node) {
-        let mut visit_members = VisitNestedMembers { members: Vec::new() };
+        let mut visit_members = VisitNestedMembers {
+            members: Vec::new(),
+        };
         n.visit_children_with(&mut visit_members);
         for member in visit_members.members.drain(..) {
             self.members.push(member);

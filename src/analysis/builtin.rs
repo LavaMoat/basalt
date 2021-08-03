@@ -614,13 +614,11 @@ impl Visit for BuiltinAnalyzer {
 pub fn member_expr_words(n: &MemberExpr) -> Vec<&JsWord> {
     let mut expressions = Vec::new();
     walk(n, &mut expressions);
-    expressions.iter().filter_map(|e| {
-        match e {
-            Expr::Ident(id) => {
-                Some(&id.sym)
-            }
-            _ => None
-        }
-    }).collect()
+    expressions
+        .iter()
+        .filter_map(|e| match e {
+            Expr::Ident(id) => Some(&id.sym),
+            _ => None,
+        })
+        .collect()
 }
-
