@@ -458,8 +458,15 @@ impl ScopeBuilder {
                 scope.scopes.push(next_scope);
 
                 if let Some(ref catch_clause) = n.handler {
+                    let locals = if let Some(pat) = &catch_clause.param {
+                        let mut names = Vec::new();
+                        pattern_words(pat, &mut names);
+                        let locals: IndexSet<_> =
+                            names.into_iter().map(|n| n.clone()).collect();
+                        Some(locals)
+                    } else { None };
                     let block_stmt = Stmt::Block(catch_clause.body.clone());
-                    let mut next_scope = Scope::new(None);
+                    let mut next_scope = Scope::new(locals);
                     self._visit_stmt(&block_stmt, &mut next_scope, None);
                     scope.scopes.push(next_scope);
                 }
