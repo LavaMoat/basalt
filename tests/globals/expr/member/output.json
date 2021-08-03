@@ -3,5 +3,7 @@
   "fetch",
   "window",
   "process.platform",
-  "process.env.TERM"
+  "process.env.TERM",
+  "versionA",
+  "versionB"
 ]

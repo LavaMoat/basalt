@@ -852,11 +852,16 @@ impl ScopeBuilder {
                 _ => {
                     let mut visit_paren = VisitMemberParen {
                         members: Vec::new(),
+                        idents: Vec::new(),
                     };
                     n.visit_all_children_with(&mut visit_paren);
                     for member in visit_paren.members.iter() {
                         let mut result = self.compute_member(member, scope);
                         members.append(&mut result);
+                    }
+
+                    for ident in visit_paren.idents.into_iter() {
+                        self.insert_ident(ident.sym, scope, None);
                     }
                 }
             }
@@ -920,27 +925,38 @@ impl ScopeBuilder {
 // search for nested member expressions within the parentheses.
 struct VisitMemberParen {
     members: Vec<MemberExpr>,
+    idents: Vec<Ident>,
 }
 
 impl VisitAll for VisitMemberParen {
     fn visit_paren_expr(&mut self, n: &ParenExpr, _: &dyn Node) {
         let mut visit_members = VisitNestedMembers {
             members: Vec::new(),
+            idents: Vec::new(),
         };
         n.visit_children_with(&mut visit_members);
         for member in visit_members.members.drain(..) {
             self.members.push(member);
+        }
+
+        for id in visit_members.idents.drain(..) {
+            self.idents.push(id);
         }
     }
 }
 
 struct VisitNestedMembers {
     members: Vec<MemberExpr>,
+    idents: Vec<Ident>,
 }
 
 impl Visit for VisitNestedMembers {
     fn visit_member_expr(&mut self, n: &MemberExpr, _: &dyn Node) {
         self.members.push(n.clone());
+    }
+
+    fn visit_ident(&mut self, n: &Ident, _: &dyn Node) {
+        self.idents.push(n.clone());
     }
 }
 

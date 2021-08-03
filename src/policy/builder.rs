@@ -102,6 +102,13 @@ impl PolicyBuilder {
     pub fn analyze(mut self) -> Result<Self> {
         let cache = cached_modules();
         for ((spec, module_base), modules) in self.package_buckets.drain() {
+            log::debug!(
+                "Analyze {} {} with {} module(s)",
+                spec,
+                module_base.display(),
+                modules.len()
+            );
+
             // Aggregated analysis data
             let mut analysis: PackagePolicy = Default::default();
 
