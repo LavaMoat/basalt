@@ -128,7 +128,7 @@ impl ScopeBuilder {
                         self._visit_function(
                             Func::Fn(&n.function),
                             scope,
-                            Default::default(),
+                            None,
                         );
                     }
                     Decl::Class(n) => {
@@ -372,7 +372,7 @@ impl ScopeBuilder {
                 self._visit_expr(&n.arg, scope);
             }
             Expr::Arrow(n) => {
-                self._visit_function(Func::Arrow(n), scope, Default::default());
+                self._visit_function(Func::Arrow(n), scope, None);
             }
             Expr::Call(n) => {
                 match &n.callee {
@@ -433,7 +433,7 @@ impl ScopeBuilder {
                         set
                     })
                     .unwrap_or_default();
-                self._visit_function(Func::Fn(&n.function), scope, locals);
+                self._visit_function(Func::Fn(&n.function), scope, Some(locals));
             }
             Expr::Class(n) => {
                 // Class expressions with a named identifer like:
@@ -472,7 +472,7 @@ impl ScopeBuilder {
                     self._visit_function(
                         Func::Constructor(n),
                         &mut next_scope,
-                        Default::default(),
+                        None,
                     );
                 }
                 ClassMember::Method(n) => {
@@ -480,7 +480,7 @@ impl ScopeBuilder {
                         self._visit_function(
                             Func::Fn(&n.function),
                             &mut next_scope,
-                            Default::default(),
+                            None,
                         );
                     }
                 }
@@ -489,7 +489,7 @@ impl ScopeBuilder {
                         self._visit_function(
                             Func::Fn(&n.function),
                             &mut next_scope,
-                            Default::default(),
+                            None,
                         );
                     }
                 }
@@ -526,10 +526,9 @@ impl ScopeBuilder {
         &self,
         n: Func,
         scope: &mut Scope,
-        locals: IndexSet<JsWord>,
+        locals: Option<IndexSet<JsWord>>,
     ) {
-
-        let mut next_scope = Scope::new(Some(locals), Rc::clone(&scope.hoisted_vars));
+        let mut next_scope = Scope::new(locals, Rc::clone(&scope.hoisted_vars));
 
         // Gether function parameters
         let params = match n {
