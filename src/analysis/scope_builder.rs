@@ -495,13 +495,6 @@ impl ScopeBuilder {
                 }
                 ClassMember::ClassProp(n) => {
                     if !n.is_static {
-                        // TODO: Should we handle other types of expressions here?
-                        match &*n.key {
-                            Expr::Ident(ident) => {
-                                scope.locals.insert(ident.sym.clone());
-                            }
-                            _ => {}
-                        }
                         if let Some(value) = &n.value {
                             self._visit_expr(value, &mut next_scope);
                         }
@@ -509,7 +502,6 @@ impl ScopeBuilder {
                 }
                 ClassMember::PrivateProp(n) => {
                     if !n.is_static {
-                        scope.locals.insert(private_name_prefix(&n.key.id.sym));
                         if let Some(value) = &n.value {
                             self._visit_expr(value, &mut next_scope);
                         }
