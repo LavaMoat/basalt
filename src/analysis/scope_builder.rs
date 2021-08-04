@@ -592,7 +592,15 @@ impl ScopeBuilder {
         let word_list = var_symbol_words(n);
         for (decl, words) in word_list.iter() {
             for word in words {
-                scope.locals.insert((*word).clone());
+                match n.kind {
+                    VarDeclKind::Var => {
+                        let mut hoisted = scope.hoisted_vars.borrow_mut();
+                        hoisted.insert((*word).clone());
+                    }
+                    _ => {
+                        scope.locals.insert((*word).clone());
+                    }
+                }
             }
 
             // Recurse on variable declarations with initializers

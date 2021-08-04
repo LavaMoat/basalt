@@ -200,13 +200,19 @@ impl GlobalAnalysis {
         &self,
         scope: &'a Scope,
         global_symbols: &mut IndexSet<JsWord>,
-        locals_stack: &mut Vec<&'a IndexSet<JsWord>>,
+        scope_stack: &mut Vec<&'a Scope>,
     ) {
-        locals_stack.push(&scope.locals);
+        scope_stack.push(scope);
 
         let mut combined_locals: IndexSet<JsWord> = Default::default();
-        for locals in locals_stack.iter() {
-            combined_locals = combined_locals.union(locals).cloned().collect();
+        for scope in scope_stack.iter() {
+            combined_locals =
+                combined_locals.union(&scope.locals).cloned().collect();
+            let hoisted: IndexSet<JsWord> =
+                scope.hoisted_vars.borrow().iter().cloned().collect();
+            for word in hoisted {
+                combined_locals.insert(word);
+            }
         }
 
         // Build up the difference between the sets, cannot use difference()
@@ -224,10 +230,10 @@ impl GlobalAnalysis {
         }
 
         for scope in scope.scopes.iter() {
-            self.compute_globals(scope, global_symbols, locals_stack);
+            self.compute_globals(scope, global_symbols, scope_stack);
         }
 
-        locals_stack.pop();
+        scope_stack.pop();
     }
 }
 
