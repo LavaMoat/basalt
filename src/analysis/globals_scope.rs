@@ -20,9 +20,7 @@ use swc_ecma_visit::{Node, Visit};
 
 use indexmap::IndexSet;
 
-use crate::{
-    analysis::{scope_builder::{Scope, ScopeBuilder, WordOrPath}},
-};
+use crate::analysis::scope_builder::{Scope, ScopeBuilder, WordOrPath};
 
 // SEE: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects
 
@@ -250,7 +248,9 @@ impl Visit for GlobalAnalysis {
                 }
                 _ => {}
             },
-            ModuleItem::Stmt(stmt) => self.builder._visit_stmt(stmt, scope, None),
+            ModuleItem::Stmt(stmt) => {
+                self.builder._visit_stmt(stmt, scope, None)
+            }
         }
     }
 }

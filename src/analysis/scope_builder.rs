@@ -17,9 +17,13 @@ use crate::helpers::{pattern_words, var_symbol_words};
 
 const GLOBAL_THIS: &str = "globalThis";
 
-enum FuncOrConstructor<'a> {
+/// Enumeration of function variants in the AST.
+///
+/// Used for unified handling of functions regardless of type.
+enum Func<'a> {
     Fn(&'a Function),
     Constructor(&'a Constructor),
+    // TODO: handle Arrow functions.
 }
 
 /// Represents a symbol word or a member expression path.
@@ -79,7 +83,10 @@ pub struct Scope {
 
 impl Scope {
     /// Create a scope.
-    pub fn new(locals: Option<IndexSet<JsWord>>, hoisted_vars: Rc<RefCell<IndexSet<JsWord>>>) -> Self {
+    pub fn new(
+        locals: Option<IndexSet<JsWord>>,
+        hoisted_vars: Rc<RefCell<IndexSet<JsWord>>>,
+    ) -> Self {
         Self {
             scopes: Default::default(),
             locals: locals.unwrap_or(Default::default()),
@@ -108,7 +115,6 @@ impl Scope {
 pub struct ScopeBuilder;
 
 impl ScopeBuilder {
-
     /// Visit a statement.
     pub fn _visit_stmt(
         &self,
@@ -122,7 +128,7 @@ impl ScopeBuilder {
                     Decl::Fn(n) => {
                         scope.locals.insert(n.ident.sym.clone());
                         self._visit_function(
-                            FuncOrConstructor::Fn(&n.function),
+                            Func::Fn(&n.function),
                             scope,
                             Default::default(),
                         );
@@ -243,9 +249,8 @@ impl ScopeBuilder {
                 }
             }
             Stmt::Try(n) => {
-                let block_stmt = Stmt::Block(n.block.clone());
                 let mut next_scope = Scope::from_parent(scope);
-                self._visit_stmt(&block_stmt, &mut next_scope, None);
+                self._visit_block_stmt(&n.block, &mut next_scope);
                 scope.scopes.push(next_scope);
 
                 if let Some(catch_clause) = &n.handler {
@@ -259,7 +264,8 @@ impl ScopeBuilder {
                         None
                     };
 
-                    let mut next_scope = Scope::new(locals, Rc::clone(&scope.hoisted_vars));
+                    let mut next_scope =
+                        Scope::new(locals, Rc::clone(&scope.hoisted_vars));
                     self._visit_block_stmt(&catch_clause.body, &mut next_scope);
                     scope.scopes.push(next_scope);
                 }
@@ -280,7 +286,8 @@ impl ScopeBuilder {
                 }
             }
             Stmt::Block(n) => {
-                let mut next_scope = Scope::new(locals, Rc::clone(&scope.hoisted_vars));
+                let mut next_scope =
+                    Scope::new(locals, Rc::clone(&scope.hoisted_vars));
                 for stmt in n.stmts.iter() {
                     self._visit_stmt(stmt, &mut next_scope, None);
                 }
@@ -383,6 +390,7 @@ impl ScopeBuilder {
 
                 match &n.body {
                     BlockStmtOrExpr::BlockStmt(block) => {
+                        // FIXME: use _visit_function() for this handling.
                         let block_stmt = Stmt::Block(block.clone());
                         self._visit_stmt(
                             &block_stmt,
@@ -459,7 +467,7 @@ impl ScopeBuilder {
                         set
                     })
                     .unwrap_or_default();
-                self._visit_function(FuncOrConstructor::Fn(&n.function), scope, locals);
+                self._visit_function(Func::Fn(&n.function), scope, locals);
             }
             Expr::Class(n) => {
                 // Class expressions with a named identifer like:
@@ -496,7 +504,7 @@ impl ScopeBuilder {
             match member {
                 ClassMember::Constructor(n) => {
                     self._visit_function(
-                        FuncOrConstructor::Constructor(n),
+                        Func::Constructor(n),
                         &mut next_scope,
                         Default::default(),
                     );
@@ -504,7 +512,7 @@ impl ScopeBuilder {
                 ClassMember::Method(n) => {
                     if !n.is_static {
                         self._visit_function(
-                            FuncOrConstructor::Fn(&n.function),
+                            Func::Fn(&n.function),
                             &mut next_scope,
                             Default::default(),
                         );
@@ -513,7 +521,7 @@ impl ScopeBuilder {
                 ClassMember::PrivateMethod(n) => {
                     if !n.is_static {
                         self._visit_function(
-                            FuncOrConstructor::Fn(&n.function),
+                            Func::Fn(&n.function),
                             &mut next_scope,
                             Default::default(),
                         );
@@ -550,32 +558,32 @@ impl ScopeBuilder {
 
     fn _visit_function(
         &self,
-        n: FuncOrConstructor,
+        n: Func,
         scope: &mut Scope,
         locals: IndexSet<JsWord>,
     ) {
-
-        let mut next_scope = Scope::new(Some(locals), Rc::clone(&scope.hoisted_vars));
+        let mut next_scope =
+            Scope::new(Some(locals), Rc::clone(&scope.hoisted_vars));
 
         // Capture function parameters as locals
         match n {
-            FuncOrConstructor::Fn(n) => {
+            Func::Fn(n) => {
                 for param in n.params.iter() {
                     self._visit_param(param, &mut next_scope);
                 }
             }
-            FuncOrConstructor::Constructor(n) => {
+            Func::Constructor(n) => {
                 for param in &n.params {
                     if let ParamOrTsParamProp::Param(param) = param {
-                        self._visit_param(param, scope);
+                        self._visit_param(param, &mut next_scope);
                     }
                 }
             }
         }
 
         let body = match n {
-            FuncOrConstructor::Fn(n) => &n.body,
-            FuncOrConstructor::Constructor(n) => &n.body,
+            Func::Fn(n) => &n.body,
+            Func::Constructor(n) => &n.body,
         };
 
         if let Some(body) = body {
