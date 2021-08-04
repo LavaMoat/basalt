@@ -14,6 +14,11 @@ use crate::helpers::{pattern_words, var_symbol_words};
 
 const GLOBAL_THIS: &str = "globalThis";
 
+enum FuncOrConstructor<'a> {
+    Fn(&'a Function),
+    Constructor(&'a Constructor),
+}
+
 /// Represents a symbol word or a member expression path.
 #[derive(Debug, Hash, Eq, PartialEq, Clone)]
 pub enum WordOrPath {
@@ -97,7 +102,7 @@ impl ScopeBuilder {
                     Decl::Fn(n) => {
                         scope.locals.insert(n.ident.sym.clone());
                         self._visit_function(
-                            &n.function,
+                            FuncOrConstructor::Fn(&n.function),
                             scope,
                             Default::default(),
                         );
@@ -437,7 +442,7 @@ impl ScopeBuilder {
                         set
                     })
                     .unwrap_or_default();
-                self._visit_function(&n.function, scope, locals);
+                self._visit_function(FuncOrConstructor::Fn(&n.function), scope, locals);
             }
             Expr::Class(n) => {
                 // Class expressions with a named identifer like:
@@ -473,27 +478,16 @@ impl ScopeBuilder {
         for member in n.body.iter() {
             match member {
                 ClassMember::Constructor(n) => {
-                    for param in &n.params {
-                        if let ParamOrTsParamProp::Param(param) = param {
-                            self._visit_param(param, scope);
-                        }
-                    }
-
-                    if let Some(body) = &n.body {
-                        let block_stmt = Stmt::Block(body.clone());
-                        self._visit_stmt(&block_stmt, &mut next_scope, None);
-                    }
+                    self._visit_function(
+                        FuncOrConstructor::Constructor(n),
+                        &mut next_scope,
+                        Default::default(),
+                    );
                 }
                 ClassMember::Method(n) => {
                     if !n.is_static {
-                        match &n.key {
-                            PropName::Ident(id) => {
-                                scope.locals.insert(id.sym.clone());
-                            }
-                            _ => {}
-                        }
                         self._visit_function(
-                            &n.function,
+                            FuncOrConstructor::Fn(&n.function),
                             &mut next_scope,
                             Default::default(),
                         );
@@ -501,9 +495,8 @@ impl ScopeBuilder {
                 }
                 ClassMember::PrivateMethod(n) => {
                     if !n.is_static {
-                        scope.locals.insert(n.key.id.sym.clone());
                         self._visit_function(
-                            &n.function,
+                            FuncOrConstructor::Fn(&n.function),
                             &mut next_scope,
                             Default::default(),
                         );
@@ -540,19 +533,40 @@ impl ScopeBuilder {
 
     fn _visit_function(
         &self,
-        n: &Function,
+        n: FuncOrConstructor,
         scope: &mut Scope,
         locals: IndexSet<JsWord>,
     ) {
+        let mut next_scope = Scope::new(Some(locals));
+
         // Capture function parameters as locals
-        for param in n.params.iter() {
-            self._visit_param(param, scope);
+        match n {
+            FuncOrConstructor::Fn(n) => {
+                for param in n.params.iter() {
+                    self._visit_param(param, &mut next_scope);
+                }
+            }
+            FuncOrConstructor::Constructor(n) => {
+                for param in &n.params {
+                    if let ParamOrTsParamProp::Param(param) = param {
+                        self._visit_param(param, scope);
+                    }
+                }
+            }
         }
 
-        if let Some(ref body) = n.body {
-            let block_stmt = Stmt::Block(body.clone());
-            self._visit_stmt(&block_stmt, scope, Some(locals));
+        let body = match n {
+            FuncOrConstructor::Fn(n) => &n.body,
+            FuncOrConstructor::Constructor(n) => &n.body,
+        };
+
+        if let Some(body) = body {
+            for stmt in &body.stmts {
+                self._visit_stmt(stmt, &mut next_scope, None);
+            }
         }
+
+        scope.scopes.push(next_scope);
     }
 
     fn _visit_param(&self, n: &Param, scope: &mut Scope) {
