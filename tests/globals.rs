@@ -128,3 +128,11 @@ fn globals_normalize_global_this() -> Result<()> {
     assert_eq!(expected.trim_end(), result);
     Ok(())
 }
+
+#[test]
+fn globals_hoisted_vars() -> Result<()> {
+    let (expected, result) = analyze("tests/globals/hoisted-vars")?;
+    //println!("{}", result);
+    assert_eq!(expected.trim_end(), result);
+    Ok(())
+}
