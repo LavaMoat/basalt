@@ -249,7 +249,7 @@ impl Visit for GlobalAnalysis {
                 _ => {}
             },
             ModuleItem::Stmt(stmt) => {
-                self.builder._visit_stmt(stmt, scope, None)
+                self.builder.visit_stmt(stmt, scope, None)
             }
         }
     }

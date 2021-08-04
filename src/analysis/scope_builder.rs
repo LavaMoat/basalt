@@ -83,7 +83,10 @@ pub struct Scope {
 
 impl Scope {
     /// Create a scope.
-    pub fn new(locals: Option<IndexSet<JsWord>>, hoisted_vars: Rc<RefCell<IndexSet<JsWord>>>) -> Self {
+    pub fn new(
+        locals: Option<IndexSet<JsWord>>,
+        hoisted_vars: Rc<RefCell<IndexSet<JsWord>>>,
+    ) -> Self {
         Self {
             scopes: Default::default(),
             locals: locals.unwrap_or(Default::default()),
@@ -112,9 +115,8 @@ impl Scope {
 pub struct ScopeBuilder;
 
 impl ScopeBuilder {
-
     /// Visit a statement.
-    pub fn _visit_stmt(
+    pub fn visit_stmt(
         &self,
         n: &Stmt,
         scope: &mut Scope,
@@ -125,35 +127,31 @@ impl ScopeBuilder {
                 match decl {
                     Decl::Fn(n) => {
                         scope.locals.insert(n.ident.sym.clone());
-                        self._visit_function(
-                            Func::Fn(&n.function),
-                            scope,
-                            None,
-                        );
+                        self.visit_function(Func::Fn(&n.function), scope, None);
                     }
                     Decl::Class(n) => {
                         scope.locals.insert(n.ident.sym.clone());
-                        self._visit_class(&n.class, scope, None);
+                        self.visit_class(&n.class, scope, None);
                     }
                     Decl::Var(n) => {
-                        self._visit_var_decl(n, scope);
+                        self.visit_var_decl(n, scope);
                     }
                     _ => {}
                 };
             }
             Stmt::With(n) => {
                 let mut next_scope = Scope::from_parent(scope);
-                self._visit_stmt(&*n.body, &mut next_scope, None);
+                self.visit_stmt(&*n.body, &mut next_scope, None);
                 scope.scopes.push(next_scope);
             }
             Stmt::While(n) => {
                 let mut next_scope = Scope::from_parent(scope);
-                self._visit_stmt(&*n.body, &mut next_scope, None);
+                self.visit_stmt(&*n.body, &mut next_scope, None);
                 scope.scopes.push(next_scope);
             }
             Stmt::DoWhile(n) => {
                 let mut next_scope = Scope::from_parent(scope);
-                self._visit_stmt(&*n.body, &mut next_scope, None);
+                self.visit_stmt(&*n.body, &mut next_scope, None);
                 scope.scopes.push(next_scope);
             }
             Stmt::For(n) => {
@@ -161,33 +159,33 @@ impl ScopeBuilder {
                 if let Some(init) = &n.init {
                     match init {
                         VarDeclOrExpr::Expr(n) => {
-                            self._visit_expr(n, &mut next_scope);
+                            self.visit_expr(n, &mut next_scope);
                         }
                         VarDeclOrExpr::VarDecl(n) => {
-                            self._visit_var_decl(n, &mut next_scope);
+                            self.visit_var_decl(n, &mut next_scope);
                         }
                     }
                 }
 
                 if let Some(test) = &n.test {
-                    self._visit_expr(test, &mut next_scope);
+                    self.visit_expr(test, &mut next_scope);
                 }
                 if let Some(update) = &n.update {
-                    self._visit_expr(update, &mut next_scope);
+                    self.visit_expr(update, &mut next_scope);
                 }
 
-                self._visit_stmt(&*n.body, &mut next_scope, None);
+                self.visit_stmt(&*n.body, &mut next_scope, None);
                 scope.scopes.push(next_scope);
             }
             Stmt::ForIn(n) => {
                 let mut next_scope = Scope::from_parent(scope);
                 match &n.left {
                     VarDeclOrPat::VarDecl(n) => {
-                        self._visit_var_decl(n, &mut next_scope);
+                        self.visit_var_decl(n, &mut next_scope);
                     }
                     VarDeclOrPat::Pat(pat) => match pat {
                         Pat::Expr(n) => {
-                            self._visit_expr(n, &mut next_scope);
+                            self.visit_expr(n, &mut next_scope);
                         }
                         _ => {
                             let mut names = Vec::new();
@@ -199,20 +197,20 @@ impl ScopeBuilder {
                     },
                 }
 
-                self._visit_expr(&*n.right, &mut next_scope);
+                self.visit_expr(&*n.right, &mut next_scope);
 
-                self._visit_stmt(&*n.body, &mut next_scope, None);
+                self.visit_stmt(&*n.body, &mut next_scope, None);
                 scope.scopes.push(next_scope);
             }
             Stmt::ForOf(n) => {
                 let mut next_scope = Scope::from_parent(scope);
                 match &n.left {
                     VarDeclOrPat::VarDecl(n) => {
-                        self._visit_var_decl(n, &mut next_scope);
+                        self.visit_var_decl(n, &mut next_scope);
                     }
                     VarDeclOrPat::Pat(pat) => match pat {
                         Pat::Expr(n) => {
-                            self._visit_expr(n, &mut next_scope);
+                            self.visit_expr(n, &mut next_scope);
                         }
                         _ => {
                             let mut names = Vec::new();
@@ -224,31 +222,31 @@ impl ScopeBuilder {
                     },
                 }
 
-                self._visit_expr(&*n.right, &mut next_scope);
+                self.visit_expr(&*n.right, &mut next_scope);
 
-                self._visit_stmt(&*n.body, &mut next_scope, None);
+                self.visit_stmt(&*n.body, &mut next_scope, None);
                 scope.scopes.push(next_scope);
             }
             Stmt::Labeled(n) => {
                 let mut next_scope = Scope::from_parent(scope);
-                self._visit_stmt(&*n.body, &mut next_scope, None);
+                self.visit_stmt(&*n.body, &mut next_scope, None);
                 scope.scopes.push(next_scope);
             }
             Stmt::If(n) => {
                 let mut next_scope = Scope::from_parent(scope);
-                self._visit_expr(&*n.test, &mut next_scope);
-                self._visit_stmt(&*n.cons, &mut next_scope, None);
+                self.visit_expr(&*n.test, &mut next_scope);
+                self.visit_stmt(&*n.cons, &mut next_scope, None);
                 scope.scopes.push(next_scope);
 
                 if let Some(ref alt) = n.alt {
                     let mut next_scope = Scope::from_parent(scope);
-                    self._visit_stmt(&*alt, &mut next_scope, None);
+                    self.visit_stmt(&*alt, &mut next_scope, None);
                     scope.scopes.push(next_scope);
                 }
             }
             Stmt::Try(n) => {
                 let mut next_scope = Scope::from_parent(scope);
-                self._visit_block_stmt(&n.block, &mut next_scope);
+                self.visit_block_stmt(&n.block, &mut next_scope);
                 scope.scopes.push(next_scope);
 
                 if let Some(catch_clause) = &n.handler {
@@ -262,14 +260,15 @@ impl ScopeBuilder {
                         None
                     };
 
-                    let mut next_scope = Scope::new(locals, Rc::clone(&scope.hoisted_vars));
-                    self._visit_block_stmt(&catch_clause.body, &mut next_scope);
+                    let mut next_scope =
+                        Scope::new(locals, Rc::clone(&scope.hoisted_vars));
+                    self.visit_block_stmt(&catch_clause.body, &mut next_scope);
                     scope.scopes.push(next_scope);
                 }
 
                 if let Some(finalizer) = &n.finalizer {
                     let mut next_scope = Scope::from_parent(scope);
-                    self._visit_block_stmt(finalizer, &mut next_scope);
+                    self.visit_block_stmt(finalizer, &mut next_scope);
                     scope.scopes.push(next_scope);
                 }
             }
@@ -277,32 +276,33 @@ impl ScopeBuilder {
                 for case in n.cases.iter() {
                     for stmt in case.cons.iter() {
                         let mut next_scope = Scope::from_parent(scope);
-                        self._visit_stmt(stmt, &mut next_scope, None);
+                        self.visit_stmt(stmt, &mut next_scope, None);
                         scope.scopes.push(next_scope);
                     }
                 }
             }
             Stmt::Block(n) => {
-                let mut next_scope = Scope::new(locals, Rc::clone(&scope.hoisted_vars));
+                let mut next_scope =
+                    Scope::new(locals, Rc::clone(&scope.hoisted_vars));
                 for stmt in n.stmts.iter() {
-                    self._visit_stmt(stmt, &mut next_scope, None);
+                    self.visit_stmt(stmt, &mut next_scope, None);
                 }
                 scope.scopes.push(next_scope);
             }
             Stmt::Return(n) => {
                 if let Some(arg) = &n.arg {
-                    self._visit_expr(arg, scope);
+                    self.visit_expr(arg, scope);
                 }
             }
             Stmt::Throw(n) => {
-                self._visit_expr(&*n.arg, scope);
+                self.visit_expr(&*n.arg, scope);
             }
-            Stmt::Expr(n) => self._visit_expr(&*n.expr, scope),
+            Stmt::Expr(n) => self.visit_expr(&*n.expr, scope),
             _ => {}
         }
     }
 
-    fn _visit_expr(&self, n: &Expr, scope: &mut Scope) {
+    fn visit_expr(&self, n: &Expr, scope: &mut Scope) {
         match n {
             Expr::Ident(id) => {
                 self.insert_ident(id.sym.clone(), scope, None);
@@ -311,29 +311,29 @@ impl ScopeBuilder {
                 self.insert_ident(private_name_prefix(&n.id.sym), scope, None);
             }
             Expr::Bin(n) => {
-                self._visit_expr(&*n.left, scope);
-                self._visit_expr(&*n.right, scope);
+                self.visit_expr(&*n.left, scope);
+                self.visit_expr(&*n.right, scope);
             }
             Expr::Tpl(n) => {
                 for expr in n.exprs.iter() {
-                    self._visit_expr(&*expr, scope);
+                    self.visit_expr(&*expr, scope);
                 }
             }
             Expr::TaggedTpl(n) => {
-                self._visit_expr(&*n.tag, scope);
+                self.visit_expr(&*n.tag, scope);
                 for expr in n.tpl.exprs.iter() {
-                    self._visit_expr(&*expr, scope);
+                    self.visit_expr(&*expr, scope);
                 }
             }
             Expr::Seq(n) => {
                 for expr in n.exprs.iter() {
-                    self._visit_expr(&*expr, scope);
+                    self.visit_expr(&*expr, scope);
                 }
             }
             Expr::Array(n) => {
                 for elem in n.elems.iter() {
                     if let Some(elem) = elem {
-                        self._visit_expr(&elem.expr, scope);
+                        self.visit_expr(&elem.expr, scope);
                     }
                 }
             }
@@ -341,14 +341,14 @@ impl ScopeBuilder {
                 for prop in n.props.iter() {
                     match prop {
                         PropOrSpread::Spread(n) => {
-                            self._visit_expr(&*n.expr, scope);
+                            self.visit_expr(&*n.expr, scope);
                         }
                         PropOrSpread::Prop(n) => match &**n {
                             Prop::Shorthand(id) => {
                                 self.insert_ident(id.sym.clone(), scope, None);
                             }
                             Prop::KeyValue(n) => {
-                                self._visit_expr(&*n.value, scope);
+                                self.visit_expr(&*n.value, scope);
                             }
                             _ => {}
                         },
@@ -356,45 +356,45 @@ impl ScopeBuilder {
                 }
             }
             Expr::Paren(n) => {
-                self._visit_expr(&n.expr, scope);
+                self.visit_expr(&n.expr, scope);
             }
             Expr::Yield(n) => {
                 if let Some(ref arg) = n.arg {
-                    self._visit_expr(arg, scope);
+                    self.visit_expr(arg, scope);
                 }
             }
             Expr::Cond(n) => {
-                self._visit_expr(&*n.test, scope);
-                self._visit_expr(&*n.cons, scope);
-                self._visit_expr(&*n.alt, scope);
+                self.visit_expr(&*n.test, scope);
+                self.visit_expr(&*n.cons, scope);
+                self.visit_expr(&*n.alt, scope);
             }
             Expr::Await(n) => {
-                self._visit_expr(&n.arg, scope);
+                self.visit_expr(&n.arg, scope);
             }
             Expr::Arrow(n) => {
-                self._visit_function(Func::Arrow(n), scope, None);
+                self.visit_function(Func::Arrow(n), scope, None);
             }
             Expr::Call(n) => {
                 match &n.callee {
                     ExprOrSuper::Expr(expr) => {
-                        self._visit_expr(expr, scope);
+                        self.visit_expr(expr, scope);
                     }
                     _ => {}
                 }
                 for arg in &n.args {
-                    self._visit_expr(&*arg.expr, scope);
+                    self.visit_expr(&*arg.expr, scope);
                 }
             }
             Expr::Update(n) => {
-                self._visit_expr(&n.arg, scope);
+                self.visit_expr(&n.arg, scope);
             }
             Expr::Unary(n) => {
-                self._visit_expr(&n.arg, scope);
+                self.visit_expr(&n.arg, scope);
             }
             Expr::Assign(assign) => {
                 match &assign.left {
                     PatOrExpr::Expr(expr) => {
-                        self._visit_expr(expr, scope);
+                        self.visit_expr(expr, scope);
                     }
                     PatOrExpr::Pat(pat) => match &**pat {
                         Pat::Ident(ident) => {
@@ -407,10 +407,10 @@ impl ScopeBuilder {
                         _ => {}
                     },
                 }
-                self._visit_expr(&*assign.right, scope);
+                self.visit_expr(&*assign.right, scope);
             }
             Expr::OptChain(n) => {
-                self._visit_expr(&n.expr, scope);
+                self.visit_expr(&n.expr, scope);
             }
             Expr::Member(n) => {
                 let members = self.compute_member(n, scope);
@@ -419,7 +419,7 @@ impl ScopeBuilder {
                 }
             }
             Expr::New(n) => {
-                self._visit_expr(&*n.callee, scope);
+                self.visit_expr(&*n.callee, scope);
             }
             Expr::Fn(n) => {
                 // Named function expressions only expose the name
@@ -433,7 +433,7 @@ impl ScopeBuilder {
                         set
                     })
                     .unwrap_or_default();
-                self._visit_function(Func::Fn(&n.function), scope, Some(locals));
+                self.visit_function(Func::Fn(&n.function), scope, Some(locals));
             }
             Expr::Class(n) => {
                 // Class expressions with a named identifer like:
@@ -447,13 +447,13 @@ impl ScopeBuilder {
                     set.insert(id.sym.clone());
                     set
                 });
-                self._visit_class(&n.class, scope, locals);
+                self.visit_class(&n.class, scope, locals);
             }
             _ => {}
         }
     }
 
-    fn _visit_class(
+    fn visit_class(
         &self,
         n: &Class,
         scope: &mut Scope,
@@ -463,13 +463,13 @@ impl ScopeBuilder {
 
         // In case the super class reference is a global
         if let Some(ref super_class) = n.super_class {
-            self._visit_expr(&*super_class, scope);
+            self.visit_expr(&*super_class, scope);
         }
 
         for member in n.body.iter() {
             match member {
                 ClassMember::Constructor(n) => {
-                    self._visit_function(
+                    self.visit_function(
                         Func::Constructor(n),
                         &mut next_scope,
                         None,
@@ -477,7 +477,7 @@ impl ScopeBuilder {
                 }
                 ClassMember::Method(n) => {
                     if !n.is_static {
-                        self._visit_function(
+                        self.visit_function(
                             Func::Fn(&n.function),
                             &mut next_scope,
                             None,
@@ -486,7 +486,7 @@ impl ScopeBuilder {
                 }
                 ClassMember::PrivateMethod(n) => {
                     if !n.is_static {
-                        self._visit_function(
+                        self.visit_function(
                             Func::Fn(&n.function),
                             &mut next_scope,
                             None,
@@ -496,14 +496,14 @@ impl ScopeBuilder {
                 ClassMember::ClassProp(n) => {
                     if !n.is_static {
                         if let Some(value) = &n.value {
-                            self._visit_expr(value, &mut next_scope);
+                            self.visit_expr(value, &mut next_scope);
                         }
                     }
                 }
                 ClassMember::PrivateProp(n) => {
                     if !n.is_static {
                         if let Some(value) = &n.value {
-                            self._visit_expr(value, &mut next_scope);
+                            self.visit_expr(value, &mut next_scope);
                         }
                     }
                 }
@@ -514,7 +514,7 @@ impl ScopeBuilder {
         scope.scopes.push(next_scope);
     }
 
-    fn _visit_function(
+    fn visit_function(
         &self,
         n: Func,
         scope: &mut Scope,
@@ -539,39 +539,35 @@ impl ScopeBuilder {
 
         // Capture function parameters as locals
         for pat in params {
-            self._visit_param_pat(pat, &mut next_scope);
+            self.visit_param_pat(pat, &mut next_scope);
         }
 
         let body = match n {
             Func::Fn(n) => n.body.as_ref(),
             Func::Constructor(n) => n.body.as_ref(),
-            Func::Arrow(n) => {
-                match &n.body {
-                    BlockStmtOrExpr::BlockStmt(block) => {
-                        Some(block)
-                    }
-                    BlockStmtOrExpr::Expr(expr) => {
-                        self._visit_expr(expr, &mut next_scope);
-                        None
-                    }
+            Func::Arrow(n) => match &n.body {
+                BlockStmtOrExpr::BlockStmt(block) => Some(block),
+                BlockStmtOrExpr::Expr(expr) => {
+                    self.visit_expr(expr, &mut next_scope);
+                    None
                 }
-            }
+            },
         };
 
         if let Some(body) = &body {
-            self._visit_block_stmt(body, &mut next_scope);
+            self.visit_block_stmt(body, &mut next_scope);
         }
 
         scope.scopes.push(next_scope);
     }
 
-    fn _visit_block_stmt(&self, n: &BlockStmt, scope: &mut Scope) {
+    fn visit_block_stmt(&self, n: &BlockStmt, scope: &mut Scope) {
         for stmt in &n.stmts {
-            self._visit_stmt(stmt, scope, None);
+            self.visit_stmt(stmt, scope, None);
         }
     }
 
-    fn _visit_param_pat(&self, n: &Pat, scope: &mut Scope) {
+    fn visit_param_pat(&self, n: &Pat, scope: &mut Scope) {
         let mut names = Vec::new();
         pattern_words(n, &mut names);
         let param_names: IndexSet<_> =
@@ -588,11 +584,11 @@ impl ScopeBuilder {
         //
         // eg: `function foo(win = window) {}`
         if let Pat::Assign(n) = &n {
-            self._visit_expr(&*n.right, scope);
+            self.visit_expr(&*n.right, scope);
         }
     }
 
-    fn _visit_var_decl(&self, n: &VarDecl, scope: &mut Scope) {
+    fn visit_var_decl(&self, n: &VarDecl, scope: &mut Scope) {
         let word_list = var_symbol_words(n);
         for (decl, words) in word_list.iter() {
             for word in words {
@@ -601,7 +597,7 @@ impl ScopeBuilder {
 
             // Recurse on variable declarations with initializers
             if let Some(ref init) = decl.init {
-                self._visit_expr(init, scope);
+                self.visit_expr(init, scope);
             }
         }
     }
@@ -683,6 +679,7 @@ impl ScopeBuilder {
         }
     }
 
+    #[inline(always)]
     fn insert_ident(
         &self,
         sym: JsWord,
