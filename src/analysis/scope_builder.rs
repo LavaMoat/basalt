@@ -3,6 +3,9 @@
 //! symbol references.
 //!
 
+use std::cell::RefCell;
+use std::rc::Rc;
+
 use swc_atoms::JsWord;
 use swc_ecma_ast::*;
 use swc_ecma_visit::{Node, Visit, VisitAll, VisitAllWith, VisitWith};
@@ -70,16 +73,33 @@ pub struct Scope {
     /// to combine all parent scopes to detect if a symbol should
     /// be considered global.
     pub idents: IndexSet<WordOrPath>,
+    /// Hoisted variable declarations.
+    pub hoisted_vars: Rc<RefCell<IndexSet<JsWord>>>,
 }
 
 impl Scope {
     /// Create a scope.
-    pub fn new(locals: Option<IndexSet<JsWord>>) -> Self {
+    pub fn new(locals: Option<IndexSet<JsWord>>, hoisted_vars: Rc<RefCell<IndexSet<JsWord>>>) -> Self {
         Self {
             scopes: Default::default(),
             locals: locals.unwrap_or(Default::default()),
             idents: Default::default(),
+            hoisted_vars,
         }
+    }
+
+    /// Create a scope with locals and owned hoisted variables.
+    pub fn locals(locals: Option<IndexSet<JsWord>>) -> Self {
+        Self {
+            scopes: Default::default(),
+            locals: locals.unwrap_or(Default::default()),
+            idents: Default::default(),
+            hoisted_vars: Rc::new(RefCell::new(Default::default())),
+        }
+    }
+
+    fn from_parent(parent: &mut Scope) -> Self {
+        Scope::new(None, Rc::clone(&parent.hoisted_vars))
     }
 }
 
@@ -118,22 +138,22 @@ impl ScopeBuilder {
                 };
             }
             Stmt::With(n) => {
-                let mut next_scope = Scope::new(None);
+                let mut next_scope = Scope::from_parent(scope);
                 self._visit_stmt(&*n.body, &mut next_scope, None);
                 scope.scopes.push(next_scope);
             }
             Stmt::While(n) => {
-                let mut next_scope = Scope::new(None);
+                let mut next_scope = Scope::from_parent(scope);
                 self._visit_stmt(&*n.body, &mut next_scope, None);
                 scope.scopes.push(next_scope);
             }
             Stmt::DoWhile(n) => {
-                let mut next_scope = Scope::new(None);
+                let mut next_scope = Scope::from_parent(scope);
                 self._visit_stmt(&*n.body, &mut next_scope, None);
                 scope.scopes.push(next_scope);
             }
             Stmt::For(n) => {
-                let mut next_scope = Scope::new(None);
+                let mut next_scope = Scope::from_parent(scope);
                 if let Some(init) = &n.init {
                     match init {
                         VarDeclOrExpr::Expr(n) => {
@@ -156,8 +176,7 @@ impl ScopeBuilder {
                 scope.scopes.push(next_scope);
             }
             Stmt::ForIn(n) => {
-                let mut next_scope = Scope::new(None);
-
+                let mut next_scope = Scope::from_parent(scope);
                 match &n.left {
                     VarDeclOrPat::VarDecl(n) => {
                         self._visit_var_decl(n, &mut next_scope);
@@ -182,8 +201,7 @@ impl ScopeBuilder {
                 scope.scopes.push(next_scope);
             }
             Stmt::ForOf(n) => {
-                let mut next_scope = Scope::new(None);
-
+                let mut next_scope = Scope::from_parent(scope);
                 match &n.left {
                     VarDeclOrPat::VarDecl(n) => {
                         self._visit_var_decl(n, &mut next_scope);
@@ -208,29 +226,29 @@ impl ScopeBuilder {
                 scope.scopes.push(next_scope);
             }
             Stmt::Labeled(n) => {
-                let mut next_scope = Scope::new(None);
+                let mut next_scope = Scope::from_parent(scope);
                 self._visit_stmt(&*n.body, &mut next_scope, None);
                 scope.scopes.push(next_scope);
             }
             Stmt::If(n) => {
-                let mut next_scope = Scope::new(None);
+                let mut next_scope = Scope::from_parent(scope);
                 self._visit_expr(&*n.test, &mut next_scope);
                 self._visit_stmt(&*n.cons, &mut next_scope, None);
                 scope.scopes.push(next_scope);
 
                 if let Some(ref alt) = n.alt {
-                    let mut next_scope = Scope::new(None);
+                    let mut next_scope = Scope::from_parent(scope);
                     self._visit_stmt(&*alt, &mut next_scope, None);
                     scope.scopes.push(next_scope);
                 }
             }
             Stmt::Try(n) => {
                 let block_stmt = Stmt::Block(n.block.clone());
-                let mut next_scope = Scope::new(None);
+                let mut next_scope = Scope::from_parent(scope);
                 self._visit_stmt(&block_stmt, &mut next_scope, None);
                 scope.scopes.push(next_scope);
 
-                if let Some(ref catch_clause) = n.handler {
+                if let Some(catch_clause) = &n.handler {
                     let locals = if let Some(pat) = &catch_clause.param {
                         let mut names = Vec::new();
                         pattern_words(pat, &mut names);
@@ -240,30 +258,29 @@ impl ScopeBuilder {
                     } else {
                         None
                     };
-                    let block_stmt = Stmt::Block(catch_clause.body.clone());
-                    let mut next_scope = Scope::new(locals);
-                    self._visit_stmt(&block_stmt, &mut next_scope, None);
+
+                    let mut next_scope = Scope::new(locals, Rc::clone(&scope.hoisted_vars));
+                    self._visit_block_stmt(&catch_clause.body, &mut next_scope);
                     scope.scopes.push(next_scope);
                 }
 
-                if let Some(ref finalizer) = n.finalizer {
-                    let block_stmt = Stmt::Block(finalizer.clone());
-                    let mut next_scope = Scope::new(None);
-                    self._visit_stmt(&block_stmt, &mut next_scope, None);
+                if let Some(finalizer) = &n.finalizer {
+                    let mut next_scope = Scope::from_parent(scope);
+                    self._visit_block_stmt(finalizer, &mut next_scope);
                     scope.scopes.push(next_scope);
                 }
             }
             Stmt::Switch(n) => {
                 for case in n.cases.iter() {
                     for stmt in case.cons.iter() {
-                        let mut next_scope = Scope::new(None);
+                        let mut next_scope = Scope::from_parent(scope);
                         self._visit_stmt(stmt, &mut next_scope, None);
                         scope.scopes.push(next_scope);
                     }
                 }
             }
             Stmt::Block(n) => {
-                let mut next_scope = Scope::new(locals);
+                let mut next_scope = Scope::new(locals, Rc::clone(&scope.hoisted_vars));
                 for stmt in n.stmts.iter() {
                     self._visit_stmt(stmt, &mut next_scope, None);
                 }
@@ -468,7 +485,7 @@ impl ScopeBuilder {
         scope: &mut Scope,
         locals: Option<IndexSet<JsWord>>,
     ) {
-        let mut next_scope = Scope::new(locals);
+        let mut next_scope = Scope::new(locals, Rc::clone(&scope.hoisted_vars));
 
         // In case the super class reference is a global
         if let Some(ref super_class) = n.super_class {
@@ -537,7 +554,8 @@ impl ScopeBuilder {
         scope: &mut Scope,
         locals: IndexSet<JsWord>,
     ) {
-        let mut next_scope = Scope::new(Some(locals));
+
+        let mut next_scope = Scope::new(Some(locals), Rc::clone(&scope.hoisted_vars));
 
         // Capture function parameters as locals
         match n {
@@ -561,12 +579,16 @@ impl ScopeBuilder {
         };
 
         if let Some(body) = body {
-            for stmt in &body.stmts {
-                self._visit_stmt(stmt, &mut next_scope, None);
-            }
+            self._visit_block_stmt(body, &mut next_scope);
         }
 
         scope.scopes.push(next_scope);
+    }
+
+    fn _visit_block_stmt(&self, n: &BlockStmt, scope: &mut Scope) {
+        for stmt in &n.stmts {
+            self._visit_stmt(stmt, scope, None);
+        }
     }
 
     fn _visit_param(&self, n: &Param, scope: &mut Scope) {

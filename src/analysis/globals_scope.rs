@@ -185,7 +185,7 @@ impl GlobalAnalysis {
         }
 
         Self {
-            root: Scope::new(Some(locals)),
+            root: Scope::locals(Some(locals)),
             options,
             builder: ScopeBuilder {},
         }
