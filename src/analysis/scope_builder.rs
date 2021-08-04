@@ -23,7 +23,7 @@ const GLOBAL_THIS: &str = "globalThis";
 enum Func<'a> {
     Fn(&'a Function),
     Constructor(&'a Constructor),
-    // TODO: handle Arrow functions.
+    Arrow(&'a ArrowExpr),
 }
 
 /// Represents a symbol word or a member expression path.
@@ -83,10 +83,7 @@ pub struct Scope {
 
 impl Scope {
     /// Create a scope.
-    pub fn new(
-        locals: Option<IndexSet<JsWord>>,
-        hoisted_vars: Rc<RefCell<IndexSet<JsWord>>>,
-    ) -> Self {
+    pub fn new(locals: Option<IndexSet<JsWord>>, hoisted_vars: Rc<RefCell<IndexSet<JsWord>>>) -> Self {
         Self {
             scopes: Default::default(),
             locals: locals.unwrap_or(Default::default()),
@@ -115,6 +112,7 @@ impl Scope {
 pub struct ScopeBuilder;
 
 impl ScopeBuilder {
+
     /// Visit a statement.
     pub fn _visit_stmt(
         &self,
@@ -264,8 +262,7 @@ impl ScopeBuilder {
                         None
                     };
 
-                    let mut next_scope =
-                        Scope::new(locals, Rc::clone(&scope.hoisted_vars));
+                    let mut next_scope = Scope::new(locals, Rc::clone(&scope.hoisted_vars));
                     self._visit_block_stmt(&catch_clause.body, &mut next_scope);
                     scope.scopes.push(next_scope);
                 }
@@ -286,8 +283,7 @@ impl ScopeBuilder {
                 }
             }
             Stmt::Block(n) => {
-                let mut next_scope =
-                    Scope::new(locals, Rc::clone(&scope.hoisted_vars));
+                let mut next_scope = Scope::new(locals, Rc::clone(&scope.hoisted_vars));
                 for stmt in n.stmts.iter() {
                     self._visit_stmt(stmt, &mut next_scope, None);
                 }
@@ -376,37 +372,7 @@ impl ScopeBuilder {
                 self._visit_expr(&n.arg, scope);
             }
             Expr::Arrow(n) => {
-                let mut func_param_names: IndexSet<JsWord> = Default::default();
-
-                // Capture arrow function parameters as locals
-                for pat in n.params.iter() {
-                    let mut names = Vec::new();
-                    pattern_words(pat, &mut names);
-                    let param_names: IndexSet<_> =
-                        names.into_iter().map(|n| n.clone()).collect();
-                    func_param_names =
-                        func_param_names.union(&param_names).cloned().collect();
-                }
-
-                match &n.body {
-                    BlockStmtOrExpr::BlockStmt(block) => {
-                        // FIXME: use _visit_function() for this handling.
-                        let block_stmt = Stmt::Block(block.clone());
-                        self._visit_stmt(
-                            &block_stmt,
-                            scope,
-                            Some(func_param_names),
-                        );
-                    }
-                    BlockStmtOrExpr::Expr(expr) => {
-                        scope.locals = scope
-                            .locals
-                            .union(&func_param_names)
-                            .cloned()
-                            .collect();
-                        self._visit_expr(expr, scope);
-                    }
-                }
+                self._visit_function(Func::Arrow(n), scope, Default::default());
             }
             Expr::Call(n) => {
                 match &n.callee {
@@ -562,31 +528,46 @@ impl ScopeBuilder {
         scope: &mut Scope,
         locals: IndexSet<JsWord>,
     ) {
-        let mut next_scope =
-            Scope::new(Some(locals), Rc::clone(&scope.hoisted_vars));
 
-        // Capture function parameters as locals
-        match n {
-            Func::Fn(n) => {
-                for param in n.params.iter() {
-                    self._visit_param(param, &mut next_scope);
-                }
-            }
+        let mut next_scope = Scope::new(Some(locals), Rc::clone(&scope.hoisted_vars));
+
+        // Gether function parameters
+        let params = match n {
+            Func::Fn(n) => n.params.iter().map(|n| &n.pat).collect(),
+            Func::Arrow(n) => n.params.iter().collect(),
             Func::Constructor(n) => {
+                let mut params = Vec::new();
                 for param in &n.params {
                     if let ParamOrTsParamProp::Param(param) = param {
-                        self._visit_param(param, &mut next_scope);
+                        params.push(&param.pat);
                     }
                 }
+                params
             }
+        };
+
+        // Capture function parameters as locals
+        for pat in params {
+            self._visit_param_pat(pat, &mut next_scope);
         }
 
         let body = match n {
-            Func::Fn(n) => &n.body,
-            Func::Constructor(n) => &n.body,
+            Func::Fn(n) => n.body.as_ref(),
+            Func::Constructor(n) => n.body.as_ref(),
+            Func::Arrow(n) => {
+                match &n.body {
+                    BlockStmtOrExpr::BlockStmt(block) => {
+                        Some(block)
+                    }
+                    BlockStmtOrExpr::Expr(expr) => {
+                        self._visit_expr(expr, &mut next_scope);
+                        None
+                    }
+                }
+            }
         };
 
-        if let Some(body) = body {
+        if let Some(body) = &body {
             self._visit_block_stmt(body, &mut next_scope);
         }
 
@@ -599,9 +580,9 @@ impl ScopeBuilder {
         }
     }
 
-    fn _visit_param(&self, n: &Param, scope: &mut Scope) {
+    fn _visit_param_pat(&self, n: &Pat, scope: &mut Scope) {
         let mut names = Vec::new();
-        pattern_words(&n.pat, &mut names);
+        pattern_words(n, &mut names);
         let param_names: IndexSet<_> =
             names.into_iter().map(|n| n.clone()).collect();
 
@@ -615,7 +596,7 @@ impl ScopeBuilder {
         // Handle arguments with default values
         //
         // eg: `function foo(win = window) {}`
-        if let Pat::Assign(n) = &n.pat {
+        if let Pat::Assign(n) = &n {
             self._visit_expr(&*n.right, scope);
         }
     }
