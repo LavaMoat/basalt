@@ -160,11 +160,13 @@ impl ScopeBuilder {
                 scope.scopes.push(next_scope);
             }
             Stmt::While(n) => {
+                self.visit_expr(&*n.test, scope);
                 let mut next_scope = Scope::from_parent(scope);
                 self.visit_stmt(&*n.body, &mut next_scope, None);
                 scope.scopes.push(next_scope);
             }
             Stmt::DoWhile(n) => {
+                self.visit_expr(&*n.test, scope);
                 let mut next_scope = Scope::from_parent(scope);
                 self.visit_stmt(&*n.body, &mut next_scope, None);
                 scope.scopes.push(next_scope);
