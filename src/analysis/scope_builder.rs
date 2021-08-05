@@ -36,6 +36,7 @@ pub enum WordOrPath {
 }
 
 impl WordOrPath {
+
     /// Convert into a dot delimited path.
     pub fn into_path(&self) -> JsWord {
         match self {
@@ -47,6 +48,21 @@ impl WordOrPath {
                     words.iter().map(|w| w.as_ref().to_string()).collect();
                 JsWord::from(words.join("."))
             }
+        }
+    }
+}
+
+impl Into<Vec<JsWord>> for &WordOrPath {
+    fn into(self) -> Vec<JsWord> {
+        match self {
+            WordOrPath::Word(word) => vec![word.clone()],
+            WordOrPath::Path(word, parts) => {
+                let mut out = vec![word.clone()];
+                for word in parts {
+                    out.push(word.clone());
+                }
+                out
+            },
         }
     }
 }

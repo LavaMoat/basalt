@@ -191,15 +191,47 @@ impl GlobalAnalysis {
 
     /// Compute the global variables.
     pub fn compute(&self) -> IndexSet<JsWord> {
-        let mut global_symbols: IndexSet<JsWord> = Default::default();
+        let mut global_symbols: IndexSet<Vec<JsWord>> = Default::default();
         self.compute_globals(&self.root, &mut global_symbols, &mut vec![]);
-        global_symbols
+
+        let filtered_symbols = self.filter(global_symbols);
+
+        filtered_symbols.iter().map(|words| {
+            let words: Vec<String> =
+                words.into_iter().map(|w| w.as_ref().to_string()).collect();
+            JsWord::from(words.join("."))
+        }).collect()
+    }
+
+    /// Filter the computed symbol list so that deep properties are
+    /// accumulated with the parent reference.
+    ///
+    /// For example, if we have `Buffer` and `Buffer.alloc` the `Buffer.alloc`
+    /// entry is removed and we defer to the parent `Buffer`.
+    fn filter(
+        &self,
+        set: IndexSet<Vec<JsWord>>,
+    ) -> IndexSet<Vec<JsWord>> {
+        let compare = set.clone();
+        set
+            .into_iter()
+            .filter(|k| {
+                for key in compare.iter() {
+                    if key.len() < k.len() {
+                        if k.starts_with(&key) {
+                            return false;
+                        }
+                    }
+                }
+                true
+            })
+            .collect()
     }
 
     fn compute_globals<'a>(
         &self,
         scope: &'a Scope,
-        global_symbols: &mut IndexSet<JsWord>,
+        global_symbols: &mut IndexSet<Vec<JsWord>>,
         scope_stack: &mut Vec<&'a Scope>,
     ) {
         scope_stack.push(scope);
@@ -226,7 +258,7 @@ impl GlobalAnalysis {
         }
 
         for sym in diff.drain(..) {
-            global_symbols.insert(sym.into_path());
+            global_symbols.insert(sym.into());
         }
 
         for scope in scope.scopes.iter() {
