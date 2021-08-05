@@ -33,6 +33,8 @@ pub struct PolicyBuilder {
     /// for the package as the key and map to all the modules inside
     /// the base path.
     package_buckets: HashMap<(String, PathBuf), HashSet<PathBuf>>,
+    /// Package buckets after grouping.
+    package_groups: HashMap<String, HashSet<PathBuf>>,
     /// Cumulative analysis for a package by merging the analysis for
     /// each module in the package.
     //package_analysis: HashMap<(String, PathBuf), PackagePolicy>,
@@ -46,6 +48,7 @@ impl PolicyBuilder {
             entry,
             resolver: Box::new(NodeResolver::default()),
             package_buckets: Default::default(),
+            package_groups: Default::default(),
             package_analysis: Default::default(),
         }
     }
@@ -99,14 +102,39 @@ impl PolicyBuilder {
         Ok(self)
     }
 
+    /// Merge packages with the same specifier.
+    ///
+    /// THe npm package manager allows multiple versions of the same package
+    /// so we merge them into a single bucket with all of the modules so
+    /// the end result is cumulative analysis across multiple versions of the same package.
+    pub fn group(mut self) -> Result<Self> {
+        for ((spec, _module_base), modules) in self.package_buckets.drain() {
+            if let Some(entry) = self.package_groups.get_mut(&spec) {
+                for p in modules {
+                    entry.insert(p);
+                }
+            } else {
+                self.package_groups.insert(spec, modules);
+            }
+        }
+
+        for (k, _) in &self.package_groups {
+            println!("{}", k);
+        }
+
+        println!("Buckets len {}", self.package_buckets.len());
+        println!("Groups len {}", self.package_groups.len());
+
+        Ok(self)
+    }
+
     /// Analyze and aggregate the modules for all dependent packages.
     pub fn analyze(mut self) -> Result<Self> {
         let cache = cached_modules();
-        for ((spec, module_base), modules) in self.package_buckets.drain() {
+        for (spec, modules) in self.package_groups.drain() {
             log::debug!(
-                "Analyze {} {} with {} module(s)",
+                "Analyze {} with {} module(s)",
                 spec,
-                module_base.display(),
                 modules.len()
             );
 
