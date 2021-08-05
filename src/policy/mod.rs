@@ -62,6 +62,15 @@ pub struct PackagePolicy {
     pub packages: PolicyGroup,
 }
 
+impl PackagePolicy {
+    /// Determine if this policy has no builtins, globals and packages.
+    pub fn is_empty(&self) -> bool {
+        self.builtin.map.is_empty()
+            && self.globals.map.is_empty()
+            && self.packages.map.is_empty()
+    }
+}
+
 impl Merge for PackagePolicy {
     fn merge(&mut self, from: &Self) {
         self.native = from.native;
@@ -132,6 +141,7 @@ pub struct PolicyGroup {
 }
 
 impl PolicyGroup {
+
     /// Determine if this policy map is empty.
     pub fn is_empty(policy_map: &PolicyGroup) -> bool {
         policy_map.map.is_empty()

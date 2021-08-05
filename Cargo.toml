@@ -1,6 +1,6 @@
 [package]
 name = "basalt"
-version = "0.2.0"
+version = "0.3.0"
 authors = ["muji <muji@tmpfs.org>"]
 edition = "2018"
 default-run = "basalt"

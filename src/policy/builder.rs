@@ -35,7 +35,8 @@ pub struct PolicyBuilder {
     package_buckets: HashMap<(String, PathBuf), HashSet<PathBuf>>,
     /// Cumulative analysis for a package by merging the analysis for
     /// each module in the package.
-    package_analysis: HashMap<(String, PathBuf), PackagePolicy>,
+    //package_analysis: HashMap<(String, PathBuf), PackagePolicy>,
+    package_analysis: Policy,
 }
 
 impl PolicyBuilder {
@@ -176,18 +177,16 @@ impl PolicyBuilder {
                 }
             }
 
-            self.package_analysis.insert((spec, module_base), analysis);
+            if !analysis.is_empty() {
+                self.package_analysis.insert(spec, analysis);
+            }
         }
 
         Ok(self)
     }
 
     /// Generate a package policy file.
-    pub fn finalize(mut self) -> Policy {
-        let mut policy: Policy = Default::default();
-        for ((spec, _), analysis) in self.package_analysis.drain() {
-            policy.insert(spec, analysis);
-        }
-        policy
+    pub fn finalize(self) -> Policy {
+        self.package_analysis
     }
 }

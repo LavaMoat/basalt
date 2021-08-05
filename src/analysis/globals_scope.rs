@@ -196,11 +196,14 @@ impl GlobalAnalysis {
 
         let filtered_symbols = self.filter(global_symbols);
 
-        filtered_symbols.iter().map(|words| {
-            let words: Vec<String> =
-                words.into_iter().map(|w| w.as_ref().to_string()).collect();
-            JsWord::from(words.join("."))
-        }).collect()
+        filtered_symbols
+            .iter()
+            .map(|words| {
+                let words: Vec<String> =
+                    words.into_iter().map(|w| w.as_ref().to_string()).collect();
+                JsWord::from(words.join("."))
+            })
+            .collect()
     }
 
     /// Filter the computed symbol list so that deep properties are
@@ -208,13 +211,9 @@ impl GlobalAnalysis {
     ///
     /// For example, if we have `Buffer` and `Buffer.alloc` the `Buffer.alloc`
     /// entry is removed and we defer to the parent `Buffer`.
-    fn filter(
-        &self,
-        set: IndexSet<Vec<JsWord>>,
-    ) -> IndexSet<Vec<JsWord>> {
+    fn filter(&self, set: IndexSet<Vec<JsWord>>) -> IndexSet<Vec<JsWord>> {
         let compare = set.clone();
-        set
-            .into_iter()
+        set.into_iter()
             .filter(|k| {
                 for key in compare.iter() {
                     if key.len() < k.len() {

@@ -36,7 +36,6 @@ pub enum WordOrPath {
 }
 
 impl WordOrPath {
-
     /// Convert into a dot delimited path.
     pub fn into_path(&self) -> JsWord {
         match self {
@@ -62,7 +61,7 @@ impl Into<Vec<JsWord>> for &WordOrPath {
                     out.push(word.clone());
                 }
                 out
-            },
+            }
         }
     }
 }
