@@ -102,6 +102,50 @@ impl PolicyBuilder {
         Ok(self)
     }
 
+    /// Flatten package nested paths so that the modules are grouped
+    /// with the parent package.
+    ///
+    /// For example:
+    ///
+    /// caniuse-lite/data/features/background-img-opts.js
+    ///
+    /// Would be part of the `caniuse` package or for scoped packages:
+    ///
+    /// @babel/runtime/helpers/typeof
+    ///
+    /// Becomes part of `@babel/runtime`.
+    ///
+    pub fn flatten(mut self) -> Result<Self> {
+        let mut tmp: HashMap<(String, PathBuf), HashSet<PathBuf>> = HashMap::new();
+        for ((spec, module_base), modules) in self.package_buckets.drain() {
+            let is_scoped = spec.starts_with("@");
+            let mut parts: Vec<String> = spec.split("/").map(|s| s.into()).collect();
+
+            let mut key = spec;
+
+            // Scoped packages use a single slash delimiter
+            if is_scoped {
+                if parts.len() > 2 {
+                    key = format!("{}/{}", parts.remove(0), parts.remove(0));
+                }
+            // Otherwise any slash denotes a deep path
+            } else {
+                if parts.len() > 1 {
+                    key = parts.remove(0);
+                }
+            }
+
+            let entry = tmp.entry((key, module_base)).or_insert(Default::default());
+            for p in modules {
+                entry.insert(p);
+            }
+        }
+
+        self.package_buckets = tmp;
+
+        Ok(self)
+    }
+
     /// Merge packages with the same specifier.
     ///
     /// THe npm package manager allows multiple versions of the same package
@@ -117,14 +161,6 @@ impl PolicyBuilder {
                 self.package_groups.insert(spec, modules);
             }
         }
-
-        for (k, _) in &self.package_groups {
-            println!("{}", k);
-        }
-
-        println!("Buckets len {}", self.package_buckets.len());
-        println!("Groups len {}", self.package_groups.len());
-
         Ok(self)
     }
 
