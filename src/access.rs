@@ -1,11 +1,11 @@
-//! Code access permissions.
+//! Symbol access flags.
 
 /// Represents the access control to a code symbol.
 #[derive(Debug, Default, Copy, Clone, Eq, PartialEq, Hash)]
 pub struct Access {
     /// Read access to the symbol.
     pub read: bool,
-    /// Wrote access to the symbol.
+    /// Write access to the symbol.
     pub write: bool,
     /// Execute (function call) access to the symbol.
     pub execute: bool,
@@ -13,7 +13,7 @@ pub struct Access {
 
 impl Access {
     /// Merge positive flags from other into this access.
-    pub fn merge(&mut self, other: &Access) {
+    pub fn merge(&mut self, other: &Self) {
         if other.read {
             self.read = true
         }

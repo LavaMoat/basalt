@@ -4,8 +4,7 @@ use swc_ecma_ast::*;
 
 const REQUIRE: &str = "require";
 
-/// Find the symbol names in a variable declaration so that we can
-/// check for existence in the fixed or live exports map(s).
+/// Walk a variable declaration and find all symbols.
 pub fn var_symbol_words(var: &VarDecl) -> Vec<(&VarDeclarator, Vec<&JsWord>)> {
     var.decls
         .iter()
