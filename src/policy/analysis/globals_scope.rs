@@ -205,8 +205,7 @@ impl GlobalAnalysis {
 
     /// Join the words into a dot-delimited string.
     fn join_keys(&self, set: IndexSet<Vec<JsWord>>) -> IndexSet<JsWord> {
-        set
-            .iter()
+        set.iter()
             .map(|words| {
                 let words: Vec<String> =
                     words.into_iter().map(|w| w.as_ref().to_string()).collect();

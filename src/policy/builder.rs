@@ -19,9 +19,7 @@ use crate::{
         dependencies::is_dependent_module,
         node::{cached_modules, parse_file, VisitedDependency, VisitedModule},
     },
-    policy::analysis::{
-        builtin::BuiltinAnalysis, globals_scope::GlobalAnalysis,
-    },
+    policy::analysis::globals_scope::GlobalAnalysis,
 };
 
 /// Generate a policy.
@@ -193,32 +191,12 @@ fn analyze_modules(modules: HashSet<PathBuf>) -> Result<PackagePolicy> {
                     .map(|atom| (atom.as_ref().to_string(), true.into()))
                     .collect::<BTreeMap<String, PolicyAccess>>();
 
-                //let builtin_candidates =
-                    //std::mem::take(&mut globals_scope.builder.candidates);
-
+                // Compute and aggregate builtins
                 let builtin = globals_scope
                     .compute_builtins()
                     .into_iter()
                     .map(|atom| (atom.as_ref().to_string(), true.into()))
                     .collect::<BTreeMap<String, PolicyAccess>>();
-
-                //let builtins =
-                    //std::mem::take(&mut globals_scope.builder.candidates);
-
-                //println!("Builtin access {:#?}", builtins);
-
-                // Compute and aggregate builtins
-
-                /*
-                let builtins: BuiltinAnalysis = Default::default();
-                let builtin = builtins
-                    .analyze(&*node.module, builtin_candidates)
-                    .into_iter()
-                    .map(|(atom, _access)| {
-                        (atom.as_ref().to_string(), true.into())
-                    })
-                    .collect::<BTreeMap<String, PolicyAccess>>();
-                */
 
                 let packages = if let Some(deps) = &node.dependencies {
                     deps.iter()

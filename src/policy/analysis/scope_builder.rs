@@ -15,7 +15,7 @@ use indexmap::IndexSet;
 use crate::{
     helpers::{is_require_expr, pattern_words, var_symbol_words},
     module::dependencies::is_builtin_module,
-    policy::analysis::member_expr::{walk, member_expr_words},
+    policy::analysis::member_expr::{member_expr_words, walk},
 };
 
 const GLOBAL_THIS: &str = "globalThis";
@@ -499,12 +499,25 @@ impl ScopeBuilder {
                     }
                     PatOrExpr::Pat(pat) => match &**pat {
                         Pat::Ident(ident) => {
+                            if let Some((local, source)) =
+                                self.is_builtin_match(&ident.id.sym)
+                            {
+                                let words_key = match local {
+                                    Local::Named(word) => {
+                                        vec![source, word.clone()]
+                                    }
+                                    Local::Default(_word) => vec![source],
+                                };
+                                self.insert_builtin(words_key);
+                            }
+
                             self.insert_ident(
                                 ident.id.sym.clone(),
                                 scope,
                                 None,
                             );
                         }
+                        Pat::Expr(expr) => self.visit_expr(expr, scope),
                         _ => {}
                     },
                 }
@@ -538,6 +551,7 @@ impl ScopeBuilder {
                                 }
                             }
 
+                            // FIXME: restore this for execute access
                             /*
                             // Strip function methods like `call`, `apply` and `bind` etc.
                             if let AccessKind::Execute = kind {
@@ -554,7 +568,6 @@ impl ScopeBuilder {
                         }
                     }
                 }
-
             }
             Expr::New(n) => {
                 self.visit_expr(&*n.callee, scope);

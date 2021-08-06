@@ -3,8 +3,8 @@
 //! The AST stores member expressions with the left node as the
 //! deepest leaf of the tree and we tend to operate left to right
 //! for analysis tasks.
-use swc_ecma_ast::{Expr, ExprOrSuper, MemberExpr};
 use swc_atoms::JsWord;
+use swc_ecma_ast::{Expr, ExprOrSuper, MemberExpr};
 
 /// Walk a member expression left to right.
 ///
@@ -49,4 +49,3 @@ pub fn member_expr_words(n: &MemberExpr) -> Vec<&JsWord> {
         })
         .collect()
 }
-

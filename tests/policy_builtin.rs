@@ -19,7 +19,7 @@ const MODULES: &[&str] = &[
     "tests/policy/builtin/cjs",
     "tests/policy/builtin/named-import",
     "tests/policy/builtin/named-require",
-    //"tests/policy/builtin/named-deep",
+    "tests/policy/builtin/named-deep",
 ];
 
 #[test]
