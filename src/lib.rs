@@ -13,7 +13,6 @@ use anyhow::{bail, Result};
 use swc_ecma_visit::VisitWith;
 
 pub mod access;
-pub mod analysis;
 pub mod helpers;
 pub mod module;
 pub mod policy;
@@ -25,8 +24,7 @@ pub use static_module_record::{
     Parser, StaticModuleRecordProgram, TransformSource,
 };
 
-use analysis::globals_scope::GlobalAnalysis;
-use policy::builder::PolicyBuilder;
+use policy::{analysis::globals_scope::GlobalAnalysis, builder::PolicyBuilder};
 
 /// Parse all the modules in a dependency graph.
 pub fn parse(file: PathBuf) -> Result<()> {

@@ -25,32 +25,20 @@
 //!
 use swc_atoms::JsWord;
 use swc_ecma_ast::*;
-use swc_ecma_visit::{Node, Visit, VisitAll, VisitAllWith, VisitWith};
+use swc_ecma_visit::{Node, Visit, VisitWith};
 
 use indexmap::IndexMap;
 
 use crate::{
     access::{Access, AccessKind},
-    analysis::{dependencies::is_builtin_module, member_expr::walk},
-    helpers::{is_require_expr, pattern_words},
+    helpers::is_require_expr,
+    policy::analysis::member_expr::walk,
 };
+
+use super::scope_builder::{Builtin, Local};
 
 const FUNCTION_METHODS: [&str; 5] =
     ["call", "apply", "bind", "toSource", "toString"];
-
-#[derive(Debug, Hash, Eq, PartialEq, Clone)]
-enum Local {
-    Default(JsWord),
-    // Named locals will need to be converted to fully qualified
-    // module paths, eg: `readSync` would become the canonical `fs.readSync`
-    Named(JsWord),
-}
-
-#[derive(Debug, Hash, Eq, PartialEq, Clone)]
-struct Builtin {
-    source: JsWord,
-    locals: Vec<Local>,
-}
 
 /// Visit a module and generate the set of access
 /// to builtin packages.
@@ -59,14 +47,13 @@ pub struct BuiltinAnalysis;
 
 impl BuiltinAnalysis {
     /// Analyze and compute the builtins for a module.
-    pub fn analyze(&self, module: &Module) -> IndexMap<JsWord, Access> {
-        let mut finder = BuiltinFinder {
-            candidates: Default::default(),
-        };
-        module.visit_all_children_with(&mut finder);
-
+    pub fn analyze(
+        &self,
+        module: &Module,
+        candidates: Vec<Builtin>,
+    ) -> IndexMap<JsWord, Access> {
         let mut analyzer = BuiltinAnalyzer {
-            candidates: finder.candidates,
+            candidates,
             access: Default::default(),
         };
 
@@ -122,76 +109,6 @@ impl BuiltinAnalysis {
             out.insert(JsWord::from(words.join(".")), access.clone());
         }
         out
-    }
-}
-
-/// Find the imports and require calls to built in modules.
-struct BuiltinFinder {
-    candidates: Vec<Builtin>,
-}
-
-impl VisitAll for BuiltinFinder {
-    fn visit_import_decl(&mut self, n: &ImportDecl, _: &dyn Node) {
-        if is_builtin_module(n.src.value.as_ref()) {
-            let mut builtin = Builtin {
-                source: n.src.value.clone(),
-                locals: Default::default(),
-            };
-
-            for spec in n.specifiers.iter() {
-                let local = match spec {
-                    ImportSpecifier::Default(n) => {
-                        Local::Default(n.local.sym.clone())
-                    }
-                    ImportSpecifier::Named(n) => {
-                        Local::Named(n.local.sym.clone())
-                    }
-                    ImportSpecifier::Namespace(n) => {
-                        Local::Default(n.local.sym.clone())
-                    }
-                };
-                if !builtin.locals.contains(&local) {
-                    builtin.locals.push(local);
-                }
-            }
-            self.candidates.push(builtin);
-        }
-    }
-
-    fn visit_var_declarator(&mut self, n: &VarDeclarator, _: &dyn Node) {
-        if let Some(init) = &n.init {
-            if let Some((name, is_member)) = is_require_expr(init) {
-                if is_builtin_module(name.as_ref()) {
-                    let mut builtin = Builtin {
-                        source: name.clone(),
-                        locals: Default::default(),
-                    };
-                    builtin.locals = match &n.name {
-                        // Looks like a default require statement
-                        // but may have dot access so we test
-                        // is_member.
-                        Pat::Ident(ident) => {
-                            if !is_member {
-                                vec![Local::Default(ident.id.sym.clone())]
-                            } else {
-                                vec![Local::Named(ident.id.sym.clone())]
-                            }
-                        }
-                        // Handle object destructuring on LHS of require()
-                        _ => {
-                            let mut names = Vec::new();
-                            pattern_words(&n.name, &mut names);
-                            names
-                                .into_iter()
-                                .cloned()
-                                .map(|sym| Local::Named(sym))
-                                .collect()
-                        }
-                    };
-                    self.candidates.push(builtin);
-                }
-            }
-        }
     }
 }
 

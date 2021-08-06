@@ -13,14 +13,14 @@ use rayon::prelude::*;
 
 use super::{PackagePolicy, Policy, PolicyAccess};
 use crate::{
-    analysis::{
-        builtin::BuiltinAnalysis, dependencies::is_dependent_module,
-        globals_scope::GlobalAnalysis,
-    },
     helpers::normalize_specifier,
-    module::base::module_base_directory,
-    module::node::{
-        cached_modules, parse_file, VisitedDependency, VisitedModule,
+    module::{
+        base::module_base_directory,
+        dependencies::is_dependent_module,
+        node::{cached_modules, parse_file, VisitedDependency, VisitedModule},
+    },
+    policy::analysis::{
+        builtin::BuiltinAnalysis, globals_scope::GlobalAnalysis,
     },
 };
 
@@ -168,9 +168,7 @@ impl PolicyBuilder {
 }
 
 /// Walk all the modules in a package and perform a cumulative analysis.
-fn analyze_modules(
-    modules: HashSet<PathBuf>,
-) -> Result<PackagePolicy> {
+fn analyze_modules(modules: HashSet<PathBuf>) -> Result<PackagePolicy> {
     let cache = cached_modules();
 
     // Aggregated analysis data
@@ -187,8 +185,7 @@ fn analyze_modules(
             let visited_module = cached_module.value();
             if let VisitedModule::Module(_, _, node) = &**visited_module {
                 // Compute and aggregate globals
-                let mut globals_scope =
-                    GlobalAnalysis::new(Default::default());
+                let mut globals_scope = GlobalAnalysis::new(Default::default());
                 node.module.visit_children_with(&mut globals_scope);
                 let globals = globals_scope
                     .compute()
@@ -196,10 +193,13 @@ fn analyze_modules(
                     .map(|atom| (atom.as_ref().to_string(), true.into()))
                     .collect::<BTreeMap<String, PolicyAccess>>();
 
+                let builtin_candidates =
+                    globals_scope.builder.candidates.into_inner();
+
                 // Compute and aggregate builtins
                 let builtins: BuiltinAnalysis = Default::default();
                 let builtin = builtins
-                    .analyze(&*node.module)
+                    .analyze(&*node.module, builtin_candidates)
                     .into_iter()
                     .map(|(atom, _access)| {
                         (atom.as_ref().to_string(), true.into())
@@ -211,9 +211,7 @@ fn analyze_modules(
                         .filter_map(|dep| {
                             if is_dependent_module(dep.specifier.as_ref()) {
                                 Some((
-                                    normalize_specifier(
-                                        dep.specifier.as_ref(),
-                                    ),
+                                    normalize_specifier(dep.specifier.as_ref()),
                                     true.into(),
                                 ))
                             } else {
@@ -239,4 +237,3 @@ fn analyze_modules(
 
     Ok(analysis)
 }
-

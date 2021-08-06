@@ -20,7 +20,7 @@ use swc_ecma_visit::{Node, Visit};
 
 use indexmap::IndexSet;
 
-use crate::analysis::scope_builder::{Scope, ScopeBuilder, WordOrPath};
+use crate::policy::analysis::scope_builder::{Scope, ScopeBuilder, WordOrPath};
 
 // SEE: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects
 
@@ -140,7 +140,8 @@ impl Default for GlobalOptions {
 pub struct GlobalAnalysis {
     root: Scope,
     options: GlobalOptions,
-    builder: ScopeBuilder,
+    /// Scope builder.
+    pub builder: ScopeBuilder,
 }
 
 impl GlobalAnalysis {
@@ -185,7 +186,7 @@ impl GlobalAnalysis {
         Self {
             root: Scope::locals(Some(locals)),
             options,
-            builder: ScopeBuilder {},
+            builder: Default::default(),
         }
     }
 
@@ -274,13 +275,14 @@ impl Visit for GlobalAnalysis {
         match n {
             ModuleItem::ModuleDecl(decl) => match decl {
                 ModuleDecl::Import(import) => {
+                    self.builder.add_static_import(import);
                     for spec in import.specifiers.iter() {
-                        let id = match spec {
+                        let sym = match spec {
                             ImportSpecifier::Named(n) => &n.local.sym,
                             ImportSpecifier::Default(n) => &n.local.sym,
                             ImportSpecifier::Namespace(n) => &n.local.sym,
                         };
-                        scope.locals.insert(id.clone());
+                        scope.locals.insert(sym.clone());
                     }
                 }
                 _ => {}

@@ -1,7 +1,7 @@
 use anyhow::Result;
 use std::path::PathBuf;
 
-use basalt::analysis::globals_scope::GlobalAnalysis;
+use basalt::policy::analysis::globals_scope::GlobalAnalysis;
 use basalt::swc_utils::load_file;
 
 use swc_ecma_visit::VisitWith;

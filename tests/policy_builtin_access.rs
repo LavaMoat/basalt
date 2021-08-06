@@ -1,15 +1,25 @@
 use anyhow::Result;
 use indexmap::IndexMap;
 use swc_atoms::JsWord;
+use swc_ecma_visit::VisitWith;
 
 use basalt::{
-    access::Access, analysis::builtin::BuiltinAnalysis, swc_utils::load_code,
+    access::Access,
+    policy::analysis::{
+        builtin::BuiltinAnalysis, globals_scope::GlobalAnalysis,
+    },
+    swc_utils::load_code,
 };
 
 fn analyze(code: &str) -> Result<IndexMap<JsWord, Access>> {
     let (_, _, module) = load_code(code, None)?;
+
+    let mut globals_scope = GlobalAnalysis::new(Default::default());
+    module.visit_children_with(&mut globals_scope);
+    let builtin_candidates = globals_scope.builder.candidates.into_inner();
+
     let analyzer: BuiltinAnalysis = Default::default();
-    Ok(analyzer.analyze(&module))
+    Ok(analyzer.analyze(&module, builtin_candidates))
 }
 
 // WRITE

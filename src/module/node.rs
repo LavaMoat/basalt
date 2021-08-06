@@ -17,7 +17,7 @@ use swc_ecma_dep_graph::{analyze_dependencies, DependencyDescriptor};
 
 use swc_ecma_loader::{resolve::Resolve, resolvers::node::NodeResolver};
 
-use crate::analysis::dependencies::is_builtin_module;
+use crate::module::dependencies::is_builtin_module;
 //use crate::module::cache::load_module;
 use crate::swc_utils::load_file;
 

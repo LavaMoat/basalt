@@ -3,7 +3,7 @@ use anyhow::Result;
 use swc_common::comments::SingleThreadedComments;
 use swc_ecma_dep_graph::{analyze_dependencies, DependencyDescriptor};
 
-use basalt::analysis::dependencies::is_builtin_module;
+use basalt::module::dependencies::is_builtin_module;
 use basalt::swc_utils::load_code;
 
 fn load(code: &str) -> Result<Vec<DependencyDescriptor>> {

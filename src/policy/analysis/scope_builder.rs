@@ -12,10 +12,30 @@ use swc_ecma_visit::{Node, Visit, VisitAll, VisitAllWith, VisitWith};
 
 use indexmap::IndexSet;
 
-use super::member_expr::walk;
-use crate::helpers::{pattern_words, var_symbol_words};
+use crate::{
+    helpers::{is_require_expr, pattern_words, var_symbol_words},
+    module::dependencies::is_builtin_module,
+    policy::analysis::member_expr::walk,
+};
 
 const GLOBAL_THIS: &str = "globalThis";
+
+/// Reference to a built in module.
+///
+/// May be from an import specifier, call to `require()` or a dynamic `import()`.
+#[derive(Debug, Hash, Eq, PartialEq, Clone)]
+pub struct Builtin {
+    pub(crate) source: JsWord,
+    pub(crate) locals: Vec<Local>,
+}
+
+#[derive(Debug, Hash, Eq, PartialEq, Clone)]
+pub(crate) enum Local {
+    Default(JsWord),
+    // Named locals will need to be converted to fully qualified
+    // module paths, eg: `readSync` would become the canonical `fs.readSync`
+    Named(JsWord),
+}
 
 /// Enumeration of function variants in the AST.
 ///
@@ -126,10 +146,41 @@ impl Scope {
 }
 
 /// Scope builder creates a tree of scopes.
-#[derive(Debug)]
-pub struct ScopeBuilder;
+#[derive(Debug, Default)]
+pub struct ScopeBuilder {
+    /// Builtin module detection candidates.
+    pub candidates: RefCell<Vec<Builtin>>,
+}
 
 impl ScopeBuilder {
+    /// Add a static import declaration.
+    pub fn add_static_import(&self, n: &ImportDecl) {
+        if is_builtin_module(n.src.value.as_ref()) {
+            let mut builtin = Builtin {
+                source: n.src.value.clone(),
+                locals: Default::default(),
+            };
+            for spec in n.specifiers.iter() {
+                let local = match spec {
+                    ImportSpecifier::Default(n) => {
+                        Local::Default(n.local.sym.clone())
+                    }
+                    ImportSpecifier::Named(n) => {
+                        Local::Named(n.local.sym.clone())
+                    }
+                    ImportSpecifier::Namespace(n) => {
+                        Local::Default(n.local.sym.clone())
+                    }
+                };
+                if !builtin.locals.contains(&local) {
+                    builtin.locals.push(local);
+                }
+            }
+            let mut candidates = self.candidates.borrow_mut();
+            candidates.push(builtin);
+        }
+    }
+
     /// Visit a statement.
     pub fn visit_stmt(
         &self,
@@ -621,8 +672,47 @@ impl ScopeBuilder {
             }
 
             // Recurse on variable declarations with initializers
-            if let Some(ref init) = decl.init {
+            if let Some(init) = &decl.init {
                 self.visit_expr(init, scope);
+            }
+
+            self.visit_var_declarator(decl, scope);
+        }
+    }
+
+    fn visit_var_declarator(&self, n: &VarDeclarator, _scope: &mut Scope) {
+        if let Some(init) = &n.init {
+            if let Some((name, is_member)) = is_require_expr(init) {
+                if is_builtin_module(name.as_ref()) {
+                    let mut builtin = Builtin {
+                        source: name.clone(),
+                        locals: Default::default(),
+                    };
+                    builtin.locals = match &n.name {
+                        // Looks like a default require statement
+                        // but may have dot access so we test
+                        // is_member.
+                        Pat::Ident(ident) => {
+                            if !is_member {
+                                vec![Local::Default(ident.id.sym.clone())]
+                            } else {
+                                vec![Local::Named(ident.id.sym.clone())]
+                            }
+                        }
+                        // Handle object destructuring on LHS of require()
+                        _ => {
+                            let mut names = Vec::new();
+                            pattern_words(&n.name, &mut names);
+                            names
+                                .into_iter()
+                                .cloned()
+                                .map(|sym| Local::Named(sym))
+                                .collect()
+                        }
+                    };
+                    let mut candidates = self.candidates.borrow_mut();
+                    candidates.push(builtin);
+                }
             }
         }
     }
