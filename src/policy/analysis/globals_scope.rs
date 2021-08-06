@@ -190,14 +190,22 @@ impl GlobalAnalysis {
         }
     }
 
+    /// Compute the builtins.
+    pub fn compute_builtins(&mut self) -> IndexSet<JsWord> {
+        let builtins = std::mem::take(&mut self.builder.builtins);
+        self.join_keys(self.filter(builtins))
+    }
+
     /// Compute the global variables.
-    pub fn compute(&self) -> IndexSet<JsWord> {
+    pub fn compute(&mut self) -> IndexSet<JsWord> {
         let mut global_symbols: IndexSet<Vec<JsWord>> = Default::default();
         self.compute_globals(&self.root, &mut global_symbols, &mut vec![]);
+        self.join_keys(self.filter(global_symbols))
+    }
 
-        let filtered_symbols = self.filter(global_symbols);
-
-        filtered_symbols
+    /// Join the words into a dot-delimited string.
+    fn join_keys(&self, set: IndexSet<Vec<JsWord>>) -> IndexSet<JsWord> {
+        set
             .iter()
             .map(|words| {
                 let words: Vec<String> =

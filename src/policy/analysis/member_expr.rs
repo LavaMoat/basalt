@@ -4,6 +4,7 @@
 //! deepest leaf of the tree and we tend to operate left to right
 //! for analysis tasks.
 use swc_ecma_ast::{Expr, ExprOrSuper, MemberExpr};
+use swc_atoms::JsWord;
 
 /// Walk a member expression left to right.
 ///
@@ -35,3 +36,17 @@ fn walk_member_expr<'a>(n: &'a Expr, expressions: &mut Vec<&'a Expr>) {
         }
     }
 }
+
+/// Collect the words in a member expression.
+pub fn member_expr_words(n: &MemberExpr) -> Vec<&JsWord> {
+    let mut expressions = Vec::new();
+    walk(n, &mut expressions);
+    expressions
+        .iter()
+        .filter_map(|e| match e {
+            Expr::Ident(id) => Some(&id.sym),
+            _ => None,
+        })
+        .collect()
+}
+

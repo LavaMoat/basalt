@@ -193,10 +193,23 @@ fn analyze_modules(modules: HashSet<PathBuf>) -> Result<PackagePolicy> {
                     .map(|atom| (atom.as_ref().to_string(), true.into()))
                     .collect::<BTreeMap<String, PolicyAccess>>();
 
-                let builtin_candidates =
-                    globals_scope.builder.candidates.into_inner();
+                //let builtin_candidates =
+                    //std::mem::take(&mut globals_scope.builder.candidates);
+
+                let builtin = globals_scope
+                    .compute_builtins()
+                    .into_iter()
+                    .map(|atom| (atom.as_ref().to_string(), true.into()))
+                    .collect::<BTreeMap<String, PolicyAccess>>();
+
+                //let builtins =
+                    //std::mem::take(&mut globals_scope.builder.candidates);
+
+                //println!("Builtin access {:#?}", builtins);
 
                 // Compute and aggregate builtins
+
+                /*
                 let builtins: BuiltinAnalysis = Default::default();
                 let builtin = builtins
                     .analyze(&*node.module, builtin_candidates)
@@ -205,6 +218,7 @@ fn analyze_modules(modules: HashSet<PathBuf>) -> Result<PackagePolicy> {
                         (atom.as_ref().to_string(), true.into())
                     })
                     .collect::<BTreeMap<String, PolicyAccess>>();
+                */
 
                 let packages = if let Some(deps) = &node.dependencies {
                     deps.iter()

@@ -15,7 +15,7 @@ use indexmap::IndexSet;
 use crate::{
     helpers::{is_require_expr, pattern_words, var_symbol_words},
     module::dependencies::is_builtin_module,
-    policy::analysis::member_expr::walk,
+    policy::analysis::member_expr::{walk, member_expr_words},
 };
 
 const GLOBAL_THIS: &str = "globalThis";
@@ -149,12 +149,14 @@ impl Scope {
 #[derive(Debug, Default)]
 pub struct ScopeBuilder {
     /// Builtin module detection candidates.
-    pub candidates: RefCell<Vec<Builtin>>,
+    pub candidates: Vec<Builtin>,
+    /// List of symbols that reference a builtin candidate.
+    pub builtins: IndexSet<Vec<JsWord>>,
 }
 
 impl ScopeBuilder {
     /// Add a static import declaration.
-    pub fn add_static_import(&self, n: &ImportDecl) {
+    pub fn add_static_import(&mut self, n: &ImportDecl) {
         if is_builtin_module(n.src.value.as_ref()) {
             let mut builtin = Builtin {
                 source: n.src.value.clone(),
@@ -176,14 +178,36 @@ impl ScopeBuilder {
                     builtin.locals.push(local);
                 }
             }
-            let mut candidates = self.candidates.borrow_mut();
-            candidates.push(builtin);
+            self.candidates.push(builtin);
         }
+    }
+
+    /// Determine if a word matches a previously located builtin module local
+    /// symbol. For member expressions pass the first word in the expression.
+    fn is_builtin_match(&self, sym: &JsWord) -> Option<(&Local, JsWord)> {
+        for builtin in self.candidates.iter() {
+            let mut matched = builtin.locals.iter().find(|local| {
+                let word = match local {
+                    Local::Default(word) => word,
+                    Local::Named(word) => word,
+                };
+                word == sym
+            });
+            if let Some(local) = matched.take() {
+                return Some((local, builtin.source.clone()));
+            }
+        }
+        None
+    }
+
+    #[inline(always)]
+    fn insert_builtin(&mut self, words_key: Vec<JsWord>) {
+        self.builtins.insert(words_key);
     }
 
     /// Visit a statement.
     pub fn visit_stmt(
-        &self,
+        &mut self,
         n: &Stmt,
         scope: &mut Scope,
         locals: Option<IndexSet<JsWord>>,
@@ -370,10 +394,19 @@ impl ScopeBuilder {
         }
     }
 
-    fn visit_expr(&self, n: &Expr, scope: &mut Scope) {
+    fn visit_expr(&mut self, n: &Expr, scope: &mut Scope) {
         match n {
-            Expr::Ident(id) => {
-                self.insert_ident(id.sym.clone(), scope, None);
+            Expr::Ident(n) => {
+                self.insert_ident(n.sym.clone(), scope, None);
+                if let Some((_local, source)) = self.is_builtin_match(&n.sym) {
+                    let words_key = if source == n.sym {
+                        vec![source]
+                    } else {
+                        vec![source, n.sym.clone()]
+                    };
+
+                    self.insert_builtin(words_key);
+                }
             }
             Expr::PrivateName(n) => {
                 self.insert_ident(private_name_prefix(&n.id.sym), scope, None);
@@ -480,11 +513,48 @@ impl ScopeBuilder {
             Expr::OptChain(n) => {
                 self.visit_expr(&n.expr, scope);
             }
-            Expr::Member(n) => {
-                let members = self.compute_member(n, scope);
+            Expr::Member(member) => {
+                let members = self.compute_member(member, scope);
                 for (word, parts) in members {
                     self.insert_ident(word, scope, Some(parts));
                 }
+
+                // Builtin handling
+                if is_require_expr(n).is_none() {
+                    // TODO: ensure the first word is Expr::Ident!
+                    let members = member_expr_words(member);
+                    if let Some(word) = members.get(0) {
+                        if let Some((local, source)) =
+                            self.is_builtin_match(word)
+                        {
+                            let mut words_key: Vec<JsWord> =
+                                members.into_iter().cloned().collect();
+                            if let Some(word) = words_key.get(0) {
+                                if word != &source {
+                                    if let Local::Default(_) = local {
+                                        words_key.remove(0);
+                                    }
+                                    words_key.insert(0, source);
+                                }
+                            }
+
+                            /*
+                            // Strip function methods like `call`, `apply` and `bind` etc.
+                            if let AccessKind::Execute = kind {
+                                if let Some(last) = words_key.last() {
+                                    if FUNCTION_METHODS.contains(&last.as_ref())
+                                    {
+                                        words_key.pop();
+                                    }
+                                }
+                            }
+                            */
+
+                            self.insert_builtin(words_key);
+                        }
+                    }
+                }
+
             }
             Expr::New(n) => {
                 self.visit_expr(&*n.callee, scope);
@@ -522,7 +592,7 @@ impl ScopeBuilder {
     }
 
     fn visit_class(
-        &self,
+        &mut self,
         n: &Class,
         scope: &mut Scope,
         locals: Option<IndexSet<JsWord>>,
@@ -583,7 +653,7 @@ impl ScopeBuilder {
     }
 
     fn visit_function(
-        &self,
+        &mut self,
         n: Func,
         scope: &mut Scope,
         locals: Option<IndexSet<JsWord>>,
@@ -629,13 +699,13 @@ impl ScopeBuilder {
         scope.scopes.push(next_scope);
     }
 
-    fn visit_block_stmt(&self, n: &BlockStmt, scope: &mut Scope) {
+    fn visit_block_stmt(&mut self, n: &BlockStmt, scope: &mut Scope) {
         for stmt in &n.stmts {
             self.visit_stmt(stmt, scope, None);
         }
     }
 
-    fn visit_param_pat(&self, n: &Pat, scope: &mut Scope) {
+    fn visit_param_pat(&mut self, n: &Pat, scope: &mut Scope) {
         let mut names = Vec::new();
         pattern_words(n, &mut names);
         let param_names: IndexSet<_> =
@@ -656,7 +726,7 @@ impl ScopeBuilder {
         }
     }
 
-    fn visit_var_decl(&self, n: &VarDecl, scope: &mut Scope) {
+    fn visit_var_decl(&mut self, n: &VarDecl, scope: &mut Scope) {
         let word_list = var_symbol_words(n);
         for (decl, words) in word_list.iter() {
             for word in words {
@@ -680,7 +750,7 @@ impl ScopeBuilder {
         }
     }
 
-    fn visit_var_declarator(&self, n: &VarDeclarator, _scope: &mut Scope) {
+    fn visit_var_declarator(&mut self, n: &VarDeclarator, _scope: &mut Scope) {
         if let Some(init) = &n.init {
             if let Some((name, is_member)) = is_require_expr(init) {
                 if is_builtin_module(name.as_ref()) {
@@ -710,15 +780,14 @@ impl ScopeBuilder {
                                 .collect()
                         }
                     };
-                    let mut candidates = self.candidates.borrow_mut();
-                    candidates.push(builtin);
+                    self.candidates.push(builtin);
                 }
             }
         }
     }
 
     fn compute_member(
-        &self,
+        &mut self,
         n: &MemberExpr,
         scope: &mut Scope,
     ) -> Vec<(JsWord, Vec<JsWord>)> {
@@ -763,7 +832,7 @@ impl ScopeBuilder {
     }
 
     fn compute_member_words(
-        &self,
+        &mut self,
         expressions: &Vec<&Expr>,
     ) -> Option<(JsWord, Vec<JsWord>)> {
         let mut words: Vec<JsWord> = Vec::new();

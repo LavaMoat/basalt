@@ -32,7 +32,7 @@ use indexmap::IndexMap;
 use crate::{
     access::{Access, AccessKind},
     helpers::is_require_expr,
-    policy::analysis::member_expr::walk,
+    policy::analysis::member_expr::member_expr_words,
 };
 
 use super::scope_builder::{Builtin, Local};
@@ -523,19 +523,4 @@ impl Visit for BuiltinAnalyzer {
     fn visit_stmt(&mut self, n: &Stmt, _: &dyn Node) {
         self.access_visit_stmt(n);
     }
-}
-
-/// Member expressions have the furthest left of the path
-/// as the deepest expression which is awkward for analysis
-/// so we walk all member expressions and invert them.
-pub fn member_expr_words(n: &MemberExpr) -> Vec<&JsWord> {
-    let mut expressions = Vec::new();
-    walk(n, &mut expressions);
-    expressions
-        .iter()
-        .filter_map(|e| match e {
-            Expr::Ident(id) => Some(&id.sym),
-            _ => None,
-        })
-        .collect()
 }
