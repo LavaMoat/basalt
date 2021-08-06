@@ -127,3 +127,36 @@ fn is_require_call<'a>(call: &'a CallExpr) -> Option<&'a JsWord> {
     }
     None
 }
+
+/// Normalize an import specifier removing nested paths.
+///
+/// This import specifier is transformed to `caniuse-lite`:
+///
+/// ```text
+/// caniuse-lite/data/features/background-img-opts.js
+/// ```
+///
+/// Or the scoped specifier is trasformed to `@babel/runtime`:
+///
+/// ```text
+/// @babel/runtime/helpers/typeof
+/// ```
+///
+pub fn normalize_specifier<S: AsRef<str>>(spec: S) -> String {
+    let is_scoped = spec.as_ref().starts_with("@");
+    let mut parts: Vec<String> = spec.as_ref().split("/").map(|s| s.into()).collect();
+    let mut key: String = spec.as_ref().into();
+
+    // Scoped packages use a single slash delimiter
+    if is_scoped {
+        if parts.len() > 2 {
+            key = format!("{}/{}", parts.remove(0), parts.remove(0));
+        }
+    // Otherwise any slash denotes a deep path
+    } else {
+        if parts.len() > 1 {
+            key = parts.remove(0);
+        }
+    }
+    key
+}
