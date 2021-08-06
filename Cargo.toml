@@ -1,6 +1,6 @@
 [package]
 name = "basalt"
-version = "0.3.0"
+version = "0.3.1"
 authors = ["muji <muji@tmpfs.org>"]
 edition = "2018"
 default-run = "basalt"
@@ -14,6 +14,7 @@ serde = "1"
 serde_json = "1"
 indexmap = {version = "1.6", features = ["serde-1"]}
 dashmap = "4"
+rayon = "1.5"
 
 swc = {version = "0.26"}
 swc_common = {version = "0.10.21", features = ["tty-emitter"]}

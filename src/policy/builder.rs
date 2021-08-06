@@ -9,17 +9,19 @@ use swc_common::FileName;
 use swc_ecma_loader::{resolve::Resolve, resolvers::node::NodeResolver};
 use swc_ecma_visit::VisitWith;
 
+use rayon::prelude::*;
+
 use super::{PackagePolicy, Policy, PolicyAccess};
 use crate::{
     analysis::{
         builtin::BuiltinAnalysis, dependencies::is_dependent_module,
         globals_scope::GlobalAnalysis,
     },
+    helpers::normalize_specifier,
     module::base::module_base_directory,
     module::node::{
         cached_modules, parse_file, VisitedDependency, VisitedModule,
     },
-    helpers::normalize_specifier,
 };
 
 /// Generate a policy.
@@ -106,10 +108,12 @@ impl PolicyBuilder {
     /// Flatten package nested paths so that the modules are grouped
     /// with the parent package.
     pub fn flatten(mut self) -> Result<Self> {
-        let mut tmp: HashMap<(String, PathBuf), HashSet<PathBuf>> = HashMap::new();
+        let mut tmp: HashMap<(String, PathBuf), HashSet<PathBuf>> =
+            HashMap::new();
         for ((spec, module_base), modules) in self.package_buckets.drain() {
             let key = normalize_specifier(&spec);
-            let entry = tmp.entry((key, module_base)).or_insert(Default::default());
+            let entry =
+                tmp.entry((key, module_base)).or_insert(Default::default());
             for p in modules {
                 entry.insert(p);
             }
@@ -140,78 +144,15 @@ impl PolicyBuilder {
 
     /// Analyze and aggregate the modules for all dependent packages.
     pub fn analyze(mut self) -> Result<Self> {
-        let cache = cached_modules();
-        for (spec, modules) in self.package_groups.drain() {
-            log::debug!(
-                "Analyze {} with {} module(s)",
-                spec,
-                modules.len()
-            );
+        let groups = std::mem::take(&mut self.package_groups);
 
-            // Aggregated analysis data
-            let mut analysis: PackagePolicy = Default::default();
+        let analyzed: Vec<_> = groups
+            .into_par_iter()
+            .map(|(spec, modules)| (spec, analyze_modules(modules)))
+            .collect();
 
-            for module_key in modules {
-                if let Some(cached_module) = cache.get(&module_key) {
-                    let visited_module = cached_module.value();
-                    match &**visited_module {
-                        VisitedModule::Module(_, _, node) => {
-                            // Compute and aggregate globals
-                            let mut globals_scope =
-                                GlobalAnalysis::new(Default::default());
-                            node.module.visit_children_with(&mut globals_scope);
-                            let module_globals = globals_scope.compute();
-                            for atom in module_globals {
-                                analysis.globals.insert(
-                                    atom.as_ref().to_string(),
-                                    true.into(),
-                                );
-                            }
-
-                            // Compute and aggregate builtins
-                            let builtins: BuiltinAnalysis = Default::default();
-                            let module_builtins =
-                                builtins.analyze(&*node.module);
-                            for (word, _access) in module_builtins {
-                                analysis.builtin.insert(
-                                    word.as_ref().to_string(),
-                                    true.into(),
-                                );
-                            }
-
-                            // Compute dependent packages for each direct dependency
-                            if let Some(ref deps) = node.dependencies {
-                                let mut packages: BTreeMap<
-                                    String,
-                                    PolicyAccess,
-                                > = deps
-                                    .iter()
-                                    .filter_map(|dep| {
-                                        if is_dependent_module(
-                                            dep.specifier.as_ref(),
-                                        ) {
-                                            Some((
-                                                normalize_specifier(dep.specifier.as_ref()),
-                                                true.into(),
-                                            ))
-                                        } else {
-                                            None
-                                        }
-                                    })
-                                    .collect();
-                                analysis.packages.append(&mut packages);
-                            }
-                        }
-                        _ => {}
-                    }
-                } else {
-                    bail!(
-                        "Failed to locate cached module for {}",
-                        module_key.display()
-                    );
-                }
-            }
-
+        for (spec, policy) in analyzed {
+            let analysis = policy?;
             if !analysis.is_empty() {
                 self.package_analysis.insert(spec, analysis);
             }
@@ -225,3 +166,77 @@ impl PolicyBuilder {
         self.package_analysis
     }
 }
+
+/// Walk all the modules in a package and perform a cumulative analysis.
+fn analyze_modules(
+    modules: HashSet<PathBuf>,
+) -> Result<PackagePolicy> {
+    let cache = cached_modules();
+
+    // Aggregated analysis data
+    let mut analysis: PackagePolicy = Default::default();
+
+    let data: Vec<(
+        BTreeMap<String, PolicyAccess>,
+        BTreeMap<String, PolicyAccess>,
+        BTreeMap<String, PolicyAccess>,
+    )> = modules
+        .into_par_iter()
+        .map(|module_key| {
+            let cached_module = cache.get(&module_key).unwrap();
+            let visited_module = cached_module.value();
+            if let VisitedModule::Module(_, _, node) = &**visited_module {
+                // Compute and aggregate globals
+                let mut globals_scope =
+                    GlobalAnalysis::new(Default::default());
+                node.module.visit_children_with(&mut globals_scope);
+                let globals = globals_scope
+                    .compute()
+                    .into_iter()
+                    .map(|atom| (atom.as_ref().to_string(), true.into()))
+                    .collect::<BTreeMap<String, PolicyAccess>>();
+
+                // Compute and aggregate builtins
+                let builtins: BuiltinAnalysis = Default::default();
+                let builtin = builtins
+                    .analyze(&*node.module)
+                    .into_iter()
+                    .map(|(atom, _access)| {
+                        (atom.as_ref().to_string(), true.into())
+                    })
+                    .collect::<BTreeMap<String, PolicyAccess>>();
+
+                let packages = if let Some(deps) = &node.dependencies {
+                    deps.iter()
+                        .filter_map(|dep| {
+                            if is_dependent_module(dep.specifier.as_ref()) {
+                                Some((
+                                    normalize_specifier(
+                                        dep.specifier.as_ref(),
+                                    ),
+                                    true.into(),
+                                ))
+                            } else {
+                                None
+                            }
+                        })
+                        .collect::<BTreeMap<String, PolicyAccess>>()
+                } else {
+                    BTreeMap::new()
+                };
+
+                return (globals, builtin, packages);
+            }
+            (BTreeMap::new(), BTreeMap::new(), BTreeMap::new())
+        })
+        .collect();
+
+    for (mut globals, mut builtin, mut packages) in data {
+        analysis.globals.append(&mut globals);
+        analysis.builtin.append(&mut builtin);
+        analysis.packages.append(&mut packages);
+    }
+
+    Ok(analysis)
+}
+

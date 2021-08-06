@@ -143,7 +143,8 @@ fn is_require_call<'a>(call: &'a CallExpr) -> Option<&'a JsWord> {
 ///
 pub fn normalize_specifier<S: AsRef<str>>(spec: S) -> String {
     let is_scoped = spec.as_ref().starts_with("@");
-    let mut parts: Vec<String> = spec.as_ref().split("/").map(|s| s.into()).collect();
+    let mut parts: Vec<String> =
+        spec.as_ref().split("/").map(|s| s.into()).collect();
     let mut key: String = spec.as_ref().into();
 
     // Scoped packages use a single slash delimiter

@@ -141,7 +141,6 @@ pub struct PolicyGroup {
 }
 
 impl PolicyGroup {
-
     /// Determine if this policy map is empty.
     pub fn is_empty(policy_map: &PolicyGroup) -> bool {
         policy_map.map.is_empty()
