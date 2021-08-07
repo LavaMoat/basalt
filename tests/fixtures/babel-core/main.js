@@ -45,5 +45,6 @@
 //
 //import 'semver';
 
-import 'terser';
+//import 'terser';
 
+import 'glob';

@@ -34,8 +34,12 @@ pub struct PolicyBuilder {
     /// for the package as the key and map to all the modules inside
     /// the base path.
     package_buckets: HashMap<(String, PathBuf), HashSet<PathBuf>>,
+
+    /*
     /// Package buckets after grouping.
     package_groups: HashMap<String, HashSet<PathBuf>>,
+    */
+
     /// Cumulative analysis for a package by merging the analysis for
     /// each module in the package.
     //package_analysis: HashMap<(String, PathBuf), PackagePolicy>,
@@ -49,7 +53,6 @@ impl PolicyBuilder {
             entry,
             resolver: Box::new(NodeResolver::default()),
             package_buckets: Default::default(),
-            package_groups: Default::default(),
             package_analysis: Default::default(),
         }
     }
@@ -119,7 +122,7 @@ impl PolicyBuilder {
             }
         }
 
-        Ok(self.flatten()?.group()?)
+        Ok(self.flatten()?)
     }
 
     /// Flatten package nested paths so that the modules are grouped
@@ -142,6 +145,7 @@ impl PolicyBuilder {
         Ok(self)
     }
 
+    /*
     /// Merge packages with the same specifier.
     ///
     /// The npm package manager allows multiple versions of the same package
@@ -159,14 +163,15 @@ impl PolicyBuilder {
         }
         Ok(self)
     }
+    */
 
     /// Analyze and aggregate the modules for all dependent packages.
     pub fn analyze(mut self) -> Result<Self> {
-        let groups = std::mem::take(&mut self.package_groups);
+        let groups = std::mem::take(&mut self.package_buckets);
 
         let analyzed: Vec<_> = groups
             .into_par_iter()
-            .map(|(spec, modules)| (spec, analyze_modules(modules)))
+            .map(|((spec, _), modules)| (spec, analyze_modules(modules)))
             .collect();
 
         for (spec, policy) in analyzed {
