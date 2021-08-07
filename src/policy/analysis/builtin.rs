@@ -42,6 +42,7 @@ const FUNCTION_METHODS: [&str; 5] =
 /// Visit a module and generate the set of access
 /// to builtin packages.
 #[derive(Default)]
+#[deprecated(note = "Merged in with scope builder, use scope builder instead")]
 pub struct BuiltinAnalysis;
 
 impl BuiltinAnalysis {

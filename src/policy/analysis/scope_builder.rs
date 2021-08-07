@@ -551,6 +551,7 @@ impl ScopeBuilder {
                 if is_require_expr(n).is_none() {
                     // TODO: ensure the first word is Expr::Ident!
                     let members = member_expr_words(member);
+
                     if let Some(word) = members.get(0) {
                         if let Some((local, source)) =
                             self.is_builtin_match(word)

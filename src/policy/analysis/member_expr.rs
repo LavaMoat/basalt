@@ -41,15 +41,29 @@ fn walk_member_expr<'a>(n: &'a Expr, expressions: &mut Vec<&'a Expr>) {
 
 /// Collect the words in a member expression.
 pub fn member_expr_words(n: &MemberExpr) -> Vec<&JsWord> {
+    let mut words = Vec::new();
+    walk_member_expressions(n, &mut words);
+    words
+}
+
+fn walk_member_expressions<'a>(n: &'a MemberExpr, words: &mut Vec<&'a JsWord>) {
     let mut expressions = Vec::new();
     walk(n, &mut expressions);
-    expressions
-        .iter()
-        .filter_map(|e| match e {
-            Expr::Ident(id) => Some(&id.sym),
-            _ => None,
-        })
-        .collect()
+    for expr in expressions.iter() {
+        match expr {
+            Expr::Ident(n) => words.push(&n.sym),
+            Expr::Member(n) => walk_member_expressions(n, words),
+            Expr::Call(n) => match &n.callee {
+                ExprOrSuper::Expr(expr) => match &**expr {
+                    Expr::Member(n) => walk_member_expressions(n, words),
+                    _ => {}
+                }
+                _ => {}
+            },
+            _ => {},
+        }
+    }
+
 }
 
 /// Detect an expression that is a call to `require()`.

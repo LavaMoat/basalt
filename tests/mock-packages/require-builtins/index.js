@@ -11,6 +11,7 @@ const pth = path.join("a", "b", "c");
 const rs = readSync;
 
 
+
 // Write to builtin(s)!
 path.join.a.b.c = function() {}
 fs = {}
@@ -18,4 +19,13 @@ writeSync++;
 
 function Foo() {
   EE.call(this);
+}
+
+var crypto = require('crypto')
+
+function random () {
+  var buf = crypto
+    .randomBytes(4)
+    .toString('hex')
+  return parseInt(buf, 16);
 }
