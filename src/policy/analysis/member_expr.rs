@@ -4,7 +4,9 @@
 //! deepest leaf of the tree and we tend to operate left to right
 //! for analysis tasks.
 use swc_atoms::JsWord;
-use swc_ecma_ast::{Expr, ExprOrSuper, MemberExpr};
+use swc_ecma_ast::{CallExpr, Expr, ExprOrSuper, Lit, MemberExpr};
+
+const REQUIRE: &str = "require";
 
 /// Walk a member expression left to right.
 ///
@@ -48,4 +50,68 @@ pub fn member_expr_words(n: &MemberExpr) -> Vec<&JsWord> {
             _ => None,
         })
         .collect()
+}
+
+/// Detect an expression that is a call to `require()`.
+///
+/// The call must be a simple call expression (single string argument).
+///
+/// The first entry in the returned tuple is the argument passed to
+/// the function call, for deep dot access (eg: `require('buffer').Buffer`)
+/// the the first symbol in the dot access (eg: `Buffer`) is the second
+/// entry in the tuple.
+pub fn is_require_expr<'a>(
+    n: &'a Expr,
+) -> Option<(&'a JsWord, Option<&'a JsWord>)> {
+    is_call_module(n, REQUIRE)
+}
+
+fn is_call_module<'a>(
+    n: &'a Expr,
+    fn_name: &str,
+) -> Option<(&'a JsWord, Option<&'a JsWord>)> {
+    match n {
+        Expr::Call(call) => {
+            return is_simple_call(call, fn_name).map(|o| (o, None));
+        }
+        Expr::Member(n) => {
+            let mut expressions = Vec::new();
+            walk(n, &mut expressions);
+
+            // `require('buffer').Buffer`
+            if let Some(Expr::Call(call)) = expressions.get(0) {
+                let prop_name =
+                    if let Some(Expr::Ident(id)) = expressions.get(1) {
+                        Some(&id.sym)
+                    } else {
+                        None
+                    };
+                return is_simple_call(call, fn_name).map(|o| (o, prop_name));
+            }
+        }
+        _ => {}
+    }
+    None
+}
+
+/// Detect an expression that is a call to a function.
+///
+/// The call must have a single argument and the argument
+/// must be a string literal.
+fn is_simple_call<'a>(call: &'a CallExpr, fn_name: &str) -> Option<&'a JsWord> {
+    if call.args.len() == 1 {
+        if let ExprOrSuper::Expr(n) = &call.callee {
+            if let Expr::Ident(id) = &**n {
+                if id.sym.as_ref() == fn_name {
+                    let arg = call.args.get(0).unwrap();
+                    if let Expr::Lit(lit) = &*arg.expr {
+                        if let Lit::Str(s) = lit {
+                            return Some(&s.value);
+                        }
+                    }
+                }
+            }
+        }
+    }
+    None
 }

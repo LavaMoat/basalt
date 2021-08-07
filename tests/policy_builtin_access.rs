@@ -135,14 +135,17 @@ fn policy_builtin_access_execute_function_expression() -> Result<()> {
 #[test]
 fn policy_builtin_access_execute_require_dot_member_expr() -> Result<()> {
     let code = r#"
-        var Transform = require("stream").Transform;
+        var TransformStream = require("stream").Transform;
         var util = require("util");
-        util.inherits(ByteCounter, Transform);
+        util.inherits(ByteCounter, TransformStream);
         function ByteCounter(options) {
-          Transform.call(this, options);
+          TransformStream.call(this, options);
         }
         "#;
     let result = analyze(code)?;
+
+    println!("Result {:#?}", result);
+
     assert_eq!(2, result.len());
     let access = result.get(&JsWord::from("util.inherits")).unwrap();
     assert_eq!(true, access.execute);

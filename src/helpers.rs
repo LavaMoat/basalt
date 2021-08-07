@@ -2,8 +2,6 @@
 use swc_atoms::JsWord;
 use swc_ecma_ast::*;
 
-const REQUIRE: &str = "require";
-
 /// Walk a variable declaration and find all symbols.
 pub fn var_symbol_words(var: &VarDecl) -> Vec<(&VarDeclarator, Vec<&JsWord>)> {
     var.decls
@@ -81,50 +79,6 @@ pub fn pattern_words<'a>(pat: &'a Pat, names: &mut Vec<&'a JsWord>) {
         }
         _ => {}
     }
-}
-
-/// Detect an expression that is a call to `require()`.
-///
-/// The call must have a single argument and the argument
-/// must be a string literal.
-///
-/// The returned boolean indicates if the require is part of a member
-/// expression which means builtin analysis can treat dot access like
-/// object destructuring and indicate that this is not a "default import".
-pub fn is_require_expr<'a>(n: &'a Expr) -> Option<(&'a JsWord, bool)> {
-    match n {
-        Expr::Call(call) => {
-            return is_require_call(call).map(|o| (o, false));
-        }
-        Expr::Member(n) => {
-            // `require('buffer').Buffer`
-            if let ExprOrSuper::Expr(expr) = &n.obj {
-                if let Expr::Call(call) = &**expr {
-                    return is_require_call(call).map(|o| (o, true));
-                }
-            }
-        }
-        _ => {}
-    }
-    None
-}
-
-fn is_require_call<'a>(call: &'a CallExpr) -> Option<&'a JsWord> {
-    if call.args.len() == 1 {
-        if let ExprOrSuper::Expr(n) = &call.callee {
-            if let Expr::Ident(id) = &**n {
-                if id.sym.as_ref() == REQUIRE {
-                    let arg = call.args.get(0).unwrap();
-                    if let Expr::Lit(lit) = &*arg.expr {
-                        if let Lit::Str(s) = lit {
-                            return Some(&s.value);
-                        }
-                    }
-                }
-            }
-        }
-    }
-    None
 }
 
 /// Normalize an import specifier removing nested paths.

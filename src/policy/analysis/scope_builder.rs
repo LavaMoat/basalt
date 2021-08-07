@@ -13,12 +13,15 @@ use swc_ecma_visit::{Node, Visit, VisitAll, VisitAllWith, VisitWith};
 use indexmap::IndexSet;
 
 use crate::{
-    helpers::{is_require_expr, pattern_words, var_symbol_words},
+    helpers::{pattern_words, var_symbol_words},
     module::dependencies::is_builtin_module,
-    policy::analysis::member_expr::{member_expr_words, walk},
+    policy::analysis::member_expr::{is_require_expr, member_expr_words, walk},
 };
 
 const GLOBAL_THIS: &str = "globalThis";
+
+const FUNCTION_METHODS: [&str; 5] =
+    ["call", "apply", "bind", "toSource", "toString"];
 
 /// Reference to a built in module.
 ///
@@ -35,6 +38,9 @@ pub(crate) enum Local {
     // Named locals will need to be converted to fully qualified
     // module paths, eg: `readSync` would become the canonical `fs.readSync`
     Named(JsWord),
+
+    // The local symbol is the first word and the alias is the second.
+    Alias(JsWord, JsWord),
 }
 
 /// Enumeration of function variants in the AST.
@@ -190,6 +196,7 @@ impl ScopeBuilder {
                 let word = match local {
                     Local::Default(word) => word,
                     Local::Named(word) => word,
+                    Local::Alias(word, _) => word,
                 };
                 word == sym
             });
@@ -398,11 +405,15 @@ impl ScopeBuilder {
         match n {
             Expr::Ident(n) => {
                 self.insert_ident(n.sym.clone(), scope, None);
-                if let Some((_local, source)) = self.is_builtin_match(&n.sym) {
-                    let words_key = if source == n.sym {
-                        vec![source]
+                if let Some((local, source)) = self.is_builtin_match(&n.sym) {
+                    let words_key = if let Local::Alias(_, alias) = local {
+                        vec![source, alias.clone()]
                     } else {
-                        vec![source, n.sym.clone()]
+                        if source == n.sym {
+                            vec![source]
+                        } else {
+                            vec![source, n.sym.clone()]
+                        }
                     };
 
                     self.insert_builtin(words_key);
@@ -507,7 +518,11 @@ impl ScopeBuilder {
                                         vec![source, word.clone()]
                                     }
                                     Local::Default(_word) => vec![source],
+                                    Local::Alias(_word, alias) => {
+                                        vec![source, alias.clone()]
+                                    }
                                 };
+
                                 self.insert_builtin(words_key);
                             }
 
@@ -547,22 +562,22 @@ impl ScopeBuilder {
                                     if let Local::Default(_) = local {
                                         words_key.remove(0);
                                     }
-                                    words_key.insert(0, source);
+                                    words_key.insert(0, source.clone());
                                 }
                             }
 
-                            // FIXME: restore this for execute access
-                            /*
+                            if let Local::Alias(_word, alias) = local {
+                                words_key = vec![source, alias.clone()];
+                            }
+
+                            // FIXME: only apply this logic for function calls (execute access)
+
                             // Strip function methods like `call`, `apply` and `bind` etc.
-                            if let AccessKind::Execute = kind {
-                                if let Some(last) = words_key.last() {
-                                    if FUNCTION_METHODS.contains(&last.as_ref())
-                                    {
-                                        words_key.pop();
-                                    }
+                            if let Some(last) = words_key.last() {
+                                if FUNCTION_METHODS.contains(&last.as_ref()) {
+                                    words_key.pop();
                                 }
                             }
-                            */
 
                             self.insert_builtin(words_key);
                         }
@@ -765,7 +780,7 @@ impl ScopeBuilder {
 
     fn visit_var_declarator(&mut self, n: &VarDeclarator, _scope: &mut Scope) {
         if let Some(init) = &n.init {
-            if let Some((name, is_member)) = is_require_expr(init) {
+            if let Some((name, member_name)) = is_require_expr(init) {
                 if is_builtin_module(name.as_ref()) {
                     let mut builtin = Builtin {
                         source: name.clone(),
@@ -774,12 +789,15 @@ impl ScopeBuilder {
                     builtin.locals = match &n.name {
                         // Looks like a default require statement
                         // but may have dot access so we test
-                        // is_member.
+                        // for a member name.
                         Pat::Ident(ident) => {
-                            if !is_member {
-                                vec![Local::Default(ident.id.sym.clone())]
+                            if let Some(member_name) = member_name {
+                                vec![Local::Alias(
+                                    ident.id.sym.clone(),
+                                    member_name.clone(),
+                                )]
                             } else {
-                                vec![Local::Named(ident.id.sym.clone())]
+                                vec![Local::Default(ident.id.sym.clone())]
                             }
                         }
                         // Handle object destructuring on LHS of require()

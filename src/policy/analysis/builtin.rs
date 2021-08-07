@@ -31,8 +31,7 @@ use indexmap::IndexMap;
 
 use crate::{
     access::{Access, AccessKind},
-    helpers::is_require_expr,
-    policy::analysis::member_expr::member_expr_words,
+    policy::analysis::member_expr::{is_require_expr, member_expr_words},
 };
 
 use super::scope_builder::{Builtin, Local};
@@ -127,6 +126,7 @@ impl BuiltinAnalyzer {
                 let word = match local {
                     Local::Default(word) => word,
                     Local::Named(word) => word,
+                    Local::Alias(word, _) => word,
                 };
                 word == sym
             });
@@ -155,11 +155,15 @@ impl BuiltinAnalyzer {
     fn access_visit_expr(&mut self, n: &Expr, kind: &AccessKind) {
         match n {
             Expr::Ident(n) => {
-                if let Some((_local, source)) = self.is_builtin_match(&n.sym) {
-                    let words_key = if source == n.sym {
-                        vec![source]
+                if let Some((local, source)) = self.is_builtin_match(&n.sym) {
+                    let words_key = if let Local::Alias(_, alias) = local {
+                        vec![source, alias.clone()]
                     } else {
-                        vec![source, n.sym.clone()]
+                        if source == n.sym {
+                            vec![source]
+                        } else {
+                            vec![source, n.sym.clone()]
+                        }
                     };
 
                     self.insert_access(words_key, kind);
@@ -201,8 +205,12 @@ impl BuiltinAnalyzer {
                                     if let Local::Default(_) = local {
                                         words_key.remove(0);
                                     }
-                                    words_key.insert(0, source);
+                                    words_key.insert(0, source.clone());
                                 }
+                            }
+
+                            if let Local::Alias(_word, alias) = local {
+                                words_key = vec![source, alias.clone()];
                             }
 
                             // Strip function methods like `call`, `apply` and `bind` etc.
@@ -251,6 +259,9 @@ impl BuiltinAnalyzer {
                                         vec![source, word.clone()]
                                     }
                                     Local::Default(_word) => vec![source],
+                                    Local::Alias(_word, alias) => {
+                                        vec![source, alias.clone()]
+                                    }
                                 };
 
                                 self.insert_access(
