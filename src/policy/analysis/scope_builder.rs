@@ -906,6 +906,7 @@ impl ScopeBuilder {
         } else {
             WordOrPath::Word(sym)
         };
+
         scope.idents.insert(word_or_path);
     }
 }
@@ -939,13 +940,28 @@ struct VisitNestedMembers {
     idents: Vec<Ident>,
 }
 
-impl Visit for VisitNestedMembers {
-    fn visit_member_expr(&mut self, n: &MemberExpr, _: &dyn Node) {
-        self.members.push(n.clone());
+impl VisitNestedMembers {
+    fn _visit_expr(&mut self, n: &Expr) {
+        // FIXME: all the paths for nested member expressions should be declared!
+        match n {
+            Expr::Ident(n) => {
+                self.idents.push(n.clone());
+            }
+            Expr::Bin(n) => {
+                self._visit_expr(&*n.left);
+                self._visit_expr(&*n.right);
+            }
+            Expr::Member(n) => {
+                self.members.push(n.clone());
+            }
+            _ => {}
+        }
     }
+}
 
-    fn visit_ident(&mut self, n: &Ident, _: &dyn Node) {
-        self.idents.push(n.clone());
+impl Visit for VisitNestedMembers {
+    fn visit_expr(&mut self, n: &Expr, _: &dyn Node) {
+        self._visit_expr(n);
     }
 }
 
