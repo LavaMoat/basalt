@@ -36,7 +36,7 @@
 //import '@babel/parser';
 //import '@babel/traverse';
 
-import 'yazl';
+//import 'yazl';
 //
 //import 'yaml';
 //
@@ -44,6 +44,5 @@ import 'yazl';
 //import '@babel/generator';
 //
 //import 'semver';
-//
-//
-//import 'terser';
+
+import 'terser';

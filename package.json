@@ -33,7 +33,8 @@
     "react": "^17.0.2",
     "require-builtins": "file:./tests/mock-packages/require-builtins",
     "semver": "^7.3.5",
-    "terser": "^5.7.1",
+    "source-map": "0.7.3",
+    "terser": "4.8.0",
     "yaml": "^1.10.2",
     "yazl": "^2.5.1"
   }

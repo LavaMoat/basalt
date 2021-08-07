@@ -66,12 +66,16 @@ impl PolicyBuilder {
         };
 
         let mut visitor = |dep: VisitedDependency| {
-            //println!("Visiting module {:?}", dep.spec);
             if is_dependent_module(&dep.spec) {
                 match dep.file_name {
                     FileName::Real(path) => {
                         if let Some(module_base) = module_base_directory(&path)
                         {
+                            log::debug!(
+                                "Resolved {:#?} with {:#?}",
+                                &dep.spec,
+                                module_base.display()
+                            );
                             self.package_buckets
                                 .entry((dep.spec.clone(), module_base))
                                 .or_insert(Default::default());
@@ -90,12 +94,27 @@ impl PolicyBuilder {
             node.visit(&mut visitor)?;
         }
 
+        // Sort the module base keys as we need to find the deepest match
+        // so the sort and reverse iteration will yield the deeper path first.
+        let mut base_keys: Vec<PathBuf> = self
+            .package_buckets
+            .iter()
+            .map(|((_, module_base), _)| module_base.clone())
+            .collect();
+        base_keys.sort();
+
         // Put the cached module paths in each package bucket.
         for item in cached_modules().iter() {
             let key = item.key();
-            for ((_, module_base), set) in self.package_buckets.iter_mut() {
-                if key.starts_with(module_base) {
-                    set.insert(key.to_path_buf());
+            if let Some(module_base) =
+                base_keys.iter().rev().find(|p| key.starts_with(p))
+            {
+                if let Some((_, modules)) = self
+                    .package_buckets
+                    .iter_mut()
+                    .find(|((_, base), _)| base == module_base)
+                {
+                    modules.insert(key.to_path_buf());
                 }
             }
         }
@@ -110,8 +129,9 @@ impl PolicyBuilder {
             HashMap::new();
         for ((spec, module_base), modules) in self.package_buckets.drain() {
             let key = normalize_specifier(&spec);
-            let entry =
-                tmp.entry((key, module_base)).or_insert(Default::default());
+            let entry = tmp
+                .entry((key, module_base.clone()))
+                .or_insert(Default::default());
             for p in modules {
                 entry.insert(p);
             }
