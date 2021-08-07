@@ -100,12 +100,12 @@ impl PolicyBuilder {
             }
         }
 
-        Ok(self)
+        Ok(self.flatten()?.group()?)
     }
 
     /// Flatten package nested paths so that the modules are grouped
     /// with the parent package.
-    pub fn flatten(mut self) -> Result<Self> {
+    fn flatten(mut self) -> Result<Self> {
         let mut tmp: HashMap<(String, PathBuf), HashSet<PathBuf>> =
             HashMap::new();
         for ((spec, module_base), modules) in self.package_buckets.drain() {
@@ -124,10 +124,10 @@ impl PolicyBuilder {
 
     /// Merge packages with the same specifier.
     ///
-    /// THe npm package manager allows multiple versions of the same package
+    /// The npm package manager allows multiple versions of the same package
     /// so we merge them into a single bucket with all of the modules so
     /// the end result is cumulative analysis across multiple versions of the same package.
-    pub fn group(mut self) -> Result<Self> {
+    fn group(mut self) -> Result<Self> {
         for ((spec, _module_base), modules) in self.package_buckets.drain() {
             if let Some(entry) = self.package_groups.get_mut(&spec) {
                 for p in modules {

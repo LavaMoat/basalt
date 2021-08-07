@@ -9,7 +9,7 @@ fn load_policy_test(dir: &str) -> Result<(String, String)> {
         std::fs::read_to_string(PathBuf::from(dir).join("output.json"))?;
     let file = PathBuf::from(dir).join("input.js");
     let builder = PolicyBuilder::new(file);
-    let policy = builder.load()?.flatten()?.group()?.analyze()?.finalize();
+    let policy = builder.load()?.analyze()?.finalize();
     let result = serde_json::to_string_pretty(&policy)?;
     Ok((expected.trim_end().to_string(), result))
 }
