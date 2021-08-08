@@ -16,7 +16,7 @@ use crate::{
     helpers::{pattern_words, var_symbol_words},
     module::dependencies::is_builtin_module,
     policy::analysis::{
-        dynamic_import::is_require_expr,
+        dynamic_import::{is_require_expr, DynamicCall},
         member_expr::{member_expr_words, walk},
         module_exports::is_module_exports,
     },
@@ -32,6 +32,18 @@ const FUNCTION_METHODS: [&str; 5] =
 /// May be from an import specifier, call to `require()` or a dynamic `import()`.
 #[derive(Debug, Hash, Eq, PartialEq, Clone)]
 pub struct Builtin {
+    // This tells us that the name of the local symbol is
+    // a match for the property of the import which can happen
+    // when an ESM import:
+    //
+    // import {readSync} from 'fs';
+    //
+    // Destructuring a call to `require()`:
+    //
+    // const {readSync} = require('fs');
+    //
+    // Which means it is safe to use the local name in the generated builtin path.
+    pub(crate) static_assign: bool,
     pub(crate) source: JsWord,
     pub(crate) locals: Vec<Local>,
 }
@@ -169,6 +181,7 @@ impl ScopeBuilder {
     pub fn add_static_import(&mut self, n: &ImportDecl) {
         if is_builtin_module(n.src.value.as_ref()) {
             let mut builtin = Builtin {
+                static_assign: true,
                 source: n.src.value.clone(),
                 locals: Default::default(),
             };
@@ -194,7 +207,7 @@ impl ScopeBuilder {
 
     /// Determine if a word matches a previously located builtin module local
     /// symbol. For member expressions pass the first word in the expression.
-    fn is_builtin_match(&self, sym: &JsWord) -> Option<(&Local, JsWord)> {
+    fn is_builtin_match(&self, sym: &JsWord) -> Option<(&Local, JsWord, &Builtin)> {
         for builtin in self.candidates.iter() {
             let mut matched = builtin.locals.iter().find(|local| {
                 let word = match local {
@@ -205,7 +218,7 @@ impl ScopeBuilder {
                 word == sym
             });
             if let Some(local) = matched.take() {
-                return Some((local, builtin.source.clone()));
+                return Some((local, builtin.source.clone(), builtin));
             }
         }
         None
@@ -214,6 +227,18 @@ impl ScopeBuilder {
     #[inline(always)]
     fn insert_builtin(&mut self, words_key: Vec<JsWord>) {
         self.builtins.insert(words_key);
+    }
+
+    #[inline(always)]
+    fn insert_side_effect_builtin(&mut self, dynamic_call: &DynamicCall) {
+        let words_key = if let Some(member) =
+            dynamic_call.member
+        {
+            vec![dynamic_call.arg.clone(), member.clone()]
+        } else {
+            vec![dynamic_call.arg.clone()]
+        };
+        self.insert_builtin(words_key);
     }
 
     /// Visit a statement.
@@ -409,14 +434,18 @@ impl ScopeBuilder {
         match n {
             Expr::Ident(n) => {
                 self.insert_ident(n.sym.clone(), scope, None);
-                if let Some((local, source)) = self.is_builtin_match(&n.sym) {
+                if let Some((local, source, builtin)) = self.is_builtin_match(&n.sym) {
                     let words_key = if let Local::Alias(_, alias) = local {
                         vec![source, alias.clone()]
                     } else {
                         if source == n.sym {
                             vec![source]
                         } else {
-                            vec![source, n.sym.clone()]
+                            if builtin.static_assign {
+                                vec![source, n.sym.clone()]
+                            } else {
+                                vec![source]
+                            }
                         }
                     };
 
@@ -499,6 +528,14 @@ impl ScopeBuilder {
                 }
                 for arg in &n.args {
                     self.visit_expr(&*arg.expr, scope);
+
+                    //if let Some(dynamic_call) = is_require_expr(&*arg.expr) {
+                        //if let Some((_local, _source, _)) =
+                            //self.is_builtin_match(&dynamic_call.arg)
+                        //{
+                            //self.insert_side_effect_builtin(&dynamic_call);
+                        //}
+                    //}
                 }
             }
             Expr::Update(n) => {
@@ -514,7 +551,7 @@ impl ScopeBuilder {
                     }
                     PatOrExpr::Pat(pat) => match &**pat {
                         Pat::Ident(ident) => {
-                            if let Some((local, source)) =
+                            if let Some((local, source, _)) =
                                 self.is_builtin_match(&ident.id.sym)
                             {
                                 let words_key = match local {
@@ -546,6 +583,7 @@ impl ScopeBuilder {
                 if let Some(dynamic_call) = is_require_expr(&*assign.right) {
                     if is_builtin_module(dynamic_call.arg.as_ref()) {
                         let mut builtin = Builtin {
+                            static_assign: false,
                             source: dynamic_call.arg.clone(),
                             locals: Default::default(),
                         };
@@ -554,14 +592,7 @@ impl ScopeBuilder {
                         // we need to treat is as a side-effect import and
                         // automatically add it as a builtin
                         if is_module_exports(&assign.left) {
-                            let words_key = if let Some(member) =
-                                dynamic_call.member
-                            {
-                                vec![dynamic_call.arg.clone(), member.clone()]
-                            } else {
-                                vec![dynamic_call.arg.clone()]
-                            };
-                            self.insert_builtin(words_key);
+                            self.insert_side_effect_builtin(&dynamic_call);
                         // Otherwise set up the locals for builtin usage detection
                         } else {
                             match &assign.left {
@@ -627,7 +658,7 @@ impl ScopeBuilder {
                     let members = member_expr_words(member);
 
                     if let Some(word) = members.get(0) {
-                        if let Some((local, source)) =
+                        if let Some((local, source, _)) =
                             self.is_builtin_match(word)
                         {
                             let mut words_key: Vec<JsWord> =
@@ -858,6 +889,7 @@ impl ScopeBuilder {
             if let Some(dynamic_call) = is_require_expr(init) {
                 if is_builtin_module(dynamic_call.arg.as_ref()) {
                     let mut builtin = Builtin {
+                        static_assign: false,
                         source: dynamic_call.arg.clone(),
                         locals: Default::default(),
                     };
@@ -877,6 +909,8 @@ impl ScopeBuilder {
                         }
                         // Handle object destructuring on LHS of require()
                         _ => {
+                            builtin.static_assign = true;
+
                             let mut names = Vec::new();
                             pattern_words(&n.name, &mut names);
                             names
