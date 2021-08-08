@@ -32,6 +32,9 @@ pub fn is_import_expr<'a>(n: &'a Expr) -> Option<DynamicCall<'a>> {
     is_call_module(n, IMPORT)
 }
 
+// FIXME: search in object/array literals and other expressions
+// FIXME: and return a Vec not an Option
+
 fn is_call_module<'a>(
     n: &'a Expr,
     fn_name: &'static str,

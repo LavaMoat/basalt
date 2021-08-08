@@ -37,3 +37,5 @@ util = require('util');
 
 const Foo = function(){}
 util.inherits(Foo, EE);
+
+module.exports = require('url');

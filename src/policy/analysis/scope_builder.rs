@@ -18,6 +18,7 @@ use crate::{
     policy::analysis::{
         dynamic_import::is_require_expr,
         member_expr::{member_expr_words, walk},
+        module_exports::is_module_exports,
     },
 };
 
@@ -541,6 +542,7 @@ impl ScopeBuilder {
                 }
                 self.visit_expr(&*assign.right, scope);
 
+                // Dynamic require on RHS of assignment
                 if let Some(dynamic_call) = is_require_expr(&*assign.right) {
                     if is_builtin_module(dynamic_call.arg.as_ref()) {
                         let mut builtin = Builtin {
@@ -548,28 +550,58 @@ impl ScopeBuilder {
                             locals: Default::default(),
                         };
 
-                        match &assign.left {
-                            PatOrExpr::Expr(expr) => match &**expr {
-                                Expr::Ident(n) => {
-                                    builtin
-                                        .locals
-                                        .push(Local::Named(n.sym.clone()));
-                                }
-                                _ => {}
-                            },
-                            PatOrExpr::Pat(pat) => match &**pat {
-                                Pat::Ident(ident) => {
-                                    builtin.locals.push(Local::Named(
-                                        ident.id.sym.clone(),
-                                    ));
-                                }
-                                _ => {}
-                            },
-                        }
+                        // Assigning to module exports is a re-export so
+                        // we need to treat is as a side-effect import and
+                        // automatically add it as a builtin
+                        if is_module_exports(&assign.left) {
+                            let words_key = if let Some(member) = dynamic_call.member {
+                                vec![dynamic_call.arg.clone(), member.clone()]
+                            } else { vec![dynamic_call.arg.clone()] };
+                            self.insert_builtin(words_key);
+                        // Otherwise set up the locals for builtin usage detection
+                        } else {
+                            match &assign.left {
+                                PatOrExpr::Expr(expr) => match &**expr {
+                                    Expr::Ident(n) => {
+                                        builtin
+                                            .locals
+                                            .push(
+                                                {
+                                                    if let Some(member) = dynamic_call.member {
+                                                        Local::Alias(dynamic_call.arg.clone(), member.clone())
+                                                    } else {
+                                                        Local::Named(n.sym.clone())
+                                                    }
+                                                });
+                                    }
+                                    // TODO: handle assignment to member expression:
+                                    //
+                                    // Foo.prototype.util = require('util');
+                                    //
+                                    _ => {}
+                                },
+                                PatOrExpr::Pat(pat) => match &**pat {
+                                    Pat::Ident(ident) => {
+                                        builtin
+                                            .locals
+                                            .push(
+                                                {
+                                                    if let Some(member) = dynamic_call.member {
+                                                        Local::Alias(dynamic_call.arg.clone(), member.clone())
+                                                    } else {
+                                                        Local::Named(ident.id.sym.clone())
+                                                    }
+                                                });
+                                    }
+                                    _ => {}
+                                },
+                            }
 
-                        self.candidates.push(builtin);
+                            self.candidates.push(builtin);
+                        }
                     }
                 }
+
             }
             Expr::OptChain(n) => {
                 self.visit_expr(&n.expr, scope);
