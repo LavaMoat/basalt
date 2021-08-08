@@ -1,3 +1,4 @@
+/*
 const fs = require('fs');
 const path = require('path');
 const {readSync, writeSync} = require('fs');
@@ -28,4 +29,9 @@ function random () {
     .randomBytes(4)
     .toString('hex')
   return parseInt(buf, 16);
+}
+*/
+
+function atob(str) {
+  return Buffer.from(str, 'base64').toString('binary');
 }

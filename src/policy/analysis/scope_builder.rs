@@ -15,7 +15,10 @@ use indexmap::IndexSet;
 use crate::{
     helpers::{pattern_words, var_symbol_words},
     module::dependencies::is_builtin_module,
-    policy::analysis::member_expr::{is_require_expr, member_expr_words, walk},
+    policy::analysis::{
+        dynamic_import::is_require_expr,
+        member_expr::{member_expr_words, walk},
+    },
 };
 
 const GLOBAL_THIS: &str = "globalThis";
@@ -781,10 +784,11 @@ impl ScopeBuilder {
 
     fn visit_var_declarator(&mut self, n: &VarDeclarator, _scope: &mut Scope) {
         if let Some(init) = &n.init {
-            if let Some((name, member_name)) = is_require_expr(init) {
-                if is_builtin_module(name.as_ref()) {
+            if let Some(dynamic_call) = is_require_expr(init) {
+
+                if is_builtin_module(dynamic_call.arg.as_ref()) {
                     let mut builtin = Builtin {
-                        source: name.clone(),
+                        source: dynamic_call.arg.clone(),
                         locals: Default::default(),
                     };
                     builtin.locals = match &n.name {
@@ -792,7 +796,7 @@ impl ScopeBuilder {
                         // but may have dot access so we test
                         // for a member name.
                         Pat::Ident(ident) => {
-                            if let Some(member_name) = member_name {
+                            if let Some(member_name) = dynamic_call.member {
                                 vec![Local::Alias(
                                     ident.id.sym.clone(),
                                     member_name.clone(),
@@ -856,7 +860,7 @@ impl ScopeBuilder {
             }
         }
 
-        if let Some(member_expr) = self.compute_member_words(&mut expressions) {
+        if let Some(member_expr) = self.compute_member_words(&mut expressions, scope) {
             members.push(member_expr);
         }
 
@@ -866,6 +870,7 @@ impl ScopeBuilder {
     fn compute_member_words(
         &mut self,
         expressions: &Vec<&Expr>,
+        scope: &mut Scope,
     ) -> Option<(JsWord, Vec<JsWord>)> {
         let mut words: Vec<JsWord> = Vec::new();
         for expr in expressions.iter() {
@@ -879,6 +884,13 @@ impl ScopeBuilder {
                             Expr::Ident(id) => {
                                 words.push(id.sym.clone());
                             }
+                            Expr::Member(n) => {
+                                let computed = self.compute_member(n, scope);
+                                for (word, mut parts) in computed {
+                                    words.push(word);
+                                    words.append(&mut parts);
+                                }
+                            },
                             _ => {}
                         }
                     }
