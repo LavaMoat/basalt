@@ -32,8 +32,7 @@ use indexmap::IndexMap;
 use crate::{
     access::{Access, AccessKind},
     policy::analysis::{
-        dynamic_import::is_require_expr,
-        member_expr::member_expr_words,
+        dynamic_import::is_require_expr, member_expr::member_expr_words,
     },
 };
 

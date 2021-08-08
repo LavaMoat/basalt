@@ -55,11 +55,10 @@ fn walk_member_expressions<'a>(n: &'a MemberExpr, words: &mut Vec<&'a JsWord>) {
                 ExprOrSuper::Expr(expr) => match &**expr {
                     Expr::Member(n) => walk_member_expressions(n, words),
                     _ => {}
-                }
+                },
                 _ => {}
             },
-            _ => {},
+            _ => {}
         }
     }
-
 }

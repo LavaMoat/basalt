@@ -39,7 +39,6 @@ pub struct PolicyBuilder {
     /// Package buckets after grouping.
     package_groups: HashMap<String, HashSet<PathBuf>>,
     */
-
     /// Cumulative analysis for a package by merging the analysis for
     /// each module in the package.
     //package_analysis: HashMap<(String, PathBuf), PackagePolicy>,

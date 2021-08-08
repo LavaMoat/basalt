@@ -8,9 +8,11 @@ const EXPORTS: &str = "exports";
 pub fn is_module_exports(n: &Expr) -> bool {
     match n {
         Expr::Member(n) => {
-            if let (ExprOrSuper::Expr(expr), Expr::Ident(prop)) = (&n.obj, &*n.prop) {
+            if let (ExprOrSuper::Expr(expr), Expr::Ident(prop)) =
+                (&n.obj, &*n.prop)
+            {
                 if let Expr::Ident(obj) = &**expr {
-                    return obj.as_ref() == MODULE && prop.as_ref() == EXPORTS
+                    return obj.as_ref() == MODULE && prop.as_ref() == EXPORTS;
                 }
             }
         }

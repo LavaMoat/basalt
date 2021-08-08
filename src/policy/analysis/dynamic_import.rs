@@ -15,24 +15,20 @@ pub struct DynamicCall<'a> {
     /// Argument passed to the function.
     pub arg: &'a JsWord,
     /// Property name when call is a member expression.
-    pub member: Option<&'a JsWord>
+    pub member: Option<&'a JsWord>,
 }
 
 /// Detect an expression that is a call to `require()`.
 ///
 /// The call must be a simple call expression (single string argument).
-pub fn is_require_expr<'a>(
-    n: &'a Expr,
-) -> Option<DynamicCall<'a>> {
+pub fn is_require_expr<'a>(n: &'a Expr) -> Option<DynamicCall<'a>> {
     is_call_module(n, REQUIRE)
 }
 
 /// Detect an expression that is a call to `import()`.
 ///
 /// The call must be a simple call expression (single string argument).
-pub fn is_import_expr<'a>(
-    n: &'a Expr,
-) -> Option<DynamicCall<'a>> {
+pub fn is_import_expr<'a>(n: &'a Expr) -> Option<DynamicCall<'a>> {
     is_call_module(n, IMPORT)
 }
 
@@ -42,8 +38,10 @@ fn is_call_module<'a>(
 ) -> Option<DynamicCall<'a>> {
     match n {
         Expr::Call(call) => {
-            return is_simple_call(call, fn_name).map(|arg| {
-                DynamicCall { arg, member: None, fn_name }
+            return is_simple_call(call, fn_name).map(|arg| DynamicCall {
+                arg,
+                member: None,
+                fn_name,
             });
         }
         Expr::Member(n) => {
@@ -58,8 +56,10 @@ fn is_call_module<'a>(
                     } else {
                         None
                     };
-                return is_simple_call(call, fn_name).map(|arg| {
-                    DynamicCall { arg, member: prop_name, fn_name }
+                return is_simple_call(call, fn_name).map(|arg| DynamicCall {
+                    arg,
+                    member: prop_name,
+                    fn_name,
                 });
             }
         }
@@ -72,7 +72,10 @@ fn is_call_module<'a>(
 ///
 /// The call must have a single argument and the argument
 /// must be a string literal.
-fn is_simple_call<'a>(call: &'a CallExpr, fn_name: &'static str) -> Option<&'a JsWord> {
+fn is_simple_call<'a>(
+    call: &'a CallExpr,
+    fn_name: &'static str,
+) -> Option<&'a JsWord> {
     if call.args.len() == 1 {
         if let ExprOrSuper::Expr(n) = &call.callee {
             if let Expr::Ident(id) = &**n {

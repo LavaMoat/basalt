@@ -540,6 +540,36 @@ impl ScopeBuilder {
                     },
                 }
                 self.visit_expr(&*assign.right, scope);
+
+                if let Some(dynamic_call) = is_require_expr(&*assign.right) {
+                    if is_builtin_module(dynamic_call.arg.as_ref()) {
+                        let mut builtin = Builtin {
+                            source: dynamic_call.arg.clone(),
+                            locals: Default::default(),
+                        };
+
+                        match &assign.left {
+                            PatOrExpr::Expr(expr) => match &**expr {
+                                Expr::Ident(n) => {
+                                    builtin
+                                        .locals
+                                        .push(Local::Named(n.sym.clone()));
+                                }
+                                _ => {}
+                            },
+                            PatOrExpr::Pat(pat) => match &**pat {
+                                Pat::Ident(ident) => {
+                                    builtin.locals.push(Local::Named(
+                                        ident.id.sym.clone(),
+                                    ));
+                                }
+                                _ => {}
+                            },
+                        }
+
+                        self.candidates.push(builtin);
+                    }
+                }
             }
             Expr::OptChain(n) => {
                 self.visit_expr(&n.expr, scope);
@@ -785,7 +815,6 @@ impl ScopeBuilder {
     fn visit_var_declarator(&mut self, n: &VarDeclarator, _scope: &mut Scope) {
         if let Some(init) = &n.init {
             if let Some(dynamic_call) = is_require_expr(init) {
-
                 if is_builtin_module(dynamic_call.arg.as_ref()) {
                     let mut builtin = Builtin {
                         source: dynamic_call.arg.clone(),
@@ -860,7 +889,9 @@ impl ScopeBuilder {
             }
         }
 
-        if let Some(member_expr) = self.compute_member_words(&mut expressions, scope) {
+        if let Some(member_expr) =
+            self.compute_member_words(&mut expressions, scope)
+        {
             members.push(member_expr);
         }
 
@@ -890,7 +921,7 @@ impl ScopeBuilder {
                                     words.push(word);
                                     words.append(&mut parts);
                                 }
-                            },
+                            }
                             _ => {}
                         }
                     }

@@ -1,4 +1,3 @@
-/*
 const fs = require('fs');
 const path = require('path');
 const {readSync, writeSync} = require('fs');
@@ -10,8 +9,6 @@ writeSync("test.txt", "foo");
 
 const pth = path.join("a", "b", "c");
 const rs = readSync;
-
-
 
 // Write to builtin(s)!
 path.join.a.b.c = function() {}
@@ -30,8 +27,13 @@ function random () {
     .toString('hex')
   return parseInt(buf, 16);
 }
-*/
 
 function atob(str) {
   return Buffer.from(str, 'base64').toString('binary');
 }
+
+var util;
+util = require('util');
+
+const Foo = function(){}
+util.inherits(Foo, EE);
