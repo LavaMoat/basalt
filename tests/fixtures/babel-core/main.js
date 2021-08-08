@@ -47,5 +47,7 @@
 
 //import 'terser';
 
-import '@babel/parser';
+//import 'braces';
+import 'micromatch';
+import 'anymatch';
 

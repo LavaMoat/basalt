@@ -35,13 +35,11 @@ pub struct PolicyBuilder {
     /// the base path.
     package_buckets: HashMap<(String, PathBuf), HashSet<PathBuf>>,
 
-    /*
-    /// Package buckets after grouping.
+    /// Package buckets after grouping multiple versions of the same package.
     package_groups: HashMap<String, HashSet<PathBuf>>,
-    */
+
     /// Cumulative analysis for a package by merging the analysis for
     /// each module in the package.
-    //package_analysis: HashMap<(String, PathBuf), PackagePolicy>,
     package_analysis: Policy,
 }
 
@@ -52,6 +50,7 @@ impl PolicyBuilder {
             entry,
             resolver: Box::new(NodeResolver::default()),
             package_buckets: Default::default(),
+            package_groups: Default::default(),
             package_analysis: Default::default(),
         }
     }
@@ -121,7 +120,7 @@ impl PolicyBuilder {
             }
         }
 
-        Ok(self.flatten()?)
+        Ok(self.flatten()?.group()?)
     }
 
     /// Flatten package nested paths so that the modules are grouped
@@ -144,7 +143,6 @@ impl PolicyBuilder {
         Ok(self)
     }
 
-    /*
     /// Merge packages with the same specifier.
     ///
     /// The npm package manager allows multiple versions of the same package
@@ -162,15 +160,14 @@ impl PolicyBuilder {
         }
         Ok(self)
     }
-    */
 
     /// Analyze and aggregate the modules for all dependent packages.
     pub fn analyze(mut self) -> Result<Self> {
-        let groups = std::mem::take(&mut self.package_buckets);
+        let groups = std::mem::take(&mut self.package_groups);
 
         let analyzed: Vec<_> = groups
             .into_par_iter()
-            .map(|((spec, _), modules)| {
+            .map(|(spec, modules)| {
                 let result = analyze_modules(&spec, modules);
                 (spec, result)
             })
@@ -228,16 +225,27 @@ fn analyze_modules(
                     .map(|atom| (atom.as_ref().to_string(), true.into()))
                     .collect::<BTreeMap<String, PolicyAccess>>();
 
+                //if spec == "braces" {
+                    //println!("Calculating braces module {:#?}", module_key);
+                //}
+
                 // Compute dependent packages
                 let packages = if let Some(deps) = &node.dependencies {
                     deps.iter()
                         .filter_map(|dep| {
+
                             let normalized = normalize_specifier(dep.specifier.as_ref());
                             // Some packages such as @babel/runtime can end up with
                             // themselves in the dependency list so we explicitly disallow this
                             if spec != &normalized
                                 && is_dependent_module(dep.specifier.as_ref())
                             {
+
+                            //if spec == "braces" {
+                                //println!("Got module dependency {:#?} of {:#?}", dep, module_key);
+                            //}
+
+
                                 Some((normalized, true.into()))
                             } else {
                                 None
@@ -247,6 +255,10 @@ fn analyze_modules(
                 } else {
                     BTreeMap::new()
                 };
+
+                //if spec == "braces" {
+                    //println!("Calculating braces module {:#?}", packages);
+                //}
 
                 return (globals, builtin, packages);
             }
