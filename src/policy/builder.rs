@@ -170,7 +170,10 @@ impl PolicyBuilder {
 
         let analyzed: Vec<_> = groups
             .into_par_iter()
-            .map(|((spec, _), modules)| (spec, analyze_modules(modules)))
+            .map(|((spec, _), modules)| {
+                let result = analyze_modules(&spec, modules);
+                (spec, result)
+            })
             .collect();
 
         for (spec, policy) in analyzed {
@@ -190,7 +193,10 @@ impl PolicyBuilder {
 }
 
 /// Walk all the modules in a package and perform a cumulative analysis.
-fn analyze_modules(modules: HashSet<PathBuf>) -> Result<PackagePolicy> {
+fn analyze_modules(
+    spec: &str,
+    modules: HashSet<PathBuf>,
+) -> Result<PackagePolicy> {
     let cache = cached_modules();
 
     // Aggregated analysis data
@@ -222,14 +228,17 @@ fn analyze_modules(modules: HashSet<PathBuf>) -> Result<PackagePolicy> {
                     .map(|atom| (atom.as_ref().to_string(), true.into()))
                     .collect::<BTreeMap<String, PolicyAccess>>();
 
+                // Compute dependent packages
                 let packages = if let Some(deps) = &node.dependencies {
                     deps.iter()
                         .filter_map(|dep| {
-                            if is_dependent_module(dep.specifier.as_ref()) {
-                                Some((
-                                    normalize_specifier(dep.specifier.as_ref()),
-                                    true.into(),
-                                ))
+                            let normalized = normalize_specifier(dep.specifier.as_ref());
+                            // Some packages such as @babel/runtime can end up with
+                            // themselves in the dependency list so we explicitly disallow this
+                            if spec != &normalized
+                                && is_dependent_module(dep.specifier.as_ref())
+                            {
+                                Some((normalized, true.into()))
                             } else {
                                 None
                             }

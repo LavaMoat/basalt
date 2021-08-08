@@ -554,25 +554,31 @@ impl ScopeBuilder {
                         // we need to treat is as a side-effect import and
                         // automatically add it as a builtin
                         if is_module_exports(&assign.left) {
-                            let words_key = if let Some(member) = dynamic_call.member {
+                            let words_key = if let Some(member) =
+                                dynamic_call.member
+                            {
                                 vec![dynamic_call.arg.clone(), member.clone()]
-                            } else { vec![dynamic_call.arg.clone()] };
+                            } else {
+                                vec![dynamic_call.arg.clone()]
+                            };
                             self.insert_builtin(words_key);
                         // Otherwise set up the locals for builtin usage detection
                         } else {
                             match &assign.left {
                                 PatOrExpr::Expr(expr) => match &**expr {
                                     Expr::Ident(n) => {
-                                        builtin
-                                            .locals
-                                            .push(
-                                                {
-                                                    if let Some(member) = dynamic_call.member {
-                                                        Local::Alias(dynamic_call.arg.clone(), member.clone())
-                                                    } else {
-                                                        Local::Named(n.sym.clone())
-                                                    }
-                                                });
+                                        builtin.locals.push({
+                                            if let Some(member) =
+                                                dynamic_call.member
+                                            {
+                                                Local::Alias(
+                                                    dynamic_call.arg.clone(),
+                                                    member.clone(),
+                                                )
+                                            } else {
+                                                Local::Named(n.sym.clone())
+                                            }
+                                        });
                                     }
                                     // TODO: handle assignment to member expression:
                                     //
@@ -582,16 +588,20 @@ impl ScopeBuilder {
                                 },
                                 PatOrExpr::Pat(pat) => match &**pat {
                                     Pat::Ident(ident) => {
-                                        builtin
-                                            .locals
-                                            .push(
-                                                {
-                                                    if let Some(member) = dynamic_call.member {
-                                                        Local::Alias(dynamic_call.arg.clone(), member.clone())
-                                                    } else {
-                                                        Local::Named(ident.id.sym.clone())
-                                                    }
-                                                });
+                                        builtin.locals.push({
+                                            if let Some(member) =
+                                                dynamic_call.member
+                                            {
+                                                Local::Alias(
+                                                    dynamic_call.arg.clone(),
+                                                    member.clone(),
+                                                )
+                                            } else {
+                                                Local::Named(
+                                                    ident.id.sym.clone(),
+                                                )
+                                            }
+                                        });
                                     }
                                     _ => {}
                                 },
@@ -601,7 +611,6 @@ impl ScopeBuilder {
                         }
                     }
                 }
-
             }
             Expr::OptChain(n) => {
                 self.visit_expr(&n.expr, scope);
