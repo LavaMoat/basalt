@@ -47,5 +47,5 @@
 
 //import 'terser';
 
-import 'glob';
+import '@babel/parser';
 

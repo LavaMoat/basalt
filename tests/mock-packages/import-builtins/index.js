@@ -9,3 +9,8 @@ fs.writeSync("test.txt", "foo");
 
 const pth = path.join("a", "b", "c");
 
+class Foo {
+  addComment() {
+    return super.addComment();
+  }
+}

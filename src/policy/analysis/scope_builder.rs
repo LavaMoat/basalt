@@ -899,6 +899,10 @@ impl ScopeBuilder {
     ) -> Vec<(JsWord, Vec<JsWord>)> {
         let mut members = Vec::new();
 
+        if let ExprOrSuper::Super(_) = &n.obj {
+            return members;
+        }
+
         let mut expressions = Vec::new();
         walk(n, &mut expressions);
 
