@@ -519,7 +519,41 @@ impl ScopeBuilder {
                             Prop::KeyValue(n) => {
                                 self.visit_expr(&*n.value, scope);
                             }
-                            _ => {}
+                            Prop::Method(n) => {
+                                self.visit_function(
+                                    Func::Fn(&n.function),
+                                    scope,
+                                    None,
+                                );
+                            }
+                            Prop::Assign(n) => {
+                                self.visit_expr(&*n.value, scope);
+                            }
+                            Prop::Getter(n) => {
+                                if let Some(body) = &n.body {
+                                    self.visit_block_stmt(body, scope);
+                                }
+                            }
+                            Prop::Setter(n) => {
+                                if let Some(body) = &n.body {
+                                    let mut names = Vec::new();
+                                    pattern_words(&n.param, &mut names);
+                                    let locals: IndexSet<_> = names
+                                        .into_iter()
+                                        .map(|n| n.clone())
+                                        .collect();
+
+                                    let mut next_scope = Scope::new(
+                                        Some(locals),
+                                        Rc::clone(&scope.hoisted_vars),
+                                    );
+                                    self.visit_block_stmt(
+                                        body,
+                                        &mut next_scope,
+                                    );
+                                    scope.scopes.push(next_scope);
+                                }
+                            }
                         },
                     }
                 }
