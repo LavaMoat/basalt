@@ -207,7 +207,10 @@ impl ScopeBuilder {
 
     /// Determine if a word matches a previously located builtin module local
     /// symbol. For member expressions pass the first word in the expression.
-    fn is_builtin_match(&self, sym: &JsWord) -> Option<(&Local, JsWord, &Builtin)> {
+    fn is_builtin_match(
+        &self,
+        sym: &JsWord,
+    ) -> Option<(&Local, JsWord, &Builtin)> {
         for builtin in self.candidates.iter() {
             let mut matched = builtin.locals.iter().find(|local| {
                 let word = match local {
@@ -231,9 +234,7 @@ impl ScopeBuilder {
 
     #[inline(always)]
     fn insert_side_effect_builtin(&mut self, dynamic_call: &DynamicCall) {
-        let words_key = if let Some(member) =
-            dynamic_call.member
-        {
+        let words_key = if let Some(member) = dynamic_call.member {
             vec![dynamic_call.arg.clone(), member.clone()]
         } else {
             vec![dynamic_call.arg.clone()]
@@ -434,7 +435,9 @@ impl ScopeBuilder {
         match n {
             Expr::Ident(n) => {
                 self.insert_ident(n.sym.clone(), scope, None);
-                if let Some((local, source, builtin)) = self.is_builtin_match(&n.sym) {
+                if let Some((local, source, builtin)) =
+                    self.is_builtin_match(&n.sym)
+                {
                     let words_key = if let Local::Alias(_, alias) = local {
                         vec![source, alias.clone()]
                     } else {
@@ -530,11 +533,11 @@ impl ScopeBuilder {
                     self.visit_expr(&*arg.expr, scope);
 
                     //if let Some(dynamic_call) = is_require_expr(&*arg.expr) {
-                        //if let Some((_local, _source, _)) =
-                            //self.is_builtin_match(&dynamic_call.arg)
-                        //{
-                            //self.insert_side_effect_builtin(&dynamic_call);
-                        //}
+                    //if let Some((_local, _source, _)) =
+                    //self.is_builtin_match(&dynamic_call.arg)
+                    //{
+                    //self.insert_side_effect_builtin(&dynamic_call);
+                    //}
                     //}
                 }
             }

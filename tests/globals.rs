@@ -13,7 +13,8 @@ fn analyze(dir: &str) -> Result<(String, String)> {
     let mut analyzer = GlobalAnalysis::new(Default::default());
     let (_, _, module) = load_file(&input)?;
     module.visit_children_with(&mut analyzer);
-    let globals = analyzer.compute();
+    let globals = analyzer.compute_globals();
+    let globals = analyzer.flatten_join(globals);
     let result = serde_json::to_string_pretty(&globals)?;
     Ok((expected.trim_end().to_owned(), result))
 }

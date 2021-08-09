@@ -20,7 +20,10 @@ use swc_ecma_visit::{Node, Visit};
 
 use indexmap::IndexSet;
 
-use crate::policy::analysis::scope_builder::{Scope, ScopeBuilder, WordOrPath};
+use crate::policy::analysis::{
+    flatten, join_keys,
+    scope_builder::{Scope, ScopeBuilder, WordOrPath},
+};
 
 // SEE: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects
 
@@ -191,51 +194,27 @@ impl GlobalAnalysis {
     }
 
     /// Compute the builtins.
-    pub fn compute_builtins(&mut self) -> IndexSet<JsWord> {
+    pub fn compute_builtins(&mut self) -> IndexSet<Vec<JsWord>> {
         let builtins = std::mem::take(&mut self.builder.builtins);
-        self.join_keys(self.filter(builtins))
+        builtins
     }
 
     /// Compute the global variables.
-    pub fn compute(&mut self) -> IndexSet<JsWord> {
+    pub fn compute_globals(&mut self) -> IndexSet<Vec<JsWord>> {
         let mut global_symbols: IndexSet<Vec<JsWord>> = Default::default();
-        self.compute_globals(&self.root, &mut global_symbols, &mut vec![]);
-        self.join_keys(self.filter(global_symbols))
+        self.walk_globals(&self.root, &mut global_symbols, &mut vec![]);
+        global_symbols
     }
 
-    /// Join the words into a dot-delimited string.
-    fn join_keys(&self, set: IndexSet<Vec<JsWord>>) -> IndexSet<JsWord> {
-        set.iter()
-            .map(|words| {
-                let words: Vec<String> =
-                    words.into_iter().map(|w| w.as_ref().to_string()).collect();
-                JsWord::from(words.join("."))
-            })
-            .collect()
+    /// Flatten words then join into a single dot-delimited word.
+    pub fn flatten_join(
+        &self,
+        words: IndexSet<Vec<JsWord>>,
+    ) -> IndexSet<JsWord> {
+        join_keys(flatten(words))
     }
 
-    /// Filter the computed symbol list so that deep properties are
-    /// accumulated with the parent reference.
-    ///
-    /// For example, if we have `Buffer` and `Buffer.alloc` the `Buffer.alloc`
-    /// entry is removed and we defer to the parent `Buffer`.
-    fn filter(&self, set: IndexSet<Vec<JsWord>>) -> IndexSet<Vec<JsWord>> {
-        let compare = set.clone();
-        set.into_iter()
-            .filter(|k| {
-                for key in compare.iter() {
-                    if key.len() < k.len() {
-                        if k.starts_with(&key) {
-                            return false;
-                        }
-                    }
-                }
-                true
-            })
-            .collect()
-    }
-
-    fn compute_globals<'a>(
+    fn walk_globals<'a>(
         &self,
         scope: &'a Scope,
         global_symbols: &mut IndexSet<Vec<JsWord>>,
@@ -269,7 +248,7 @@ impl GlobalAnalysis {
         }
 
         for scope in scope.scopes.iter() {
-            self.compute_globals(scope, global_symbols, scope_stack);
+            self.walk_globals(scope, global_symbols, scope_stack);
         }
 
         scope_stack.pop();

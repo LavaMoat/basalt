@@ -4,7 +4,9 @@ use std::collections::{BTreeMap, HashMap, HashSet};
 use std::path::PathBuf;
 
 use anyhow::{bail, Result};
+use indexmap::IndexSet;
 
+use swc_atoms::JsWord;
 use swc_common::FileName;
 use swc_ecma_loader::{resolve::Resolve, resolvers::node::NodeResolver};
 use swc_ecma_visit::VisitWith;
@@ -19,7 +21,7 @@ use crate::{
         dependencies::is_dependent_module,
         node::{cached_modules, parse_file, VisitedDependency, VisitedModule},
     },
-    policy::analysis::globals_scope::GlobalAnalysis,
+    policy::analysis::{flatten, globals_scope::GlobalAnalysis, join_words},
 };
 
 /// Generate a policy.
@@ -200,77 +202,84 @@ fn analyze_modules(
     let mut analysis: PackagePolicy = Default::default();
 
     let data: Vec<(
-        BTreeMap<String, PolicyAccess>,
-        BTreeMap<String, PolicyAccess>,
-        BTreeMap<String, PolicyAccess>,
+        IndexSet<Vec<JsWord>>,
+        IndexSet<Vec<JsWord>>,
+        IndexSet<String>,
     )> = modules
         .into_par_iter()
         .map(|module_key| {
             let cached_module = cache.get(&module_key).unwrap();
             let visited_module = cached_module.value();
             if let VisitedModule::Module(_, _, node) = &**visited_module {
-                // Compute and aggregate globals
+                // Compute globals
                 let mut globals_scope = GlobalAnalysis::new(Default::default());
                 node.module.visit_children_with(&mut globals_scope);
-                let globals = globals_scope
-                    .compute()
-                    .into_iter()
-                    .map(|atom| (atom.as_ref().to_string(), true.into()))
-                    .collect::<BTreeMap<String, PolicyAccess>>();
+                let globals = globals_scope.compute_globals();
 
-                // Compute and aggregate builtins
-                let builtin = globals_scope
-                    .compute_builtins()
-                    .into_iter()
-                    .map(|atom| (atom.as_ref().to_string(), true.into()))
-                    .collect::<BTreeMap<String, PolicyAccess>>();
-
-                //if spec == "braces" {
-                    //println!("Calculating braces module {:#?}", module_key);
-                //}
+                // Compute builtins
+                let builtin = globals_scope.compute_builtins();
 
                 // Compute dependent packages
                 let packages = if let Some(deps) = &node.dependencies {
                     deps.iter()
                         .filter_map(|dep| {
-
-                            let normalized = normalize_specifier(dep.specifier.as_ref());
+                            let normalized =
+                                normalize_specifier(dep.specifier.as_ref());
                             // Some packages such as @babel/runtime can end up with
                             // themselves in the dependency list so we explicitly disallow this
                             if spec != &normalized
                                 && is_dependent_module(dep.specifier.as_ref())
                             {
-
-                            //if spec == "braces" {
-                                //println!("Got module dependency {:#?} of {:#?}", dep, module_key);
-                            //}
-
-
-                                Some((normalized, true.into()))
+                                Some(normalized)
                             } else {
                                 None
                             }
                         })
-                        .collect::<BTreeMap<String, PolicyAccess>>()
+                        .collect::<IndexSet<String>>()
                 } else {
-                    BTreeMap::new()
+                    IndexSet::new()
                 };
-
-                //if spec == "braces" {
-                    //println!("Calculating braces module {:#?}", packages);
-                //}
 
                 return (globals, builtin, packages);
             }
-            (BTreeMap::new(), BTreeMap::new(), BTreeMap::new())
+            (IndexSet::new(), IndexSet::new(), IndexSet::new())
         })
         .collect();
 
-    for (mut globals, mut builtin, mut packages) in data {
-        analysis.globals.append(&mut globals);
-        analysis.builtin.append(&mut builtin);
-        analysis.packages.append(&mut packages);
+    // Group the computations for each package
+    let mut pkg_globals = IndexSet::new();
+    let mut pkg_builtin = IndexSet::new();
+    let mut pkg_packages = IndexSet::new();
+
+    for (globals, builtin, packages) in data {
+        pkg_globals = pkg_globals.union(&globals).cloned().collect();
+        pkg_builtin = pkg_builtin.union(&builtin).cloned().collect();
+        pkg_packages = pkg_packages.union(&packages).cloned().collect();
     }
+
+    // Flatten globals and builtins
+    pkg_globals = flatten(pkg_globals);
+    pkg_builtin = flatten(pkg_builtin);
+
+    // Build the maps for the policy file
+    let mut globals_map: BTreeMap<String, PolicyAccess> = pkg_globals
+        .into_iter()
+        .map(|words| (join_words(&words).as_ref().to_string(), true.into()))
+        .collect();
+
+    let mut builtin_map: BTreeMap<String, PolicyAccess> = pkg_builtin
+        .into_iter()
+        .map(|words| (join_words(&words).as_ref().to_string(), true.into()))
+        .collect();
+
+    let mut packages_map: BTreeMap<String, PolicyAccess> = pkg_packages
+        .into_iter()
+        .map(|key| (key, true.into()))
+        .collect();
+
+    analysis.globals.append(&mut globals_map);
+    analysis.builtin.append(&mut builtin_map);
+    analysis.packages.append(&mut packages_map);
 
     Ok(analysis)
 }

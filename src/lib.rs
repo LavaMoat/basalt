@@ -84,14 +84,15 @@ pub fn globals(file: PathBuf, debug: bool) -> Result<()> {
         bail!("Module {} does not exist or is not a file", file.display());
     }
 
-    let mut globals_scope = GlobalAnalysis::new(Default::default());
+    let mut analyzer = GlobalAnalysis::new(Default::default());
     let (_, _, module) = crate::swc_utils::load_file(&file)?;
-    module.visit_children_with(&mut globals_scope);
+    module.visit_children_with(&mut analyzer);
 
     if debug {
-        println!("{:#?}", globals_scope);
+        println!("{:#?}", analyzer);
     } else {
-        let globals = globals_scope.compute();
+        let globals = analyzer.compute_globals();
+        let globals = analyzer.flatten_join(globals);
         println!("{}", serde_json::to_string_pretty(&globals)?);
     }
 
