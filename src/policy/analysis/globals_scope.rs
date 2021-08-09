@@ -123,6 +123,7 @@ pub struct GlobalOptions {
     filter_module_exports: bool,
     filter_global_functions: bool,
     filter_dynamic_import: bool,
+    ignore_node_global: bool,
 }
 
 impl Default for GlobalOptions {
@@ -134,6 +135,7 @@ impl Default for GlobalOptions {
             filter_module_exports: true,
             filter_global_functions: true,
             filter_dynamic_import: true,
+            ignore_node_global: true,
         }
     }
 }
@@ -188,8 +190,8 @@ impl GlobalAnalysis {
 
         Self {
             root: Scope::locals(Some(locals)),
+            builder: ScopeBuilder::new(options.ignore_node_global),
             options,
-            builder: Default::default(),
         }
     }
 

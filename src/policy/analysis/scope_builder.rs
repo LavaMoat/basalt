@@ -175,9 +175,21 @@ pub struct ScopeBuilder {
     pub candidates: Vec<Builtin>,
     /// List of symbols that reference a builtin candidate.
     pub builtins: IndexSet<Vec<JsWord>>,
+    /// Whether to ignore the `global` keyword exposed by node.
+    ignore_node_global: bool,
 }
 
 impl ScopeBuilder {
+
+    /// Create a scope tree.
+    pub fn new(ignore_node_global: bool) -> Self {
+        Self {
+            candidates: Default::default(),
+            builtins: Default::default(),
+            ignore_node_global,
+        }
+    }
+
     /// Add a static import declaration.
     pub fn add_static_import(&mut self, n: &ImportDecl) {
         if is_builtin_module(n.src.value.as_ref()) {
@@ -1031,6 +1043,10 @@ impl ScopeBuilder {
         scope: &mut Scope,
         path: Option<Vec<JsWord>>,
     ) {
+        if self.ignore_node_global && sym.as_ref() == GLOBAL {
+            return;
+        }
+
         let word_or_path = if let Some(path) = path {
             WordOrPath::Path(sym, path)
         } else {
