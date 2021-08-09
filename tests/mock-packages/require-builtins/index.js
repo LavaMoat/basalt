@@ -42,13 +42,6 @@ util.inherits(Foo, EE);
 module.exports = require('url');
 */
 
-function _fs() {
-  const data = _interopRequireDefault(require("fs"));
-
-  _fs = function () {
-    return data;
-  };
-
-  return data;
-}
+var os = require('os');
+new Buffer(os.EOL);
 

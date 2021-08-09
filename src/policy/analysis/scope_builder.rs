@@ -69,6 +69,14 @@ enum Func<'a> {
     Arrow(&'a ArrowExpr),
 }
 
+/// Enumeration of call variants in the AST.
+///
+/// Used for unified handling of function calls regardless of type.
+enum Caller<'a> {
+    Call(&'a CallExpr),
+    New(&'a NewExpr),
+}
+
 /// Represents a symbol word or a member expression path.
 #[derive(Debug, Hash, Eq, PartialEq, Clone)]
 pub enum WordOrPath {
@@ -180,7 +188,6 @@ pub struct ScopeBuilder {
 }
 
 impl ScopeBuilder {
-
     /// Create a scope tree.
     pub fn new(ignore_node_global: bool) -> Self {
         Self {
@@ -538,23 +545,7 @@ impl ScopeBuilder {
                 self.visit_function(Func::Arrow(n), scope, None);
             }
             Expr::Call(n) => {
-                match &n.callee {
-                    ExprOrSuper::Expr(expr) => {
-                        self.visit_expr(expr, scope);
-                    }
-                    _ => {}
-                }
-                for arg in &n.args {
-                    self.visit_expr(&*arg.expr, scope);
-
-                    // Sometimes calls to `require()` are passed as function
-                    // arguments so we need to detect these too
-                    if let Some(dynamic_call) = is_require_expr(&*arg.expr) {
-                        if is_builtin_module(&dynamic_call.arg) {
-                            self.insert_side_effect_builtin(&dynamic_call);
-                        }
-                    }
-                }
+                self.visit_caller(Caller::Call(n), scope);
             }
             Expr::Update(n) => {
                 self.visit_expr(&n.arg, scope);
@@ -709,7 +700,7 @@ impl ScopeBuilder {
                 }
             }
             Expr::New(n) => {
-                self.visit_expr(&*n.callee, scope);
+                self.visit_caller(Caller::New(n), scope);
             }
             Expr::Fn(n) => {
                 // Named function expressions only expose the name
@@ -802,6 +793,38 @@ impl ScopeBuilder {
         }
 
         scope.scopes.push(next_scope);
+    }
+
+    fn visit_caller(&mut self, n: Caller, scope: &mut Scope) {
+        let args = match n {
+            Caller::Call(n) => {
+                match &n.callee {
+                    ExprOrSuper::Expr(expr) => {
+                        self.visit_expr(expr, scope);
+                    }
+                    _ => {}
+                }
+                Some(&n.args)
+            }
+            Caller::New(n) => {
+                self.visit_expr(&*n.callee, scope);
+                n.args.as_ref()
+            }
+        };
+
+        if let Some(args) = args {
+            for arg in args {
+                self.visit_expr(&*arg.expr, scope);
+
+                // Sometimes calls to `require()` are passed as function
+                // arguments so we need to detect these too
+                if let Some(dynamic_call) = is_require_expr(&*arg.expr) {
+                    if is_builtin_module(&dynamic_call.arg) {
+                        self.insert_side_effect_builtin(&dynamic_call);
+                    }
+                }
+            }
+        }
     }
 
     fn visit_function(
@@ -1039,12 +1062,22 @@ impl ScopeBuilder {
     #[inline(always)]
     fn insert_ident(
         &self,
-        sym: JsWord,
+        mut sym: JsWord,
         scope: &mut Scope,
-        path: Option<Vec<JsWord>>,
+        mut path: Option<Vec<JsWord>>,
     ) {
         if self.ignore_node_global && sym.as_ref() == GLOBAL {
-            return;
+            // For member paths we need to shift off the global
+            // so the rest of the path is still respected
+            if let Some(parts) = path.as_mut() {
+                if !parts.is_empty() {
+                    sym = parts.remove(0);
+                } else {
+                    return;
+                }
+            } else {
+                return;
+            }
         }
 
         let word_or_path = if let Some(path) = path {
