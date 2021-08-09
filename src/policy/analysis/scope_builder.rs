@@ -22,6 +22,7 @@ use crate::{
     },
 };
 
+const GLOBAL: &str = "global";
 const GLOBAL_THIS: &str = "globalThis";
 
 const FUNCTION_METHODS: [&str; 5] =
@@ -211,7 +212,9 @@ impl ScopeBuilder {
         &self,
         sym: &JsWord,
     ) -> Option<(&Local, JsWord, &Builtin)> {
-        for builtin in self.candidates.iter() {
+        // Note reversing is a hack until we have builtin logic
+        // that respects scopes!
+        for builtin in self.candidates.iter().rev() {
             let mut matched = builtin.locals.iter().find(|local| {
                 let word = match local {
                     Local::Default(word) => word,
@@ -532,13 +535,13 @@ impl ScopeBuilder {
                 for arg in &n.args {
                     self.visit_expr(&*arg.expr, scope);
 
-                    //if let Some(dynamic_call) = is_require_expr(&*arg.expr) {
-                    //if let Some((_local, _source, _)) =
-                    //self.is_builtin_match(&dynamic_call.arg)
-                    //{
-                    //self.insert_side_effect_builtin(&dynamic_call);
-                    //}
-                    //}
+                    // Sometimes calls to `require()` are passed as function
+                    // arguments so we need to detect these too
+                    if let Some(dynamic_call) = is_require_expr(&*arg.expr) {
+                        if is_builtin_module(&dynamic_call.arg) {
+                            self.insert_side_effect_builtin(&dynamic_call);
+                        }
+                    }
                 }
             }
             Expr::Update(n) => {
@@ -923,6 +926,7 @@ impl ScopeBuilder {
                                 .collect()
                         }
                     };
+
                     self.candidates.push(builtin);
                 }
             }

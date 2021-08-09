@@ -1,3 +1,4 @@
+/*
 const fs = require('fs');
 const path = require('path');
 const {readSync, writeSync} = require('fs');
@@ -39,3 +40,15 @@ const Foo = function(){}
 util.inherits(Foo, EE);
 
 module.exports = require('url');
+*/
+
+function _fs() {
+  const data = _interopRequireDefault(require("fs"));
+
+  _fs = function () {
+    return data;
+  };
+
+  return data;
+}
+
