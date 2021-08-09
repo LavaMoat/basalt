@@ -46,6 +46,39 @@ pub struct Builtin {
     pub(crate) static_assign: bool,
     pub(crate) source: JsWord,
     pub(crate) locals: Vec<Local>,
+    pub(crate) matched: bool,
+}
+
+impl Builtin {
+    /// Consume this builtin and convert it to a set of word lists.
+    ///
+    /// Each word list represents a path to the builtin module or a
+    /// property of the module.
+    pub fn word_lists(self) -> IndexSet<Vec<JsWord>> {
+        let mut symbols = IndexSet::new();
+        if !self.static_assign {
+            symbols.insert(vec![self.source]);
+        } else {
+            if self.locals.is_empty() {
+                symbols.insert(vec![self.source]);
+            } else {
+                for local in self.locals {
+                    match local {
+                        Local::Default(_) => {
+                            symbols.insert(vec![self.source.clone()]);
+                        }
+                        Local::Named(name) => {
+                            symbols.insert(vec![self.source.clone(), name]);
+                        }
+                        Local::Alias(_, prop) => {
+                            symbols.insert(vec![self.source.clone(), prop]);
+                        }
+                    }
+                }
+            }
+        }
+        symbols
+    }
 }
 
 #[derive(Debug, Hash, Eq, PartialEq, Clone)]
@@ -203,6 +236,7 @@ impl ScopeBuilder {
                 static_assign: true,
                 source: n.src.value.clone(),
                 locals: Default::default(),
+                matched: false,
             };
             for spec in n.specifiers.iter() {
                 let local = match spec {
@@ -227,12 +261,12 @@ impl ScopeBuilder {
     /// Determine if a word matches a previously located builtin module local
     /// symbol. For member expressions pass the first word in the expression.
     fn is_builtin_match(
-        &self,
+        &mut self,
         sym: &JsWord,
     ) -> Option<(&Local, JsWord, &Builtin)> {
         // Note reversing is a hack until we have builtin logic
         // that respects scopes!
-        for builtin in self.candidates.iter().rev() {
+        for builtin in self.candidates.iter_mut().rev() {
             let mut matched = builtin.locals.iter().find(|local| {
                 let word = match local {
                     Local::Default(word) => word,
@@ -242,6 +276,7 @@ impl ScopeBuilder {
                 word == sym
             });
             if let Some(local) = matched.take() {
+                builtin.matched = true;
                 return Some((local, builtin.source.clone(), builtin));
             }
         }
@@ -628,6 +663,7 @@ impl ScopeBuilder {
                             static_assign: false,
                             source: dynamic_call.arg.clone(),
                             locals: Default::default(),
+                            matched: false,
                         };
 
                         // Assigning to module exports is a re-export so
@@ -963,6 +999,7 @@ impl ScopeBuilder {
                         static_assign: false,
                         source: dynamic_call.arg.clone(),
                         locals: Default::default(),
+                        matched: false,
                     };
                     builtin.locals = match &n.name {
                         // Looks like a default require statement

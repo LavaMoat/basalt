@@ -197,7 +197,16 @@ impl GlobalAnalysis {
 
     /// Compute the builtins.
     pub fn compute_builtins(&mut self) -> IndexSet<Vec<JsWord>> {
-        let builtins = std::mem::take(&mut self.builder.builtins);
+        let candidates = std::mem::take(&mut self.builder.candidates);
+        let mut builtins = std::mem::take(&mut self.builder.builtins);
+        for builtin in candidates {
+            if !builtin.matched {
+                let word_lists = builtin.word_lists();
+                for words in word_lists {
+                    builtins.insert(words);
+                }
+            }
+        }
         builtins
     }
 
