@@ -31,6 +31,7 @@
     "braces": "3.0.2",
     "buffer-equal": "^1.0.0",
     "class-utils": "^0.3.6",
+    "combine-source-map": "0.8.0",
     "core-js": "^3.13.1",
     "escodegen": "1.14.3",
     "glob": "7.1.6",

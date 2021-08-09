@@ -1076,22 +1076,6 @@ impl ScopeBuilder {
                         let mut result = self.compute_member(member, scope);
                         members.append(&mut result);
                     }
-
-                    /*
-                    let mut visit_paren = VisitMemberParen {
-                        members: Vec::new(),
-                        idents: Vec::new(),
-                    };
-                    n.visit_all_children_with(&mut visit_paren);
-                    for member in visit_paren.members.iter() {
-                        let mut result = self.compute_member(member, scope);
-                        members.append(&mut result);
-                    }
-
-                    for ident in visit_paren.idents.into_iter() {
-                        self.insert_ident(ident.sym, scope, None);
-                    }
-                    */
                 }
             }
         }

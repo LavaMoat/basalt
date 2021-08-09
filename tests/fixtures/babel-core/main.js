@@ -1,2 +1,2 @@
 //require('lodash');
-require('escodegen');
+require('combine-source-map');
