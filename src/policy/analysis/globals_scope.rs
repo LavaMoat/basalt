@@ -248,9 +248,16 @@ impl GlobalAnalysis {
         // as they are of different types.
         let mut diff: IndexSet<&WordOrPath> = Default::default();
         for ident in scope.idents.iter() {
-            let word: JsWord = ident.into();
-            if !combined_locals.contains(&word) {
-                diff.insert(ident);
+            match ident {
+                WordOrPath::Explicit(_, _) => {
+                    diff.insert(ident);
+                }
+                _ => {
+                    let word: JsWord = ident.into();
+                    if !combined_locals.contains(&word) {
+                        diff.insert(ident);
+                    }
+                }
             }
         }
 

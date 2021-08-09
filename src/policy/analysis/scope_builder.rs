@@ -116,6 +116,9 @@ pub enum WordOrPath {
     Word(JsWord),
     /// Member expression path.
     Path(JsWord, Vec<JsWord>),
+    /// Explicit global reference, for example by using the
+    /// `global` keyword in node.
+    Explicit(JsWord, Vec<JsWord>),
 }
 
 impl WordOrPath {
@@ -123,7 +126,7 @@ impl WordOrPath {
     pub fn into_path(&self) -> JsWord {
         match self {
             WordOrPath::Word(word) => word.clone(),
-            WordOrPath::Path(word, parts) => {
+            WordOrPath::Path(word, parts) | WordOrPath::Explicit(word, parts) => {
                 let mut words: Vec<&JsWord> = parts.iter().collect();
                 words.insert(0, word);
                 let words: Vec<String> =
@@ -138,7 +141,7 @@ impl Into<Vec<JsWord>> for &WordOrPath {
     fn into(self) -> Vec<JsWord> {
         match self {
             WordOrPath::Word(word) => vec![word.clone()],
-            WordOrPath::Path(word, parts) => {
+            WordOrPath::Path(word, parts) | WordOrPath::Explicit(word, parts) => {
                 let mut out = vec![word.clone()];
                 for word in parts {
                     out.push(word.clone());
@@ -158,6 +161,7 @@ impl Into<JsWord> for &WordOrPath {
         match self {
             WordOrPath::Word(word) => word.clone(),
             WordOrPath::Path(word, _) => word.clone(),
+            WordOrPath::Explicit(word, _) => word.clone(),
         }
     }
 }
@@ -1199,7 +1203,10 @@ impl ScopeBuilder {
         scope: &mut Scope,
         mut path: Option<Vec<JsWord>>,
     ) {
+        let mut explicit = false;
         if self.ignore_node_global && sym.as_ref() == GLOBAL {
+            explicit = true;
+
             // For member paths we need to shift off the global
             // so the rest of the path is still respected
             if let Some(parts) = path.as_mut() {
@@ -1213,11 +1220,17 @@ impl ScopeBuilder {
             }
         }
 
-        let word_or_path = if let Some(path) = path {
-            WordOrPath::Path(sym, path)
+        let word_or_path = if explicit {
+            let parts = path.unwrap_or_else(|| vec![]);
+            WordOrPath::Explicit(sym, parts)
         } else {
-            WordOrPath::Word(sym)
+            if let Some(path) = path {
+                WordOrPath::Path(sym, path)
+            } else {
+                WordOrPath::Word(sym)
+            }
         };
+
 
         scope.idents.insert(word_or_path);
     }
