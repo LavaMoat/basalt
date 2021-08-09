@@ -34,6 +34,7 @@
     "glob": "7.1.6",
     "global": "^4.4.0",
     "import-builtins": "file:./tests/mock-packages/import-builtins",
+    "lodash": "4.17.21",
     "micromatch": "3.1.10",
     "normalize-path": "3.0.0",
     "policy-builtin-esm": "file:./tests/mock-packages/policy/builtin-esm",

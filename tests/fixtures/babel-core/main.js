@@ -1,3 +1,4 @@
+require('lodash');
 //require('@babel/core');
 //require('@babel/code-frame');
 //require('ansi-styles');
