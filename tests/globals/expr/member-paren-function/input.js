@@ -3,4 +3,4 @@
   const foo = bar;
   const win = window;
   const qux = (foo || bar);
-}).call(this);
+}.call(this));

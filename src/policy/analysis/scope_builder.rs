@@ -8,7 +8,6 @@ use std::rc::Rc;
 
 use swc_atoms::JsWord;
 use swc_ecma_ast::*;
-use swc_ecma_visit::{Node, Visit, VisitAll, VisitAllWith, VisitWith};
 
 use indexmap::IndexSet;
 
@@ -705,16 +704,13 @@ impl ScopeBuilder {
             Expr::Fn(n) => {
                 // Named function expressions only expose the name
                 // to the inner scope like class expressions.
-                let locals = n
-                    .ident
-                    .as_ref()
-                    .map(|id| {
-                        let mut set = IndexSet::new();
-                        set.insert(id.sym.clone());
-                        set
-                    })
-                    .unwrap_or_default();
-                self.visit_function(Func::Fn(&n.function), scope, Some(locals));
+                let locals = n.ident.as_ref().map(|id| {
+                    let mut set = IndexSet::new();
+                    set.insert(id.sym.clone());
+                    set
+                });
+
+                self.visit_function(Func::Fn(&n.function), scope, locals);
             }
             Expr::Class(n) => {
                 // Class expressions with a named identifer like:
@@ -993,6 +989,20 @@ impl ScopeBuilder {
                     }
                 }
                 _ => {
+                    let mut member_exprs = Vec::new();
+
+                    self.compute_member_nested_expression(
+                        &expressions,
+                        scope,
+                        &mut member_exprs,
+                    );
+
+                    for member in member_exprs.iter() {
+                        let mut result = self.compute_member(member, scope);
+                        members.append(&mut result);
+                    }
+
+                    /*
                     let mut visit_paren = VisitMemberParen {
                         members: Vec::new(),
                         idents: Vec::new(),
@@ -1006,6 +1016,7 @@ impl ScopeBuilder {
                     for ident in visit_paren.idents.into_iter() {
                         self.insert_ident(ident.sym, scope, None);
                     }
+                    */
                 }
             }
         }
@@ -1017,6 +1028,57 @@ impl ScopeBuilder {
         }
 
         members
+    }
+
+    fn compute_member_nested_expression(
+        &mut self,
+        expressions: &Vec<&Expr>,
+        scope: &mut Scope,
+        members: &mut Vec<MemberExpr>,
+    ) {
+        for expr in expressions {
+            // FIXME: all the paths for nested member expressions should be declared!
+            match expr {
+                Expr::Paren(n) => {
+                    self.visit_nested_expression(&*n.expr, scope, members);
+                }
+                Expr::Fn(n) => {
+                    let locals = n.ident.as_ref().map(|id| {
+                        let mut set = IndexSet::new();
+                        set.insert(id.sym.clone());
+                        set
+                    });
+
+                    self.visit_function(Func::Fn(&n.function), scope, locals);
+                }
+                _ => {}
+            }
+        }
+    }
+
+    fn visit_nested_expression(
+        &mut self,
+        n: &Expr,
+        scope: &mut Scope,
+        members: &mut Vec<MemberExpr>,
+    ) {
+        // FIXME: all the paths for nested member expressions should be declared!
+        match n {
+            Expr::Ident(n) => {
+                self.insert_ident(n.sym.clone(), scope, None);
+            }
+            Expr::Bin(n) => {
+                self.visit_nested_expression(&*n.left, scope, members);
+                self.visit_nested_expression(&*n.right, scope, members);
+            }
+            Expr::Member(n) => {
+                members.push(n.clone());
+            }
+            Expr::Paren(n) => {
+                self.visit_nested_expression(&*n.expr, scope, members);
+            }
+            _ => {}
+        }
     }
 
     fn compute_member_words(
@@ -1087,60 +1149,6 @@ impl ScopeBuilder {
         };
 
         scope.idents.insert(word_or_path);
-    }
-}
-
-// Find nested parentheses in a member expression and then
-// search for nested member expressions within the parentheses.
-struct VisitMemberParen {
-    members: Vec<MemberExpr>,
-    idents: Vec<Ident>,
-}
-
-impl VisitAll for VisitMemberParen {
-    fn visit_paren_expr(&mut self, n: &ParenExpr, _: &dyn Node) {
-        let mut visit_members = VisitNestedMembers {
-            members: Vec::new(),
-            idents: Vec::new(),
-        };
-        n.visit_children_with(&mut visit_members);
-        for member in visit_members.members.drain(..) {
-            self.members.push(member);
-        }
-
-        for id in visit_members.idents.drain(..) {
-            self.idents.push(id);
-        }
-    }
-}
-
-struct VisitNestedMembers {
-    members: Vec<MemberExpr>,
-    idents: Vec<Ident>,
-}
-
-impl VisitNestedMembers {
-    fn _visit_expr(&mut self, n: &Expr) {
-        // FIXME: all the paths for nested member expressions should be declared!
-        match n {
-            Expr::Ident(n) => {
-                self.idents.push(n.clone());
-            }
-            Expr::Bin(n) => {
-                self._visit_expr(&*n.left);
-                self._visit_expr(&*n.right);
-            }
-            Expr::Member(n) => {
-                self.members.push(n.clone());
-            }
-            _ => {}
-        }
-    }
-}
-
-impl Visit for VisitNestedMembers {
-    fn visit_expr(&mut self, n: &Expr, _: &dyn Node) {
-        self._visit_expr(n);
     }
 }
 
