@@ -11,7 +11,6 @@ use std::time::SystemTime;
 use anyhow::{bail, Result};
 
 use swc_ecma_visit::VisitWith;
-use swc_common::FileName;
 
 pub mod access;
 pub mod helpers;

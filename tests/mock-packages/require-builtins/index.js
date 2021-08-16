@@ -46,6 +46,12 @@ new Buffer(os.EOL);
 
 */
 
+function bar() {
+  var map = this.toString();
+  return new Buffer(map).toString('base64');
+};
+
+/*
 function foo() {
     return {
       visitor: {
@@ -55,3 +61,4 @@ function foo() {
       }
     }
 }
+*/

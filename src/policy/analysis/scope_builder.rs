@@ -1098,6 +1098,9 @@ impl ScopeBuilder {
         for expr in expressions {
             // FIXME: all the paths for nested member expressions should be declared!
             match expr {
+                Expr::New(n) => {
+                    self.visit_caller(Caller::New(n), scope);
+                }
                 Expr::Paren(n) => {
                     self.visit_nested_expression(&*n.expr, scope, members);
                 }
