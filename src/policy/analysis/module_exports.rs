@@ -5,9 +5,14 @@ const MODULE: &str = "module";
 const EXPORTS: &str = "exports";
 
 /// Determine if an expression refers to CJS module exports.
+///
+/// Comparison is for plain `exports` and `module.exports`.
 pub fn is_module_exports(n: &PatOrExpr) -> bool {
     match n {
         PatOrExpr::Pat(pat) => match &**pat {
+            Pat::Ident(ident) => {
+                return ident.id.sym.as_ref() == EXPORTS;
+            }
             Pat::Expr(expr) => match &**expr {
                 Expr::Member(n) => {
                     if let (ExprOrSuper::Expr(expr), Expr::Ident(prop)) =
