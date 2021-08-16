@@ -76,7 +76,7 @@ pub fn load_code<S: AsRef<str>>(
 ) -> Result<(FileName, Arc<SourceMap>, Module)> {
     let (sm, handler) = get_handler();
     let fm = sm.new_source_file(
-        file_name.unwrap_or(FileName::Custom("unknown.js".to_string())),
+        file_name.unwrap_or(FileName::Anon),
         code.as_ref().into(),
     );
 
