@@ -20,6 +20,8 @@ const MODULES: &[&str] = &[
     "tests/policy/builtin/named-import",
     "tests/policy/builtin/named-require",
     "tests/policy/builtin/named-deep",
+    // FIXME: make this test pass
+    //"tests/policy/builtin/binary-expression",
 ];
 
 #[test]

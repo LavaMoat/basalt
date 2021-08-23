@@ -46,10 +46,26 @@ new Buffer(os.EOL);
 
 */
 
+var isWin32 = require('os').platform() === 'win32';
+
+/*
+function foo() {
+  var Buffer = require('buffer').Buffer
+  return Buffer.isBuffer([])
+}
+
+function bar(arr) {
+  var body = Buffer.isBuffer(arr[0]) ? Buffer.concat(arr)
+    : arr.join('')
+}
+*/
+
+/*
 function bar() {
   var map = this.toString();
   return new Buffer(map).toString('base64');
 };
+*/
 
 /*
 function foo() {

@@ -16,7 +16,7 @@ use crate::{
     module::dependencies::is_builtin_module,
     policy::analysis::{
         dynamic_import::{is_require_expr, DynamicCall},
-        member_expr::{member_expr_words, walk},
+        member_expr::walk,
         module_exports::is_module_exports,
     },
 };
@@ -733,7 +733,7 @@ impl ScopeBuilder {
             Expr::Member(member) => {
                 let members = self.compute_member(member, scope);
 
-                // Clone the members for builtin handling when 
+                // Clone the members for builtin handling when
                 // we are not handling a require expression
                 let builtin_members: Option<Vec<(JsWord, Vec<JsWord>)>> =
                     if is_require_expr(n).is_none() {

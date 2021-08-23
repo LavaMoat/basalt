@@ -59,6 +59,7 @@ fn is_call_module<'a>(
                     } else {
                         None
                     };
+
                 return is_simple_call(call, fn_name).map(|arg| DynamicCall {
                     arg,
                     member: prop_name,

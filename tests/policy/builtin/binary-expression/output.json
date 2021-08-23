@@ -1,0 +1,9 @@
+{
+  "resources": {
+    "builtin-binary-expression": {
+      "builtin": {
+        "os.platform": true
+      }
+    }
+  }
+}
