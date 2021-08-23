@@ -126,7 +126,8 @@ impl WordOrPath {
     pub fn into_path(&self) -> JsWord {
         match self {
             WordOrPath::Word(word) => word.clone(),
-            WordOrPath::Path(word, parts) | WordOrPath::Explicit(word, parts) => {
+            WordOrPath::Path(word, parts)
+            | WordOrPath::Explicit(word, parts) => {
                 let mut words: Vec<&JsWord> = parts.iter().collect();
                 words.insert(0, word);
                 let words: Vec<String> =
@@ -141,7 +142,8 @@ impl Into<Vec<JsWord>> for &WordOrPath {
     fn into(self) -> Vec<JsWord> {
         match self {
             WordOrPath::Word(word) => vec![word.clone()],
-            WordOrPath::Path(word, parts) | WordOrPath::Explicit(word, parts) => {
+            WordOrPath::Path(word, parts)
+            | WordOrPath::Explicit(word, parts) => {
                 let mut out = vec![word.clone()];
                 for word in parts {
                     out.push(word.clone());
@@ -730,21 +732,38 @@ impl ScopeBuilder {
             }
             Expr::Member(member) => {
                 let members = self.compute_member(member, scope);
+
+                // Clone the members for builtin handling when 
+                // we are not handling a require expression
+                let builtin_members: Option<Vec<(JsWord, Vec<JsWord>)>> =
+                    if is_require_expr(n).is_none() {
+                        Some(members.clone())
+                    } else {
+                        None
+                    };
+
                 for (word, parts) in members {
                     self.insert_ident(word, scope, Some(parts));
                 }
 
                 // Builtin handling
-                if is_require_expr(n).is_none() {
-                    // TODO: ensure the first word is Expr::Ident!
-                    let members = member_expr_words(member);
+                if let Some(builtin_members) = builtin_members {
+                    // Flatten computed members
+                    let members: Vec<JsWord> =
+                        builtin_members.into_iter().map(|(word, mut parts)| {
+                            let mut out = vec![word];
+                            out.append(&mut parts);
+                            out
+                        })
+                        .flatten()
+                        .collect();
 
                     if let Some(word) = members.get(0) {
                         if let Some((local, source, _)) =
                             self.is_builtin_match(word)
                         {
                             let mut words_key: Vec<JsWord> =
-                                members.into_iter().cloned().collect();
+                                members.into_iter().collect();
                             if let Some(word) = words_key.get(0) {
                                 if word != &source {
                                     if let Local::Default(_) = local {
@@ -1217,7 +1236,6 @@ impl ScopeBuilder {
                 WordOrPath::Word(sym)
             }
         };
-
 
         scope.idents.insert(word_or_path);
     }

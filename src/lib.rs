@@ -28,9 +28,10 @@ use policy::{analysis::globals_scope::GlobalAnalysis, builder::PolicyBuilder};
 
 /// Inspect the AST for a string or file.
 pub fn inspect(code: Option<String>, file: Option<PathBuf>) -> Result<()> {
-
     if code.is_some() && file.is_some() {
-        bail!("The --code and file options are mutually exclusive, choose one.");
+        bail!(
+            "The --code and file options are mutually exclusive, choose one."
+        );
     } else {
         if let Some(code) = code {
             let (_, _, module) = swc_utils::load_code(&code, None)?;
