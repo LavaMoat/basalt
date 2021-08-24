@@ -3,7 +3,7 @@ use std::path::PathBuf;
 use anyhow::Result;
 use structopt::StructOpt;
 
-use basalt::{globals, inspect, list, meta, parse, policy, transform};
+use basalt::{bundle, globals, inspect, list, meta, parse, policy, transform};
 
 #[derive(StructOpt)]
 #[structopt(about = "Lavamoat analyzer and bundler")]
@@ -17,6 +17,16 @@ enum BasaltCommands {
         /// Module entry point
         #[structopt(parse(from_os_str))]
         module: PathBuf,
+    },
+
+    /// Generate a bundle
+    Bundle {
+        /// Path to policy file(s)
+        #[structopt(short, long)]
+        policy: Vec<PathBuf>,
+        /// Bundle entry point(s)
+        #[structopt(parse(from_os_str))]
+        module: Vec<PathBuf>,
     },
 
     /// Print the AST for code or a file
@@ -87,6 +97,7 @@ fn main() -> Result<()> {
         } => {
             list(module, include_file)?;
         }
+        BasaltCommands::Bundle { module, policy } => bundle(module, policy)?,
         BasaltCommands::Inspect { code, module } => inspect(code, module)?,
         BasaltCommands::Parse { module } => parse(module)?,
         BasaltCommands::Policy { module } => policy(module)?,

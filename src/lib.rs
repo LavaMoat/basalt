@@ -13,6 +13,7 @@ use anyhow::{bail, Result};
 use swc_ecma_visit::VisitWith;
 
 pub mod access;
+pub mod bundler;
 pub mod helpers;
 pub mod module;
 pub mod policy;
@@ -25,6 +26,18 @@ pub use static_module_record::{
 };
 
 use policy::{analysis::globals_scope::GlobalAnalysis, builder::PolicyBuilder};
+
+/// Generate a bundle.
+pub fn bundle(module: Vec<PathBuf>, policy: Vec<PathBuf>) -> Result<()> {
+    if module.is_empty() {
+        bail!("The bundle command requires some entry point(s)");
+    }
+    if policy.is_empty() {
+        bail!("The bundle command requires some policy file(s) (use --policy)");
+    }
+    let options = bundler::BundleOptions { module, policy };
+    bundler::bundle(options)
+}
 
 /// Inspect the AST for a string or file.
 pub fn inspect(code: Option<String>, file: Option<PathBuf>) -> Result<()> {
