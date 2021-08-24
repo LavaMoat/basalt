@@ -731,6 +731,25 @@ impl ScopeBuilder {
                 self.visit_expr(&n.expr, scope);
             }
             Expr::Member(member) => {
+                // require('os').platform();
+                if let ExprOrSuper::Expr(expr) = &member.obj {
+                    if let Some(dynamic_call) = is_require_expr(expr) {
+                        if is_builtin_module(dynamic_call.arg.as_ref()) {
+                            let mut builtin = Builtin {
+                                static_assign: true,
+                                source: dynamic_call.arg.clone(),
+                                locals: Default::default(),
+                                matched: false,
+                            };
+                            if let Expr::Ident(id) = &*member.prop {
+                                builtin.locals =
+                                    vec![Local::Named(id.sym.clone())];
+                            }
+                            self.candidates.push(builtin);
+                        }
+                    }
+                }
+
                 let members = self.compute_member(member, scope);
 
                 // Clone the members for builtin handling when
@@ -749,8 +768,9 @@ impl ScopeBuilder {
                 // Builtin handling
                 if let Some(builtin_members) = builtin_members {
                     // Flatten computed members
-                    let members: Vec<JsWord> =
-                        builtin_members.into_iter().map(|(word, mut parts)| {
+                    let members: Vec<JsWord> = builtin_members
+                        .into_iter()
+                        .map(|(word, mut parts)| {
                             let mut out = vec![word];
                             out.append(&mut parts);
                             out
