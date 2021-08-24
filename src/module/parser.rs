@@ -3,7 +3,7 @@ use std::path::Path;
 
 use anyhow::Result;
 
-use swc_ecma_loader::{resolve::Resolve, resolvers::node::NodeResolver};
+use swc_ecma_loader::{resolve::Resolve, resolvers::node::NodeModulesResolver};
 
 use crate::module::node::{
     cached_modules, parse_file, VisitedDependency, VisitedModule,
@@ -11,7 +11,7 @@ use crate::module::node::{
 
 /// Parse all the modules in a dependency graph.
 pub fn parse<P: AsRef<Path>>(file: P) -> Result<(usize, usize)> {
-    let resolver: Box<dyn Resolve> = Box::new(NodeResolver::default());
+    let resolver: Box<dyn Resolve> = Box::new(NodeModulesResolver::default());
     let module = parse_file(file.as_ref(), &resolver)?;
 
     let node = match &*module {

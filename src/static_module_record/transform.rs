@@ -120,7 +120,7 @@ pub fn transform(
     let meta = parser.parse(&module)?;
 
     let generator = Generator::new(&meta);
-    let compiler = Compiler::new(sm, Arc::new(handler));
+    let compiler = Compiler::new(sm);
     let script = generator
         .create()
         .context("failed to generate transformed script")?;
@@ -128,10 +128,13 @@ pub fn transform(
 
     let result = compiler.print(
         &program,
+        None,
+        None,
         JscTarget::Es2020,
         SourceMapsConfig::Bool(true),
         None,
         false,
+        None,
     )?;
 
     Ok((meta.into(), result))

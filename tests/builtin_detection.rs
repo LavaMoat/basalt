@@ -7,9 +7,9 @@ use basalt::module::dependencies::is_builtin_module;
 use basalt::swc_utils::load_code;
 
 fn load(code: &str) -> Result<Vec<DependencyDescriptor>> {
-    let (_file_name, source_map, module) = load_code(code, None)?;
+    let (_file_name, _source_map, module) = load_code(code, None)?;
     let comments: SingleThreadedComments = Default::default();
-    Ok(analyze_dependencies(&module, &source_map, &comments))
+    Ok(analyze_dependencies(&module, &comments))
 }
 
 fn builtins(deps: Vec<DependencyDescriptor>) -> Vec<DependencyDescriptor> {

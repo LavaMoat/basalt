@@ -102,9 +102,6 @@ impl BundleBuilder {
 
         body.push(iife);
 
-        let iife_body = self.iife_mut();
-        println!("Got iife body {:#?}", iife_body);
-
         self
     }
 

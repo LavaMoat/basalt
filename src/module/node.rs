@@ -12,13 +12,12 @@ use dashmap::DashMap;
 use std::lazy::SyncLazy;
 
 use swc_common::{comments::SingleThreadedComments, FileName, SourceMap};
-use swc_ecma_ast::Module;
+use swc_ecma_ast::{Module, TargetEnv};
 use swc_ecma_dep_graph::{analyze_dependencies, DependencyDescriptor};
 
-use swc_ecma_loader::{resolve::Resolve, resolvers::node::NodeResolver};
+use swc_ecma_loader::{resolve::Resolve, resolvers::node::NodeModulesResolver};
 
 use crate::module::dependencies::is_builtin_module;
-//use crate::module::cache::load_module;
 use crate::swc_utils::load_file;
 
 /// Cache of visited modules.
@@ -160,7 +159,7 @@ impl ModuleNode {
         source_map: &SourceMap,
         comments: &SingleThreadedComments,
     ) {
-        let deps = analyze_dependencies(&self.module, source_map, comments);
+        let deps = analyze_dependencies(&self.module, comments);
         self.dependencies = if deps.is_empty() { None } else { Some(deps) };
     }
 
@@ -188,7 +187,7 @@ impl ModuleNode {
         NodeIterator {
             node: self,
             index: 0,
-            resolver: Box::new(NodeResolver::default()),
+            resolver: Box::new(NodeModulesResolver::new(TargetEnv::Node, Default::default())),
         }
     }
 

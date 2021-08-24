@@ -16,11 +16,11 @@ indexmap = {version = "1.6", features = ["serde-1"]}
 dashmap = "4"
 rayon = "1.5"
 
-swc = {version = "0.26"}
-swc_common = {version = "0.10.21", features = ["tty-emitter"]}
-swc_ecma_parser = {version = "0.61.1"}
-swc_atoms = {version = "0.2.6"}
-swc_ecma_ast = {version = "0.47"}
-swc_ecma_loader = {version = "0.9.1", features = ["node"]}
-swc_ecma_visit = {version = "0.33"}
-swc_ecma_dep_graph = {version = "0.29"}
+swc = {version = "0.43"}
+swc_common = {version = "0.11.6", features = ["tty-emitter"]}
+swc_ecma_parser = {version = "0.67.1"}
+swc_atoms = {version = "0.2.7"}
+swc_ecma_ast = {version = "0.49.4"}
+swc_ecma_loader = {version = "0.15.0", features = ["node"]}
+swc_ecma_visit = {version = "0.35.2"}
+swc_ecma_dep_graph = {version = "0.35.0"}

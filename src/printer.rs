@@ -5,7 +5,7 @@ use anyhow::Result;
 
 use crate::module::node::{parse_file, VisitedDependency, VisitedModule};
 
-use swc_ecma_loader::{resolve::Resolve, resolvers::node::NodeResolver};
+use swc_ecma_loader::{resolve::Resolve, resolvers::node::NodeModulesResolver};
 
 const TREE_BAR: &str = "│";
 const TREE_BRANCH: &str = "├──";
@@ -33,7 +33,7 @@ impl Printer {
         file: P,
         options: &PrintOptions,
     ) -> Result<()> {
-        let resolver: Box<dyn Resolve> = Box::new(NodeResolver::default());
+        let resolver: Box<dyn Resolve> = Box::new(NodeModulesResolver::default());
         let module = parse_file(file.as_ref(), &resolver)?;
         let node = match &*module {
             VisitedModule::Module(_, _, node) => Some(node),
