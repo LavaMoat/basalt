@@ -11,6 +11,9 @@ use swc_ecma_ast::*;
 
 use crate::policy::{Merge, Policy};
 
+const RUNTIME_PACKAGE: &str = "@lavamoat/lavapack";
+const RUNTIME_FILE: &str = "src/runtime.js";
+
 pub(crate) struct BundleBuilder {
     policy: Policy,
     program: Program,
@@ -59,48 +62,90 @@ impl BundleBuilder {
                 op: UnaryOp::Void,
                 arg: Box::new(Expr::Call(CallExpr {
                     span: DUMMY_SP,
-                    callee: ExprOrSuper::Expr(Box::new(Expr::Member(MemberExpr {
-                        span: DUMMY_SP,
-                        computed: false,
-                        obj: ExprOrSuper::Expr(Box::new(Expr::Fn(FnExpr {
-                            ident: None,
-                            function: Function {
-                                params: vec![],
-                                body: Some(BlockStmt {
-                                    span: DUMMY_SP,
-                                    stmts: vec![],
-                                }),
-                                decorators: vec![],
-                                span: DUMMY_SP,
-                                is_generator: false,
-                                is_async: false,
-                                type_params: None,
-                                return_type: None,
-                            }
-                        }))),
-                        prop: Box::new(Expr::Ident(Ident {
+                    callee: ExprOrSuper::Expr(Box::new(Expr::Member(
+                        MemberExpr {
                             span: DUMMY_SP,
-                            sym: "call".into(),
-                            optional: false,
-                        }))
-                    }))),
-                    args: vec![
-                        ExprOrSpread {
-                            spread: None,
-                            expr: Box::new(Expr::This(ThisExpr {span: DUMMY_SP}))
-                        }
-                    ],
+                            computed: false,
+                            obj: ExprOrSuper::Expr(Box::new(Expr::Fn(
+                                FnExpr {
+                                    ident: None,
+                                    function: Function {
+                                        params: vec![],
+                                        body: Some(BlockStmt {
+                                            span: DUMMY_SP,
+                                            stmts: vec![],
+                                        }),
+                                        decorators: vec![],
+                                        span: DUMMY_SP,
+                                        is_generator: false,
+                                        is_async: false,
+                                        type_params: None,
+                                        return_type: None,
+                                    },
+                                },
+                            ))),
+                            prop: Box::new(Expr::Ident(Ident {
+                                span: DUMMY_SP,
+                                sym: "call".into(),
+                                optional: false,
+                            })),
+                        },
+                    ))),
+                    args: vec![ExprOrSpread {
+                        spread: None,
+                        expr: Box::new(Expr::This(ThisExpr { span: DUMMY_SP })),
+                    }],
                     type_args: None,
-
-                }))
-            }))
+                })),
+            })),
         });
 
         body.push(iife);
 
+        let iife_body = self.iife_mut();
+        println!("Got iife body {:#?}", iife_body);
+
         self
     }
 
+    /// Body of the IIFE.
+    ///
+    /// Panics if `inject_iife()` has not been invoked yet.
+    fn iife_mut(&mut self) -> &mut Vec<Stmt> {
+        let body = self.body_mut();
+        let iife_node = body.get_mut(0).unwrap();
+
+        if let Stmt::Expr(ExprStmt { expr, .. }) = iife_node {
+            if let Expr::Unary(UnaryExpr { arg, .. }) = &mut **expr {
+                if let Expr::Call(CallExpr {
+                    callee: ExprOrSuper::Expr(expr),
+                    ..
+                }) = &mut **arg
+                {
+                    if let Expr::Member(MemberExpr {
+                        obj: ExprOrSuper::Expr(expr),
+                        ..
+                    }) = &mut **expr
+                    {
+                        if let Expr::Fn(FnExpr {
+                            function:
+                                Function {
+                                    body: Some(body), ..
+                                },
+                            ..
+                        }) = &mut **expr
+                        {
+                            return &mut body.stmts;
+                        }
+                    }
+                }
+            }
+        }
+
+        unreachable!("Unable to match on IIFE block statement!")
+    }
+
+    /// Main body of the program.
     fn body_mut(&mut self) -> &mut Vec<Stmt> {
         if let Program::Script(script) = &mut self.program {
             return &mut script.body;
