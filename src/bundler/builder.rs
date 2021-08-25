@@ -9,8 +9,14 @@ use anyhow::{Context, Result};
 use swc_common::DUMMY_SP;
 use swc_ecma_ast::*;
 
+use serde::Serialize;
+
 use crate::policy::{Merge, Policy};
 
+use super::serializer::Serializer;
+
+const RESOURCES: &str = "resources";
+const POLICY_VAR_NAME: &str = "__policy__";
 const RUNTIME_PACKAGE: &str = "@lavamoat/lavapack";
 const RUNTIME_FILE: &str = "src/runtime.js";
 
@@ -89,6 +95,64 @@ impl BundleBuilder {
         self
     }
 
+    /// Inject the policy into the IIFE body.
+    pub fn inject_policy(mut self) -> Self {
+        let decl = Stmt::Decl(Decl::Var(VarDecl {
+            span: DUMMY_SP,
+            kind: VarDeclKind::Var,
+            declare: false,
+            decls: vec![VarDeclarator {
+                span: DUMMY_SP,
+                definite: false,
+                name: Pat::Ident(BindingIdent {
+                    id: Ident {
+                        span: DUMMY_SP,
+                        optional: false,
+                        sym: POLICY_VAR_NAME.into(),
+                    },
+                    type_ann: None,
+                }),
+                init: Some(Box::new(self.build_policy_object())),
+            }],
+        }));
+
+        {
+            let iife = self.iife_mut();
+            iife.push(decl);
+        }
+
+        self
+    }
+
+    fn build_policy_object(&self) -> Expr {
+        let mut serializer = Serializer {};
+        let result = self.policy.serialize(&mut serializer);
+
+        println!("Got serialize result {:#?}", result);
+
+        Expr::Object(ObjectLit {
+            span: DUMMY_SP,
+            props: vec![PropOrSpread::Prop(Box::new(Prop::KeyValue(
+                KeyValueProp {
+                    key: PropName::Str(str_lit(RESOURCES)),
+                    value: Box::new(Expr::Object(ObjectLit {
+                        span: DUMMY_SP,
+                        props: {
+                            let mut out =
+                                Vec::with_capacity(self.policy.resources.len());
+                            for (k, v) in self.policy.resources.iter() {}
+                            out
+                        },
+                    })),
+                },
+            )))],
+        })
+    }
+
+    //fn build_package_policy_object() -> Expr {
+
+    //}
+
     /// Body of the IIFE.
     ///
     /// Panics if `inject_iife()` has not been invoked yet.
@@ -131,5 +195,16 @@ impl BundleBuilder {
     /// Finalize the bundled program.
     pub fn finalize(self) -> Program {
         self.program
+    }
+}
+
+fn str_lit(value: &str) -> Str {
+    Str {
+        span: DUMMY_SP,
+        value: value.into(),
+        has_escape: value.contains("\n"),
+        kind: StrKind::Normal {
+            contains_quote: false,
+        },
     }
 }

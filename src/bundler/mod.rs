@@ -5,6 +5,7 @@ use std::path::PathBuf;
 use swc_ecma_ast::Program;
 
 mod builder;
+mod serializer;
 
 /// Options for bundling.
 #[derive(Debug)]
@@ -19,5 +20,6 @@ pub fn bundle(options: BundleOptions) -> Result<Program> {
     Ok(builder
         .load_policy_files(&options.policy)?
         .inject_iife()
+        .inject_policy()
         .finalize())
 }
