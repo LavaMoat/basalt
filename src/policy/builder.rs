@@ -8,9 +8,9 @@ use indexmap::IndexSet;
 
 use swc_atoms::JsWord;
 use swc_common::FileName;
+use swc_ecma_ast::TargetEnv;
 use swc_ecma_loader::{resolve::Resolve, resolvers::node::NodeModulesResolver};
 use swc_ecma_visit::VisitWith;
-use swc_ecma_ast::TargetEnv;
 
 use rayon::prelude::*;
 
@@ -51,7 +51,10 @@ impl PolicyBuilder {
     pub fn new(entry: PathBuf) -> Self {
         Self {
             entry,
-            resolver: Box::new(NodeModulesResolver::new(TargetEnv::Node, Default::default())),
+            resolver: Box::new(NodeModulesResolver::new(
+                TargetEnv::Node,
+                Default::default(),
+            )),
             package_buckets: Default::default(),
             package_groups: Default::default(),
             package_analysis: Default::default(),

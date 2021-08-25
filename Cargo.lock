@@ -113,6 +113,7 @@ dependencies = [
  "swc_atoms",
  "swc_common",
  "swc_ecma_ast",
+ "swc_ecma_codegen",
  "swc_ecma_dep_graph",
  "swc_ecma_loader",
  "swc_ecma_parser",

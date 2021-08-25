@@ -4,15 +4,17 @@ use std::sync::Arc;
 
 use anyhow::Result;
 
-//use swc::Compiler;
+use swc::{
+    config::{JscTarget, Options, SourceMapsConfig},
+    Compiler, TransformOutput,
+};
 use swc_common::{
     errors::{emitter::ColorConfig, Handler},
     FileName, SourceFile, SourceMap,
 };
 use swc_ecma_ast::Module;
-use swc_ecma_parser::{
-    lexer::Lexer, EsConfig, JscTarget, Parser, StringInput, Syntax,
-};
+use swc_ecma_codegen::Node;
+use swc_ecma_parser::{lexer::Lexer, EsConfig, Parser, StringInput, Syntax};
 
 pub(crate) fn get_handler() -> (Arc<SourceMap>, Handler) {
     let sm: Arc<SourceMap> = Arc::new(Default::default());
@@ -98,6 +100,25 @@ pub fn load_code<S: AsRef<str>>(
             })
             .expect("Failed to parse module"),
     ))
+}
+
+/// Print a node.
+pub fn print<T>(node: &T) -> Result<TransformOutput>
+where
+    T: Node,
+{
+    let sm: Arc<SourceMap> = Arc::new(Default::default());
+    let compiler = Compiler::new(sm);
+    compiler.print(
+        node,
+        None,
+        None,
+        JscTarget::Es2020,
+        SourceMapsConfig::Bool(true),
+        None,
+        false,
+        None,
+    )
 }
 
 /*

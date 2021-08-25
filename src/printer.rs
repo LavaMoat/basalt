@@ -33,7 +33,8 @@ impl Printer {
         file: P,
         options: &PrintOptions,
     ) -> Result<()> {
-        let resolver: Box<dyn Resolve> = Box::new(NodeModulesResolver::default());
+        let resolver: Box<dyn Resolve> =
+            Box::new(NodeModulesResolver::default());
         let module = parse_file(file.as_ref(), &resolver)?;
         let node = match &*module {
             VisitedModule::Module(_, _, node) => Some(node),

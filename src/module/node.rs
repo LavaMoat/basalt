@@ -187,7 +187,10 @@ impl ModuleNode {
         NodeIterator {
             node: self,
             index: 0,
-            resolver: Box::new(NodeModulesResolver::new(TargetEnv::Node, Default::default())),
+            resolver: Box::new(NodeModulesResolver::new(
+                TargetEnv::Node,
+                Default::default(),
+            )),
         }
     }
 

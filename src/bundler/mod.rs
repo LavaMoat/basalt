@@ -2,6 +2,7 @@
 
 use anyhow::Result;
 use std::path::PathBuf;
+use swc_ecma_ast::Program;
 
 mod builder;
 
@@ -13,14 +14,10 @@ pub struct BundleOptions {
 }
 
 /// Generate a bundle from the given options.
-pub fn bundle(options: BundleOptions) -> Result<()> {
+pub fn bundle(options: BundleOptions) -> Result<Program> {
     let builder = builder::BundleBuilder::new();
-    let program = builder
+    Ok(builder
         .load_policy_files(&options.policy)?
         .inject_iife()
-        .finalize();
-
-    println!("{:#?}", program);
-
-    Ok(())
+        .finalize())
 }
