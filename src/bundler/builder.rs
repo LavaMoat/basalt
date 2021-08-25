@@ -62,39 +62,23 @@ impl BundleBuilder {
                 op: UnaryOp::Void,
                 arg: Box::new(Expr::Call(CallExpr {
                     span: DUMMY_SP,
-                    callee: ExprOrSuper::Expr(Box::new(Expr::Member(
-                        MemberExpr {
-                            span: DUMMY_SP,
-                            computed: false,
-                            obj: ExprOrSuper::Expr(Box::new(Expr::Fn(
-                                FnExpr {
-                                    ident: None,
-                                    function: Function {
-                                        params: vec![],
-                                        body: Some(BlockStmt {
-                                            span: DUMMY_SP,
-                                            stmts: vec![],
-                                        }),
-                                        decorators: vec![],
-                                        span: DUMMY_SP,
-                                        is_generator: false,
-                                        is_async: false,
-                                        type_params: None,
-                                        return_type: None,
-                                    },
-                                },
-                            ))),
-                            prop: Box::new(Expr::Ident(Ident {
+                    callee: ExprOrSuper::Expr(Box::new(Expr::Fn(FnExpr {
+                        ident: None,
+                        function: Function {
+                            params: vec![],
+                            body: Some(BlockStmt {
                                 span: DUMMY_SP,
-                                sym: "call".into(),
-                                optional: false,
-                            })),
+                                stmts: vec![],
+                            }),
+                            decorators: vec![],
+                            span: DUMMY_SP,
+                            is_generator: false,
+                            is_async: false,
+                            type_params: None,
+                            return_type: None,
                         },
-                    ))),
-                    args: vec![ExprOrSpread {
-                        spread: None,
-                        expr: Box::new(Expr::This(ThisExpr { span: DUMMY_SP })),
-                    }],
+                    }))),
+                    args: vec![],
                     type_args: None,
                 })),
             })),
@@ -119,21 +103,15 @@ impl BundleBuilder {
                     ..
                 }) = &mut **arg
                 {
-                    if let Expr::Member(MemberExpr {
-                        obj: ExprOrSuper::Expr(expr),
+                    if let Expr::Fn(FnExpr {
+                        function:
+                            Function {
+                                body: Some(body), ..
+                            },
                         ..
                     }) = &mut **expr
                     {
-                        if let Expr::Fn(FnExpr {
-                            function:
-                                Function {
-                                    body: Some(body), ..
-                                },
-                            ..
-                        }) = &mut **expr
-                        {
-                            return &mut body.stmts;
-                        }
+                        return &mut body.stmts;
                     }
                 }
             }

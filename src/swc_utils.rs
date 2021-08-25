@@ -63,10 +63,7 @@ pub fn load_file<P: AsRef<Path>>(
         sm,
         parser
             .parse_module()
-            .map_err(|e| {
-                // Unrecoverable fatal error occurred
-                e.into_diagnostic(&handler).emit()
-            })
+            .map_err(|e| e.into_diagnostic(&handler).emit())
             .expect("Failed to parse module"),
     ))
 }
@@ -94,10 +91,7 @@ pub fn load_code<S: AsRef<str>>(
         sm,
         parser
             .parse_module()
-            .map_err(|e| {
-                // Unrecoverable fatal error occurred
-                e.into_diagnostic(&handler).emit()
-            })
+            .map_err(|e| e.into_diagnostic(&handler).emit())
             .expect("Failed to parse module"),
     ))
 }
@@ -120,18 +114,3 @@ where
         None,
     )
 }
-
-/*
-pub(crate) fn get_compiler() -> (Arc<SourceMap>, Arc<Compiler>) {
-    let sm: Arc<SourceMap> = Arc::new(Default::default());
-    let handler = Handler::with_tty_emitter(
-        ColorConfig::Auto,
-        true,
-        false,
-        Some(sm.clone()),
-    );
-    let compiler =
-        Arc::new(swc::Compiler::new(Arc::clone(&sm), Arc::new(handler)));
-    (sm, compiler)
-}
-*/
