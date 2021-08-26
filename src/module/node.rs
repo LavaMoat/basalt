@@ -94,7 +94,7 @@ fn parse_module<P: AsRef<Path>>(
         dependencies: None,
         resolved: Default::default(),
     };
-    node.analyze(&source_map, &comments);
+    node.analyze(&comments);
     node.resolve(resolver, &file_name)?;
 
     // Don't bother walking dependencies that have already
@@ -154,11 +154,7 @@ pub struct ModuleNode {
 
 impl ModuleNode {
     /// Analyze the dependencies for this module.
-    pub fn analyze(
-        &mut self,
-        source_map: &SourceMap,
-        comments: &SingleThreadedComments,
-    ) {
+    pub fn analyze(&mut self, comments: &SingleThreadedComments) {
         let deps = analyze_dependencies(&self.module, comments);
         self.dependencies = if deps.is_empty() { None } else { Some(deps) };
     }

@@ -5,6 +5,19 @@ use std::fmt;
 use swc_common::DUMMY_SP;
 use swc_ecma_ast::*;
 
+#[inline]
+fn str_lit(value: &str) -> Str {
+    Str {
+        span: DUMMY_SP,
+        value: value.into(),
+        has_escape: value.contains("\n"),
+        kind: StrKind::Normal {
+            contains_quote: false,
+        },
+    }
+}
+
+/// FIXME: implement error handling!
 #[derive(Debug)]
 pub struct Error;
 
@@ -27,6 +40,7 @@ impl StdError for Error {
     }
 }
 
+/// Enumeration of serialized values.
 #[derive(Debug)]
 pub enum Value {
     Object(ObjectLit),
@@ -37,17 +51,27 @@ pub enum Value {
     Null(Null),
 }
 
-/// Compound type for variants we can serialize.
-#[derive(Debug)]
-pub enum Compound {
-    Invalid,
-    Object(ObjectLit),
-    Array(ArrayLit),
-    String(Str),
+impl Value {
+    fn into_boxed_expr(self) -> Box<Expr> {
+        match self {
+            Value::Object(obj) => Box::new(Expr::Object(obj)),
+            Value::Array(arr) => Box::new(Expr::Array(arr)),
+            Value::String(val) => Box::new(Expr::Lit(Lit::Str(val))),
+            Value::Bool(flag) => Box::new(Expr::Lit(Lit::Bool(flag))),
+            Value::Number(num) => Box::new(Expr::Lit(Lit::Num(num))),
+            Value::Null(null) => Box::new(Expr::Lit(Lit::Null(null))),
+        }
+    }
 }
 
-pub struct SerializeSeq;
-impl ser::SerializeSeq for SerializeSeq {
+/// Serialize to an array literal.
+#[doc(hidden)]
+pub struct SerializeArray<'a> {
+    literal: ArrayLit,
+    ser: &'a mut Serializer,
+}
+
+impl<'a> ser::SerializeSeq for SerializeArray<'a> {
     type Ok = Value;
     type Error = Error;
 
@@ -58,17 +82,24 @@ impl ser::SerializeSeq for SerializeSeq {
     where
         T: Serialize,
     {
+        let value = value.serialize(&mut *self.ser)?;
+        let value = value.into_boxed_expr();
+
+        self.literal.elems.push(Some(ExprOrSpread {
+            spread: None,
+            expr: value,
+        }));
         Ok(())
     }
     fn end(self) -> Result<Self::Ok, Self::Error> {
-        todo!()
+        Ok(Value::Array(self.literal))
     }
 }
 
-pub struct SerializeTuple;
-impl ser::SerializeTuple for SerializeTuple {
+impl<'a> ser::SerializeTuple for SerializeArray<'a> {
     type Ok = Value;
     type Error = Error;
+
     fn serialize_element<T: ?Sized>(
         &mut self,
         value: &T,
@@ -76,17 +107,18 @@ impl ser::SerializeTuple for SerializeTuple {
     where
         T: Serialize,
     {
-        Ok(())
+        ser::SerializeSeq::serialize_element(self, value)
     }
+
     fn end(self) -> Result<Self::Ok, Self::Error> {
-        todo!()
+        ser::SerializeSeq::end(self)
     }
 }
 
-pub struct SerializeTupleStruct;
-impl ser::SerializeTupleStruct for SerializeTupleStruct {
+impl<'a> ser::SerializeTupleStruct for SerializeArray<'a> {
     type Ok = Value;
     type Error = Error;
+
     fn serialize_field<T: ?Sized>(
         &mut self,
         value: &T,
@@ -94,10 +126,11 @@ impl ser::SerializeTupleStruct for SerializeTupleStruct {
     where
         T: Serialize,
     {
-        Ok(())
+        ser::SerializeSeq::serialize_element(self, value)
     }
+
     fn end(self) -> Result<Self::Ok, Self::Error> {
-        todo!()
+        ser::SerializeSeq::end(self)
     }
 }
 
@@ -119,6 +152,7 @@ impl ser::SerializeTupleVariant for SerializeTupleVariant {
     }
 }
 
+/// Serialize to an object literal.
 #[doc(hidden)]
 pub struct SerializeObject<'a> {
     literal: ObjectLit,
@@ -135,7 +169,14 @@ impl<'a> ser::SerializeStruct for SerializeObject<'a> {
     where
         T: Serialize,
     {
-        println!("Serialize struct field {}", key);
+        let key = PropName::Str(str_lit(key));
+        let value = value.serialize(&mut *self.ser)?;
+        self.literal
+            .props
+            .push(PropOrSpread::Prop(Box::new(Prop::KeyValue(KeyValueProp {
+                key,
+                value: value.into_boxed_expr(),
+            }))));
         Ok(())
     }
     fn end(self) -> Result<Self::Ok, Self::Error> {
@@ -150,12 +191,15 @@ impl<'a> ser::SerializeStruct for SerializeObject<'a> {
 impl<'a> ser::SerializeMap for SerializeObject<'a> {
     type Ok = Value;
     type Error = Error;
+
     fn serialize_key<T: ?Sized>(&mut self, key: &T) -> Result<(), Self::Error>
     where
         T: Serialize,
     {
+        key.serialize(&mut *self.ser)?;
         Ok(())
     }
+
     fn serialize_value<T: ?Sized>(
         &mut self,
         value: &T,
@@ -163,10 +207,12 @@ impl<'a> ser::SerializeMap for SerializeObject<'a> {
     where
         T: Serialize,
     {
+        value.serialize(&mut *self.ser)?;
         Ok(())
     }
+
     fn end(self) -> Result<Self::Ok, Self::Error> {
-        todo!()
+        Ok(Value::Object(self.literal))
     }
 
     fn serialize_entry<K: ?Sized, V: ?Sized>(
@@ -178,10 +224,24 @@ impl<'a> ser::SerializeMap for SerializeObject<'a> {
         K: Serialize,
         V: Serialize,
     {
+        let key = key.serialize(&mut *self.ser)?;
+        let key = match key {
+            Value::String(lit) => PropName::Str(lit),
+            _ => todo!("Non-string map keys are not supported yet"),
+        };
+
+        let value = value.serialize(&mut *self.ser)?;
+
+        self.literal
+            .props
+            .push(PropOrSpread::Prop(Box::new(Prop::KeyValue(KeyValueProp {
+                key,
+                value: value.into_boxed_expr(),
+            }))));
+
         Ok(())
     }
 }
-
 
 #[doc(hidden)]
 pub struct SerializeStructVariant;
@@ -214,9 +274,9 @@ impl<'a> ser::Serializer for &'a mut Serializer {
     type Ok = Value;
     type Error = Error;
 
-    type SerializeSeq = SerializeSeq;
-    type SerializeTuple = SerializeTuple;
-    type SerializeTupleStruct = SerializeTupleStruct;
+    type SerializeSeq = SerializeArray<'a>;
+    type SerializeTuple = SerializeArray<'a>;
+    type SerializeTupleStruct = SerializeArray<'a>;
     type SerializeTupleVariant = SerializeTupleVariant;
     type SerializeMap = SerializeObject<'a>;
     type SerializeStruct = SerializeObject<'a>;
@@ -279,12 +339,7 @@ impl<'a> ser::Serializer for &'a mut Serializer {
     }
 
     fn serialize_str(self, v: &str) -> Result<Self::Ok, Self::Error> {
-        Ok(Value::String(Str {
-            span: DUMMY_SP,
-            value: v.into(),
-            has_escape: v.contains("\n"),
-            kind: StrKind::Normal {contains_quote: false}
-        }))
+        Ok(Value::String(str_lit(v)))
     }
 
     fn serialize_bytes(self, v: &[u8]) -> Result<Self::Ok, Self::Error> {
@@ -292,45 +347,45 @@ impl<'a> ser::Serializer for &'a mut Serializer {
     }
 
     fn serialize_none(self) -> Result<Self::Ok, Self::Error> {
-        todo!()
+        self.serialize_unit()
     }
 
-    fn serialize_some<T: ?Sized>(
-        self,
-        value: &T,
-    ) -> Result<Self::Ok, Self::Error> {
-        todo!()
+    fn serialize_some<T>(self, value: &T) -> Result<Self::Ok, Self::Error>
+    where
+        T: ?Sized + Serialize,
+    {
+        value.serialize(self)
     }
 
     fn serialize_unit(self) -> Result<Self::Ok, Self::Error> {
-        Ok(Value::Null(Null {span: DUMMY_SP}))
+        Ok(Value::Null(Null { span: DUMMY_SP }))
     }
 
     fn serialize_unit_struct(
         self,
-        name: &'static str,
+        _name: &'static str,
     ) -> Result<Self::Ok, Self::Error> {
-        todo!()
+        self.serialize_unit()
     }
 
     fn serialize_unit_variant(
         self,
-        name: &'static str,
-        variant_index: u32,
+        _name: &'static str,
+        _variant_index: u32,
         variant: &'static str,
     ) -> Result<Self::Ok, Self::Error> {
-        todo!()
+        self.serialize_str(variant)
     }
 
     fn serialize_newtype_struct<T: ?Sized>(
         self,
-        name: &'static str,
+        _name: &'static str,
         value: &T,
     ) -> Result<Self::Ok, Self::Error>
     where
         T: Serialize,
     {
-        todo!()
+        value.serialize(self)
     }
 
     fn serialize_newtype_variant<T: ?Sized>(
@@ -350,22 +405,28 @@ impl<'a> ser::Serializer for &'a mut Serializer {
         self,
         len: Option<usize>,
     ) -> Result<Self::SerializeSeq, Self::Error> {
-        todo!()
+        Ok(SerializeArray {
+            ser: self,
+            literal: ArrayLit {
+                span: DUMMY_SP,
+                elems: vec![],
+            },
+        })
     }
 
     fn serialize_tuple(
         self,
         len: usize,
     ) -> Result<Self::SerializeTuple, Self::Error> {
-        todo!()
+        self.serialize_seq(Some(len))
     }
 
     fn serialize_tuple_struct(
         self,
-        name: &'static str,
+        _name: &'static str,
         len: usize,
     ) -> Result<Self::SerializeTupleStruct, Self::Error> {
-        todo!()
+        self.serialize_seq(Some(len))
     }
 
     fn serialize_tuple_variant(

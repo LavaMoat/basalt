@@ -5,7 +5,7 @@ use std::sync::Arc;
 use anyhow::Result;
 
 use swc::{
-    config::{JscTarget, Options, SourceMapsConfig},
+    config::{JscTarget, SourceMapsConfig},
     Compiler, TransformOutput,
 };
 use swc_common::{

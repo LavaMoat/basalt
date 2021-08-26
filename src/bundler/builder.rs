@@ -13,9 +13,8 @@ use serde::Serialize;
 
 use crate::policy::{Merge, Policy};
 
-use super::serializer::Serializer;
+use super::serializer::{Serializer, Value};
 
-const RESOURCES: &str = "resources";
 const POLICY_VAR_NAME: &str = "__policy__";
 const RUNTIME_PACKAGE: &str = "@lavamoat/lavapack";
 const RUNTIME_FILE: &str = "src/runtime.js";
@@ -96,7 +95,7 @@ impl BundleBuilder {
     }
 
     /// Inject the policy into the IIFE body.
-    pub fn inject_policy(mut self) -> Self {
+    pub fn inject_policy(mut self) -> Result<Self> {
         let decl = Stmt::Decl(Decl::Var(VarDecl {
             span: DUMMY_SP,
             kind: VarDeclKind::Var,
@@ -112,7 +111,7 @@ impl BundleBuilder {
                     },
                     type_ann: None,
                 }),
-                init: Some(Box::new(self.build_policy_object())),
+                init: Some(Box::new(self.build_policy_object()?)),
             }],
         }));
 
@@ -121,37 +120,17 @@ impl BundleBuilder {
             iife.push(decl);
         }
 
-        self
+        Ok(self)
     }
 
-    fn build_policy_object(&self) -> Expr {
+    fn build_policy_object(&self) -> Result<Expr> {
         let mut serializer = Serializer {};
-        let result = self.policy.serialize(&mut serializer);
-
-        println!("Got serialize result {:#?}", result);
-
-        Expr::Object(ObjectLit {
-            span: DUMMY_SP,
-            props: vec![PropOrSpread::Prop(Box::new(Prop::KeyValue(
-                KeyValueProp {
-                    key: PropName::Str(str_lit(RESOURCES)),
-                    value: Box::new(Expr::Object(ObjectLit {
-                        span: DUMMY_SP,
-                        props: {
-                            let mut out =
-                                Vec::with_capacity(self.policy.resources.len());
-                            for (k, v) in self.policy.resources.iter() {}
-                            out
-                        },
-                    })),
-                },
-            )))],
-        })
+        let value = self.policy.serialize(&mut serializer)?;
+        if let Value::Object(obj) = value {
+            return Ok(Expr::Object(obj));
+        }
+        unreachable!("serialized policy must be an object");
     }
-
-    //fn build_package_policy_object() -> Expr {
-
-    //}
 
     /// Body of the IIFE.
     ///
@@ -195,16 +174,5 @@ impl BundleBuilder {
     /// Finalize the bundled program.
     pub fn finalize(self) -> Program {
         self.program
-    }
-}
-
-fn str_lit(value: &str) -> Str {
-    Str {
-        span: DUMMY_SP,
-        value: value.into(),
-        has_escape: value.contains("\n"),
-        kind: StrKind::Normal {
-            contains_quote: false,
-        },
     }
 }

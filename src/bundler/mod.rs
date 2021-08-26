@@ -20,6 +20,6 @@ pub fn bundle(options: BundleOptions) -> Result<Program> {
     Ok(builder
         .load_policy_files(&options.policy)?
         .inject_iife()
-        .inject_policy()
+        .inject_policy()?
         .finalize())
 }
