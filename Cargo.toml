@@ -15,6 +15,7 @@ serde_json = "1"
 indexmap = {version = "1.6", features = ["serde-1"]}
 dashmap = "4"
 rayon = "1.5"
+num-bigint = "0.2.6"
 
 swc = {version = "0.43"}
 swc_common = {version = "0.11.6", features = ["tty-emitter"]}

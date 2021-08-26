@@ -104,6 +104,7 @@ dependencies = [
  "dashmap",
  "indexmap",
  "log",
+ "num-bigint",
  "pretty_env_logger",
  "rayon",
  "serde",
