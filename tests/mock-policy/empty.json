@@ -2,7 +2,7 @@
   "resources": {
     "mock": {
       "native": true,
-      "env": "frozen",
+      "env": "unfrozen",
       "builtin": {
         "fs.readSync": true
       },
