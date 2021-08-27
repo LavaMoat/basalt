@@ -1,13 +1,12 @@
-//! Convert a `Serialize` implementation into AST nodes.
+//! Convert a `Serialize` implementation into `swc_ecma_ast` nodes.
 //!
 //! Primitives `i64` and `u64` will be serialized to the `BigInt` type.
 //!
 use serde::ser::{self, Serialize};
-use std::convert::TryInto;
 use std::error::Error as StdError;
 use std::fmt;
 
-use num_bigint::{BigInt as BigIntValue, Sign};
+use num_bigint::BigInt as BigIntValue;
 
 use swc_common::DUMMY_SP;
 use swc_ecma_ast::*;
@@ -24,7 +23,7 @@ fn str_lit(value: &str) -> Str {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Eq, PartialEq)]
 pub enum Error {
     Custom(String),
 }
@@ -178,7 +177,7 @@ impl<'a> ser::SerializeStruct for SerializeObject<'a> {
         Ok(Value::Object(self.literal))
     }
 
-    fn skip_field(&mut self, key: &'static str) -> Result<(), Self::Error> {
+    fn skip_field(&mut self, _key: &'static str) -> Result<(), Self::Error> {
         Ok(())
     }
 }
@@ -222,7 +221,11 @@ impl<'a> ser::SerializeMap for SerializeObject<'a> {
         let key = key.serialize(&mut *self.ser)?;
         let key = match key {
             Value::String(lit) => PropName::Str(lit),
-            _ => todo!("Non-string map keys are not supported yet"),
+            _ => {
+                return Err(Error::Custom(
+                    "map keys must be string values".into(),
+                ));
+            }
         };
 
         let value = value.serialize(&mut *self.ser)?;
@@ -319,7 +322,7 @@ impl<'a> ser::SerializeStructVariant for SerializeStructVariant<'a> {
         Ok(Value::Object(self.literal))
     }
 
-    fn skip_field(&mut self, key: &'static str) -> Result<(), Self::Error> {
+    fn skip_field(&mut self, _key: &'static str) -> Result<(), Self::Error> {
         Ok(())
     }
 }
@@ -445,28 +448,31 @@ impl<'a> ser::Serializer for &'a mut Serializer {
         self.serialize_str(variant)
     }
 
-    fn serialize_newtype_struct<T: ?Sized>(
+    fn serialize_newtype_struct<T>(
         self,
         _name: &'static str,
         value: &T,
     ) -> Result<Self::Ok, Self::Error>
     where
-        T: Serialize,
+        T: ?Sized + Serialize,
     {
         value.serialize(self)
     }
 
-    fn serialize_newtype_variant<T: ?Sized>(
+    fn serialize_newtype_variant<T>(
         self,
-        name: &'static str,
-        variant_index: u32,
+        _name: &'static str,
+        _variant_index: u32,
         variant: &'static str,
         value: &T,
     ) -> Result<Self::Ok, Self::Error>
     where
-        T: Serialize,
+        T: ?Sized + Serialize,
     {
-        todo!()
+        use ser::SerializeMap;
+        let mut map = self.serialize_map(Some(1))?;
+        map.serialize_entry(variant, value)?;
+        map.end()
     }
 
     fn serialize_seq(
@@ -614,37 +620,37 @@ mod tests {
             value
         );
 
-        let i_8 = 42i8;
+        let i_8 = 2i8;
         let value = i_8.serialize(&mut serializer)?;
         assert_eq!(
             Value::Number(Number {
                 span: DUMMY_SP,
-                value: 42f64,
+                value: 2f64,
             }),
             value
         );
 
-        let i_16 = 42i16;
+        let i_16 = 4i16;
         let value = i_16.serialize(&mut serializer)?;
         assert_eq!(
             Value::Number(Number {
                 span: DUMMY_SP,
-                value: 42f64,
+                value: 4f64,
             }),
             value
         );
 
-        let i_32 = 42i32;
+        let i_32 = 8i32;
         let value = i_32.serialize(&mut serializer)?;
         assert_eq!(
             Value::Number(Number {
                 span: DUMMY_SP,
-                value: 42f64,
+                value: 8f64,
             }),
             value
         );
 
-        let i_64 = 42i64;
+        let i_64 = 16i64;
         let value = i_64.serialize(&mut serializer)?;
         assert_eq!(
             Value::BigInt(BigInt {
@@ -653,6 +659,48 @@ mod tests {
             }),
             value
         );
+
+        let u_8 = 32u8;
+        let value = u_8.serialize(&mut serializer)?;
+        assert_eq!(
+            Value::Number(Number {
+                span: DUMMY_SP,
+                value: 32f64,
+            }),
+            value
+        );
+
+        let u_16 = 64u16;
+        let value = u_16.serialize(&mut serializer)?;
+        assert_eq!(
+            Value::Number(Number {
+                span: DUMMY_SP,
+                value: 64f64,
+            }),
+            value
+        );
+
+        let u_32 = 128u32;
+        let value = u_32.serialize(&mut serializer)?;
+        assert_eq!(
+            Value::Number(Number {
+                span: DUMMY_SP,
+                value: 128f64,
+            }),
+            value
+        );
+
+        let u_64 = 256u64;
+        let value = u_64.serialize(&mut serializer)?;
+        assert_eq!(
+            Value::BigInt(BigInt {
+                span: DUMMY_SP,
+                value: BigIntValue::from(u_64),
+            }),
+            value
+        );
+
+        // i128 / u128 ?
 
         let float32 = 3.14f64;
         let value = float32.serialize(&mut serializer)?;
@@ -713,7 +761,6 @@ mod tests {
             }),
             value
         );
-
         Ok(())
     }
 
@@ -738,18 +785,23 @@ mod tests {
         Ok(())
     }
 
+    #[test]
+    fn serialize_unit() -> Result<()> {
+        let mut serializer = Serializer {};
+        let unit = ();
+        let value = unit.serialize(&mut serializer)?;
+        assert_eq!(Value::Null(Null { span: DUMMY_SP }), value);
+        Ok(())
+    }
+
     #[derive(Serialize)]
     struct Marker {
         marker: std::marker::PhantomData<bool>,
     }
 
     #[test]
-    fn serialize_unit() -> Result<()> {
+    fn serialize_unit_struct() -> Result<()> {
         let mut serializer = Serializer {};
-
-        let unit = ();
-        let value = unit.serialize(&mut serializer)?;
-        assert_eq!(Value::Null(Null { span: DUMMY_SP }), value);
 
         let unit_struct = Marker {
             marker: std::marker::PhantomData,
@@ -787,12 +839,10 @@ mod tests {
     #[test]
     fn serialize_unit_variant() -> Result<()> {
         let mut serializer = Serializer {};
-
         let variant = EnvPolicy {
             env: UnitVariant::Frozen,
         };
         let value = variant.serialize(&mut serializer)?;
-
         let expected = Value::Object(ObjectLit {
             span: DUMMY_SP,
             props: vec![PropOrSpread::Prop(Box::new(Prop::KeyValue(
@@ -804,7 +854,135 @@ mod tests {
         });
 
         assert_eq!(expected, value);
+        Ok(())
+    }
 
+    #[derive(Serialize)]
+    struct Millimeters(u8);
+
+    #[test]
+    fn serialize_newtype_struct() -> Result<()> {
+        let mut serializer = Serializer {};
+        let mm = Millimeters(0);
+        let value = mm.serialize(&mut serializer)?;
+        let expected = Value::Number(Number {
+            span: DUMMY_SP,
+            value: 0f64
+        });
+
+        assert_eq!(expected, value);
+        Ok(())
+    }
+
+    #[derive(Serialize)]
+    enum Length {
+        Millimeters(u8)
+    }
+
+    #[test]
+    fn serialize_newtype_variant() -> Result<()> {
+        let mut serializer = Serializer {};
+        let mm = Length::Millimeters(0);
+        let value = mm.serialize(&mut serializer)?;
+        let expected = Value::Object(ObjectLit {
+            span: DUMMY_SP,
+            props: vec![PropOrSpread::Prop(Box::new(Prop::KeyValue(
+                KeyValueProp {
+                    key: PropName::Str(str_lit("Millimeters")),
+                    value: Box::new(Expr::Lit(Lit::Num(Number {
+                        span: DUMMY_SP,
+                        value: 0f64,
+                    }))),
+                },
+            )))],
+        });
+
+        assert_eq!(expected, value);
+        Ok(())
+    }
+
+    #[test]
+    fn serialize_seq() -> Result<()> {
+        let mut serializer = Serializer {};
+        let list = vec!["1", "2"];
+        let value = list.serialize(&mut serializer)?;
+        let expected = Value::Array(ArrayLit {
+            span: DUMMY_SP,
+            elems: vec![
+                Some(ExprOrSpread {
+                    spread: None,
+                    expr: Box::new(Expr::Lit(Lit::Str(str_lit("1")))),
+                }),
+                Some(ExprOrSpread {
+                    spread: None,
+                    expr: Box::new(Expr::Lit(Lit::Str(str_lit("2")))),
+                }),
+            ],
+        });
+
+        assert_eq!(expected, value);
+        Ok(())
+    }
+
+    #[test]
+    fn serialize_tuple() -> Result<()> {
+        let mut serializer = Serializer {};
+        let list = ("3", "4");
+        let value = list.serialize(&mut serializer)?;
+        let expected = Value::Array(ArrayLit {
+            span: DUMMY_SP,
+            elems: vec![
+                Some(ExprOrSpread {
+                    spread: None,
+                    expr: Box::new(Expr::Lit(Lit::Str(str_lit("3")))),
+                }),
+                Some(ExprOrSpread {
+                    spread: None,
+                    expr: Box::new(Expr::Lit(Lit::Str(str_lit("4")))),
+                }),
+            ],
+        });
+
+        assert_eq!(expected, value);
+        Ok(())
+    }
+
+    #[derive(Serialize)]
+    struct Rgb(u8, u8, u8);
+
+    #[test]
+    fn serialize_tuple_struct() -> Result<()> {
+        let mut serializer = Serializer {};
+        let color = Rgb(0xff, 0x66, 0x00);
+        let value = color.serialize(&mut serializer)?;
+        let expected = Value::Array(ArrayLit {
+            span: DUMMY_SP,
+            elems: vec![
+                Some(ExprOrSpread {
+                    spread: None,
+                    expr: Box::new(Expr::Lit(Lit::Num(Number {
+                        span: DUMMY_SP,
+                        value: 255f64,
+                    }))),
+                }),
+                Some(ExprOrSpread {
+                    spread: None,
+                    expr: Box::new(Expr::Lit(Lit::Num(Number {
+                        span: DUMMY_SP,
+                        value: 102f64,
+                    }))),
+                }),
+                Some(ExprOrSpread {
+                    spread: None,
+                    expr: Box::new(Expr::Lit(Lit::Num(Number {
+                        span: DUMMY_SP,
+                        value: 0f64,
+                    }))),
+                }),
+            ],
+        });
+
+        assert_eq!(expected, value);
         Ok(())
     }
 
@@ -816,10 +994,8 @@ mod tests {
     #[test]
     fn serialize_tuple_variant() -> Result<()> {
         let mut serializer = Serializer {};
-
         let variant = TupleVariant::T("1".into(), "2".into());
         let value = variant.serialize(&mut serializer)?;
-
         let expected = Value::Object(ObjectLit {
             span: DUMMY_SP,
             props: vec![PropOrSpread::Prop(Box::new(Prop::KeyValue(
@@ -847,9 +1023,11 @@ mod tests {
         });
 
         assert_eq!(expected, value);
-
         Ok(())
     }
+
+    // TODO: map
+    // TODO: struct
 
     #[derive(Serialize)]
     enum StructVariant {
@@ -859,14 +1037,12 @@ mod tests {
     #[test]
     fn serialize_struct_variant() -> Result<()> {
         let mut serializer = Serializer {};
-
         let variant = StructVariant::Rgb {
             r: "ff".into(),
             g: "66".into(),
             b: "00".into(),
         };
         let value = variant.serialize(&mut serializer)?;
-
         let expected = Value::Object(ObjectLit {
             span: DUMMY_SP,
             props: vec![PropOrSpread::Prop(Box::new(Prop::KeyValue(
@@ -906,7 +1082,6 @@ mod tests {
         });
 
         assert_eq!(expected, value);
-
         Ok(())
     }
 }
