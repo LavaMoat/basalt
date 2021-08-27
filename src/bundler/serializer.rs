@@ -359,11 +359,9 @@ impl<'a> ser::Serializer for &'a mut Serializer {
     }
 
     fn serialize_i64(self, v: i64) -> Result<Self::Ok, Self::Error> {
-        let digits = v.to_le_bytes();
-        let value = BigIntValue::from_signed_bytes_le(&digits);
         Ok(Value::BigInt(BigInt {
             span: DUMMY_SP,
-            value,
+            value: BigIntValue::from(v),
         }))
     }
 
@@ -380,11 +378,9 @@ impl<'a> ser::Serializer for &'a mut Serializer {
     }
 
     fn serialize_u64(self, v: u64) -> Result<Self::Ok, Self::Error> {
-        let digits = v.to_le_bytes();
-        let value = BigIntValue::from_signed_bytes_le(&digits);
         Ok(Value::BigInt(BigInt {
             span: DUMMY_SP,
-            value,
+            value: BigIntValue::from(v),
         }))
     }
 
@@ -595,6 +591,8 @@ mod tests {
     use anyhow::Result;
     use serde::Serialize;
 
+    use num_bigint::BigInt as BigIntValue;
+
     use swc_common::DUMMY_SP;
     use swc_ecma_ast::*;
 
@@ -649,9 +647,9 @@ mod tests {
         let i_64 = 42i64;
         let value = i_64.serialize(&mut serializer)?;
         assert_eq!(
-            Value::Number(Number {
+            Value::BigInt(BigInt {
                 span: DUMMY_SP,
-                value: 42f64,
+                value: BigIntValue::from(i_64),
             }),
             value
         );
