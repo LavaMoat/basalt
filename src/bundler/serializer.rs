@@ -26,35 +26,28 @@ fn str_lit(value: &str) -> Str {
 
 #[derive(Debug)]
 pub enum Error {
-    Utf8(std::str::Utf8Error),
+    Custom(String),
 }
 
 impl ser::Error for Error {
     #[cold]
     fn custom<T: fmt::Display>(msg: T) -> Self {
-        todo!()
+        let msg = format!("{}", msg);
+        Self::Custom(msg)
     }
 }
 
 impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Self::Utf8(e) => fmt::Display::fmt(e, f),
+            Self::Custom(e) => fmt::Display::fmt(e, f),
         }
     }
 }
 
 impl StdError for Error {
     fn source(&self) -> Option<&(dyn StdError + 'static)> {
-        match self {
-            Self::Utf8(e) => Some(e),
-        }
-    }
-}
-
-impl From<std::str::Utf8Error> for Error {
-    fn from(e: std::str::Utf8Error) -> Self {
-        Error::Utf8(e)
+        None
     }
 }
 
@@ -154,24 +147,6 @@ impl<'a> ser::SerializeTupleStruct for SerializeArray<'a> {
     }
 }
 
-pub struct SerializeTupleVariant;
-impl ser::SerializeTupleVariant for SerializeTupleVariant {
-    type Ok = Value;
-    type Error = Error;
-    fn serialize_field<T: ?Sized>(
-        &mut self,
-        value: &T,
-    ) -> Result<(), Self::Error>
-    where
-        T: Serialize,
-    {
-        Ok(())
-    }
-    fn end(self) -> Result<Self::Ok, Self::Error> {
-        todo!()
-    }
-}
-
 /// Serialize to an object literal.
 #[doc(hidden)]
 pub struct SerializeObject<'a> {
@@ -263,6 +238,45 @@ impl<'a> ser::SerializeMap for SerializeObject<'a> {
     }
 }
 
+pub struct SerializeTupleVariant<'a> {
+    literal: ObjectLit,
+    ser: &'a mut Serializer,
+}
+
+impl<'a> ser::SerializeTupleVariant for SerializeTupleVariant<'a> {
+    type Ok = Value;
+    type Error = Error;
+
+    fn serialize_field<T: ?Sized>(
+        &mut self,
+        value: &T,
+    ) -> Result<(), Self::Error>
+    where
+        T: Serialize,
+    {
+        let prop = self.literal.props.get_mut(0).unwrap();
+        let entry = value.serialize(&mut *self.ser)?;
+
+        if let PropOrSpread::Prop(prop) = prop {
+            if let Prop::KeyValue(KeyValueProp {value, ..}) = &mut **prop {
+                if let Expr::Array(ArrayLit{elems, ..}) = &mut **value {
+                    elems.push(Some(ExprOrSpread {
+                        spread: None,
+                        expr: entry.into_boxed_expr(),
+                    }));
+
+                }
+            }
+        }
+
+        Ok(())
+    }
+
+    fn end(self) -> Result<Self::Ok, Self::Error> {
+        Ok(Value::Object(self.literal))
+    }
+}
+
 #[doc(hidden)]
 pub struct SerializeStructVariant;
 impl ser::SerializeStructVariant for SerializeStructVariant {
@@ -297,7 +311,7 @@ impl<'a> ser::Serializer for &'a mut Serializer {
     type SerializeSeq = SerializeArray<'a>;
     type SerializeTuple = SerializeArray<'a>;
     type SerializeTupleStruct = SerializeArray<'a>;
-    type SerializeTupleVariant = SerializeTupleVariant;
+    type SerializeTupleVariant = SerializeTupleVariant<'a>;
     type SerializeMap = SerializeObject<'a>;
     type SerializeStruct = SerializeObject<'a>;
     type SerializeStructVariant = SerializeStructVariant;
@@ -477,7 +491,24 @@ impl<'a> ser::Serializer for &'a mut Serializer {
         variant: &'static str,
         len: usize,
     ) -> Result<Self::SerializeTupleVariant, Self::Error> {
-        todo!()
+        use ser::SerializeSeq;
+
+        let seq = self.serialize_seq(Some(len))?;
+        let val = seq.end()?;
+
+        let key = PropName::Str(str_lit(variant));
+        let prop = PropOrSpread::Prop(Box::new(Prop::KeyValue(KeyValueProp {
+            key,
+            value: val.into_boxed_expr(),
+        })));
+
+        Ok(SerializeTupleVariant {
+            ser: self,
+            literal: ObjectLit {
+                span: DUMMY_SP,
+                props: vec![prop],
+            },
+        })
     }
 
     fn serialize_map(
@@ -488,7 +519,13 @@ impl<'a> ser::Serializer for &'a mut Serializer {
             ser: self,
             literal: ObjectLit {
                 span: DUMMY_SP,
-                props: vec![],
+                props: {
+                    if let Some(size) = len {
+                        Vec::with_capacity(size)
+                    } else {
+                        vec![]
+                    }
+                },
             },
         })
     }
@@ -693,6 +730,45 @@ mod tests {
         });
 
         let value = unit_struct.serialize(&mut serializer)?;
+        assert_eq!(expected, value);
+
+        Ok(())
+    }
+
+    #[derive(Serialize)]
+    enum TupleVariant {
+        T(String, String),
+    }
+
+    #[test]
+    fn serialize_tuple_variant() -> Result<()> {
+        let mut serializer = Serializer {};
+
+        let variant = TupleVariant::T("1".into(), "2".into());
+        let value = variant.serialize(&mut serializer)?;
+
+        let expected = Value::Object(ObjectLit {
+            span: DUMMY_SP,
+            props: vec![PropOrSpread::Prop(Box::new(Prop::KeyValue(
+                KeyValueProp {
+                    key: PropName::Str(str_lit("T")),
+                    value: Box::new(Expr::Array(ArrayLit {
+                        span: DUMMY_SP,
+                        elems: vec![
+                            Some(ExprOrSpread {
+                                spread: None,
+                                expr: Box::new(Expr::Lit(Lit::Str(str_lit("1")))),
+                            }),
+                            Some(ExprOrSpread {
+                                spread: None,
+                                expr: Box::new(Expr::Lit(Lit::Str(str_lit("2")))),
+                            }),
+                        ]
+                    })),
+                },
+            )))],
+        });
+
         assert_eq!(expected, value);
 
         Ok(())
