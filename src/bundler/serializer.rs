@@ -1100,7 +1100,56 @@ mod tests {
         Ok(())
     }
 
-    // TODO: struct
+    #[derive(Serialize)]
+    struct Container {
+        message: String,
+        amount: u8,
+        flag: bool,
+    }
+
+    #[test]
+    fn serialize_struct() -> Result<()> {
+        let mut serializer = Serializer {};
+        let con = Container {
+            message: "mock".into(),
+            amount: 32,
+            flag: true,
+        };
+        let value = con.serialize(&mut serializer)?;
+
+        let expected = Value::Object(ObjectLit {
+            span: DUMMY_SP,
+            props: vec![
+                PropOrSpread::Prop(Box::new(Prop::KeyValue(
+                    KeyValueProp {
+                        key: PropName::Str(str_lit("message")),
+                        value: Box::new(Expr::Lit(Lit::Str(str_lit("mock")))),
+                    },
+                ))),
+                PropOrSpread::Prop(Box::new(Prop::KeyValue(
+                    KeyValueProp {
+                        key: PropName::Str(str_lit("amount")),
+                        value: Box::new(Expr::Lit(Lit::Num(Number {
+                            span: DUMMY_SP,
+                            value: 32f64,
+                        }))),
+                    },
+                ))),
+                PropOrSpread::Prop(Box::new(Prop::KeyValue(
+                    KeyValueProp {
+                        key: PropName::Str(str_lit("flag")),
+                        value: Box::new(Expr::Lit(Lit::Bool(Bool {
+                            span: DUMMY_SP,
+                            value: true,
+                        }))),
+                    },
+                ))),
+            ],
+        });
+        assert_eq!(expected, value);
+
+        Ok(())
+    }
 
     #[derive(Serialize)]
     enum StructVariant {
