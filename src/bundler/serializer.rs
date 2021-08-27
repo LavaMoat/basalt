@@ -25,6 +25,7 @@ fn str_lit(value: &str) -> Str {
 
 #[derive(Debug, Eq, PartialEq)]
 pub enum Error {
+    ObjectKeyType,
     Custom(String),
 }
 
@@ -39,6 +40,7 @@ impl ser::Error for Error {
 impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
+            Self::ObjectKeyType => write!(f, "object literal key type is not supported, expecting string, number or bigint"),
             Self::Custom(e) => fmt::Display::fmt(e, f),
         }
     }
@@ -221,10 +223,11 @@ impl<'a> ser::SerializeMap for SerializeObject<'a> {
         let key = key.serialize(&mut *self.ser)?;
         let key = match key {
             Value::String(lit) => PropName::Str(lit),
+            Value::Number(num) => PropName::Num(num),
+            Value::BigInt(num) => PropName::BigInt(num),
             _ => {
-                return Err(Error::Custom(
-                    "map keys must be string values".into(),
-                ));
+                // TODO: convert other key types to use `Map`
+                return Err(Error::ObjectKeyType);
             }
         };
 
@@ -867,7 +870,7 @@ mod tests {
         let value = mm.serialize(&mut serializer)?;
         let expected = Value::Number(Number {
             span: DUMMY_SP,
-            value: 0f64
+            value: 0f64,
         });
 
         assert_eq!(expected, value);
@@ -876,7 +879,7 @@ mod tests {
 
     #[derive(Serialize)]
     enum Length {
-        Millimeters(u8)
+        Millimeters(u8),
     }
 
     #[test]
@@ -1026,7 +1029,77 @@ mod tests {
         Ok(())
     }
 
-    // TODO: map
+    #[test]
+    fn serialize_map() -> Result<()> {
+        use std::collections::HashMap;
+        let mut serializer = Serializer {};
+
+        // String keys
+        let mut map = HashMap::new();
+        map.insert("foo", "bar");
+        let value = map.serialize(&mut serializer)?;
+        let expected = Value::Object(ObjectLit {
+            span: DUMMY_SP,
+            props: vec![PropOrSpread::Prop(Box::new(Prop::KeyValue(
+                KeyValueProp {
+                    key: PropName::Str(str_lit("foo")),
+                    value: Box::new(Expr::Lit(Lit::Str(str_lit("bar")))),
+                },
+            )))],
+        });
+        assert_eq!(expected, value);
+
+        // Number keys
+        let mut map = HashMap::new();
+        map.insert(4, 8);
+        let value = map.serialize(&mut serializer)?;
+        let expected = Value::Object(ObjectLit {
+            span: DUMMY_SP,
+            props: vec![PropOrSpread::Prop(Box::new(Prop::KeyValue(
+                KeyValueProp {
+                    key: PropName::Num(Number {
+                        span: DUMMY_SP,
+                        value: 4f64,
+                    }),
+                    value: Box::new(Expr::Lit(Lit::Num(Number {
+                        span: DUMMY_SP,
+                        value: 8f64,
+                    }))),
+                },
+            )))],
+        });
+        assert_eq!(expected, value);
+
+        // BigInt keys
+        let mut map = HashMap::new();
+        map.insert(4u64, 8u64);
+        let value = map.serialize(&mut serializer)?;
+        let expected = Value::Object(ObjectLit {
+            span: DUMMY_SP,
+            props: vec![PropOrSpread::Prop(Box::new(Prop::KeyValue(
+                KeyValueProp {
+                    key: PropName::BigInt(BigInt {
+                        span: DUMMY_SP,
+                        value: BigIntValue::from(4u64),
+                    }),
+                    value: Box::new(Expr::Lit(Lit::BigInt(BigInt {
+                        span: DUMMY_SP,
+                        value: BigIntValue::from(8u64),
+                    }))),
+                },
+            )))],
+        });
+        assert_eq!(expected, value);
+
+        // Unsupported key type for object literal
+        let mut map = HashMap::new();
+        map.insert((1, 2), 3);
+        let result = map.serialize(&mut serializer);
+        println!("{:#?}", result);
+
+        Ok(())
+    }
+
     // TODO: struct
 
     #[derive(Serialize)]
