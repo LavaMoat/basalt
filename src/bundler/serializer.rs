@@ -1120,30 +1120,24 @@ mod tests {
         let expected = Value::Object(ObjectLit {
             span: DUMMY_SP,
             props: vec![
-                PropOrSpread::Prop(Box::new(Prop::KeyValue(
-                    KeyValueProp {
-                        key: PropName::Str(str_lit("message")),
-                        value: Box::new(Expr::Lit(Lit::Str(str_lit("mock")))),
-                    },
-                ))),
-                PropOrSpread::Prop(Box::new(Prop::KeyValue(
-                    KeyValueProp {
-                        key: PropName::Str(str_lit("amount")),
-                        value: Box::new(Expr::Lit(Lit::Num(Number {
-                            span: DUMMY_SP,
-                            value: 32f64,
-                        }))),
-                    },
-                ))),
-                PropOrSpread::Prop(Box::new(Prop::KeyValue(
-                    KeyValueProp {
-                        key: PropName::Str(str_lit("flag")),
-                        value: Box::new(Expr::Lit(Lit::Bool(Bool {
-                            span: DUMMY_SP,
-                            value: true,
-                        }))),
-                    },
-                ))),
+                PropOrSpread::Prop(Box::new(Prop::KeyValue(KeyValueProp {
+                    key: PropName::Str(str_lit("message")),
+                    value: Box::new(Expr::Lit(Lit::Str(str_lit("mock")))),
+                }))),
+                PropOrSpread::Prop(Box::new(Prop::KeyValue(KeyValueProp {
+                    key: PropName::Str(str_lit("amount")),
+                    value: Box::new(Expr::Lit(Lit::Num(Number {
+                        span: DUMMY_SP,
+                        value: 32f64,
+                    }))),
+                }))),
+                PropOrSpread::Prop(Box::new(Prop::KeyValue(KeyValueProp {
+                    key: PropName::Str(str_lit("flag")),
+                    value: Box::new(Expr::Lit(Lit::Bool(Bool {
+                        span: DUMMY_SP,
+                        value: true,
+                    }))),
+                }))),
             ],
         });
         assert_eq!(expected, value);

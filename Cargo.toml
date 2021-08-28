@@ -17,12 +17,22 @@ dashmap = "4"
 rayon = "1.5"
 num-bigint = "0.2.6"
 
-swc = {version = "0.43"}
-swc_common = {version = "0.11.6", features = ["tty-emitter"]}
-swc_ecma_parser = {version = "0.67.1"}
-swc_atoms = {version = "0.2.7"}
-swc_ecma_ast = {version = "0.49.4"}
-swc_ecma_loader = {version = "0.15.0", features = ["node"]}
-swc_ecma_visit = {version = "0.35.2"}
-swc_ecma_dep_graph = {version = "0.35.0"}
-swc_ecma_codegen = {version = "0.67.1"}
+#swc = {version = "0.43"}
+#swc_common = {version = "0.11.6", features = ["tty-emitter"]}
+#swc_ecma_parser = {version = "0.67.1"}
+#swc_atoms = {version = "0.2.7"}
+#swc_ecma_ast = {version = "0.49.4"}
+#swc_ecma_loader = {version = "0.15.0", features = ["node"]}
+#swc_ecma_visit = {version = "0.35.2"}
+#swc_ecma_dep_graph = {version = "0.35.0"}
+#swc_ecma_codegen = {version = "0.67.1"}
+
+swc = {path = "../swc"}
+swc_common = {features = ["tty-emitter"], path = "../swc/common"}
+swc_ecma_parser = {path = "../swc/ecmascript/parser"}
+swc_atoms = {path = "../swc/atoms"}
+swc_ecma_ast = {path = "../swc/ecmascript/ast"}
+swc_ecma_loader = {features = ["node"], path = "../swc/ecmascript/loader"}
+swc_ecma_visit = {path = "../swc/ecmascript/visit"}
+swc_ecma_dep_graph = {path = "../swc/ecmascript/dep-graph"}
+swc_ecma_codegen = {path = "../swc/ecmascript/codegen"}

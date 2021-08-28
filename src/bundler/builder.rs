@@ -4,24 +4,30 @@ use std::fs::File;
 use std::io::BufReader;
 use std::path::PathBuf;
 
-use anyhow::{Context, Result};
+use anyhow::{bail, Context, Result};
 
-use swc_common::DUMMY_SP;
+use swc_common::{FileName, DUMMY_SP};
 use swc_ecma_ast::*;
+use swc_ecma_loader::{resolve::Resolve, resolvers::node::NodeModulesResolver};
 
 use serde::Serialize;
 
-use crate::policy::{Merge, Policy};
+use crate::{
+    module::base::module_base_directory,
+    policy::{Merge, Policy},
+    swc_utils::load_file,
+};
 
 use super::serializer::{Serializer, Value};
 
 const POLICY_VAR_NAME: &str = "__policy__";
 const RUNTIME_PACKAGE: &str = "@lavamoat/lavapack";
-const RUNTIME_FILE: &str = "src/runtime.js";
+//const RUNTIME_FILE: &str = "src/runtime.js";
 
 pub(crate) struct BundleBuilder {
     policy: Policy,
     program: Program,
+    resolver: Box<dyn Resolve>,
 }
 
 impl BundleBuilder {
@@ -33,9 +39,13 @@ impl BundleBuilder {
             shebang: None,
         });
 
+        let resolver: Box<dyn Resolve> =
+            Box::new(NodeModulesResolver::default());
+
         Self {
             policy: Default::default(),
             program,
+            resolver,
         }
     }
 
@@ -130,6 +140,41 @@ impl BundleBuilder {
             return Ok(Expr::Object(obj));
         }
         unreachable!("serialized policy must be an object");
+    }
+
+    pub fn inject_runtime(mut self) -> Result<Self> {
+        let base_dir = FileName::Real(std::env::current_dir()?);
+        let runtime_lib = self
+            .resolver
+            .resolve(&base_dir, RUNTIME_PACKAGE)
+            .context(format!(
+                "could not find {}, ensure it has been installed",
+                RUNTIME_PACKAGE
+            ))?;
+
+        let lib_index = match runtime_lib {
+            FileName::Real(path) => path,
+            _ => bail!("runtime library must be a real path"),
+        };
+        let package_dir = module_base_directory(&lib_index).unwrap();
+        let runtime_file = package_dir.join("src").join("runtime.js");
+
+        if !runtime_file.is_file() {
+            bail!("runtime {} is not a file", runtime_file.display());
+        }
+
+        let iife = self.iife_mut();
+        let (_, _, module) = load_file(&runtime_file)?;
+        for item in module.body {
+            match item {
+                ModuleItem::Stmt(stmt) => {
+                    //iife.push(stmt);
+                }
+                _ => {}
+            }
+        }
+
+        Ok(self)
     }
 
     /// Body of the IIFE.

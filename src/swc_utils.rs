@@ -16,6 +16,9 @@ use swc_ecma_ast::Module;
 use swc_ecma_codegen::Node;
 use swc_ecma_parser::{lexer::Lexer, EsConfig, Parser, StringInput, Syntax};
 
+use swc::IdentCollector;
+use swc_ecma_visit::VisitWith;
+
 pub(crate) fn get_handler() -> (Arc<SourceMap>, Handler) {
     let sm: Arc<SourceMap> = Arc::new(Default::default());
     let handler = Handler::with_tty_emitter(
@@ -99,8 +102,18 @@ pub fn load_code<S: AsRef<str>>(
 /// Print a node.
 pub fn print<T>(node: &T) -> Result<TransformOutput>
 where
-    T: Node,
+    T: Node + VisitWith<IdentCollector>,
 {
+    //node: &T,
+    //source_file_name: Option<&str>,
+    //output_path: Option<PathBuf>,
+    //target: JscTarget,
+    //source_map: SourceMapsConfig,
+    //source_map_names: &[JsWord],
+    //orig: Option<&sourcemap::SourceMap>,
+    //minify: bool,
+    //preserve_comments: Option<BoolOrObject<JsMinifyCommentOption>>,
+
     let sm: Arc<SourceMap> = Arc::new(Default::default());
     let compiler = Compiler::new(sm);
     compiler.print(
@@ -109,6 +122,7 @@ where
         None,
         JscTarget::Es2020,
         SourceMapsConfig::Bool(true),
+        &[],
         None,
         false,
         None,

@@ -132,6 +132,7 @@ pub fn transform(
         None,
         JscTarget::Es2020,
         SourceMapsConfig::Bool(true),
+        &[],
         None,
         false,
         None,
