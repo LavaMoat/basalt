@@ -16,7 +16,7 @@ use serde::Serialize;
 use crate::{
     module::base::module_base_directory,
     policy::{Merge, Policy},
-    swc_utils::load_file,
+    swc_utils::{load_file, load_code, get_parser},
 };
 
 use super::serializer::{Serializer, Value};
@@ -35,11 +35,19 @@ pub(crate) struct BundleBuilder {
 impl BundleBuilder {
     /// Create a bundle builder.
     pub fn new() -> Self {
-        let program = Program::Script(Script {
-            span: DUMMY_SP,
-            body: vec![],
-            shebang: None,
-        });
+        //let program = Program::Script(Script {
+            //span: DUMMY_SP,
+            //body: vec![],
+            //shebang: None,
+        //});
+
+        let source_map: Arc<SourceMap> = Arc::new(Default::default());
+        let fm = source_map.new_source_file(
+            FileName::Anon,
+            "".into(),
+        );
+        let mut parser = get_parser(&fm);
+        let program = parser.parse_program().unwrap();
 
         let resolver: Box<dyn Resolve> =
             Box::new(NodeModulesResolver::default());
@@ -47,7 +55,7 @@ impl BundleBuilder {
         Self {
             policy: Default::default(),
             program,
-            source_map: Arc::new(Default::default()),
+            source_map,
             resolver,
         }
     }
