@@ -52,10 +52,10 @@ pub fn inspect(code: Option<String>, file: Option<PathBuf>) -> Result<()> {
         );
     } else {
         if let Some(code) = code {
-            let (_, _, module) = swc_utils::load_code(&code, None)?;
+            let (_, _, module) = swc_utils::load_code(&code, None, None)?;
             println!("{:#?}", module);
         } else if let Some(file) = file {
-            let (_, _, module) = swc_utils::load_file(&file)?;
+            let (_, _, module) = swc_utils::load_file(&file, None)?;
             println!("{:#?}", module);
         }
     }
@@ -104,7 +104,7 @@ pub fn meta(file: PathBuf) -> Result<()> {
         bail!("Module {} does not exist or is not a file", file.display());
     }
     let mut parser = Parser::new();
-    let (_, _, module) = crate::swc_utils::load_file(file)?;
+    let (_, _, module) = crate::swc_utils::load_file(file, None)?;
     let smr = parser.parse(&module)?;
     let contents = serde_json::to_string_pretty(&smr)?;
     println!("{}", contents);
@@ -121,7 +121,7 @@ pub fn globals(file: PathBuf, debug: bool) -> Result<()> {
     }
 
     let mut analyzer = GlobalAnalysis::new(Default::default());
-    let (_, _, module) = crate::swc_utils::load_file(&file)?;
+    let (_, _, module) = crate::swc_utils::load_file(&file, None)?;
     module.visit_children_with(&mut analyzer);
 
     if debug {

@@ -3,10 +3,11 @@
 use std::fs::File;
 use std::io::BufReader;
 use std::path::PathBuf;
+use std::sync::Arc;
 
 use anyhow::{bail, Context, Result};
 
-use swc_common::{FileName, DUMMY_SP};
+use swc_common::{FileName, SourceMap, DUMMY_SP};
 use swc_ecma_ast::*;
 use swc_ecma_loader::{resolve::Resolve, resolvers::node::NodeModulesResolver};
 
@@ -27,6 +28,7 @@ const RUNTIME_PACKAGE: &str = "@lavamoat/lavapack";
 pub(crate) struct BundleBuilder {
     policy: Policy,
     program: Program,
+    source_map: Arc<SourceMap>,
     resolver: Box<dyn Resolve>,
 }
 
@@ -45,6 +47,7 @@ impl BundleBuilder {
         Self {
             policy: Default::default(),
             program,
+            source_map: Arc::new(Default::default()),
             resolver,
         }
     }
@@ -163,12 +166,14 @@ impl BundleBuilder {
             bail!("runtime {} is not a file", runtime_file.display());
         }
 
+        let (_, _, module) =
+            load_file(&runtime_file, Some(Arc::clone(&self.source_map)))?;
+
         let iife = self.iife_mut();
-        let (_, _, module) = load_file(&runtime_file)?;
         for item in module.body {
             match item {
                 ModuleItem::Stmt(stmt) => {
-                    //iife.push(stmt);
+                    iife.push(stmt);
                 }
                 _ => {}
             }

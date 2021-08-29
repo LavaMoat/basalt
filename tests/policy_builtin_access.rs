@@ -12,7 +12,7 @@ use basalt::{
 };
 
 fn analyze(code: &str) -> Result<IndexMap<JsWord, Access>> {
-    let (_, _, module) = load_code(code, None)?;
+    let (_, _, module) = load_code(code, None, None)?;
 
     let mut globals_scope = GlobalAnalysis::new(Default::default());
     module.visit_children_with(&mut globals_scope);

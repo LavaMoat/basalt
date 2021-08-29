@@ -19,8 +19,11 @@ use swc_ecma_parser::{lexer::Lexer, EsConfig, Parser, StringInput, Syntax};
 use swc::IdentCollector;
 use swc_ecma_visit::VisitWith;
 
-pub(crate) fn get_handler() -> (Arc<SourceMap>, Handler) {
-    let sm: Arc<SourceMap> = Arc::new(Default::default());
+pub(crate) fn get_handler(
+    source_map: Option<Arc<SourceMap>>,
+) -> (Arc<SourceMap>, Handler) {
+    let sm: Arc<SourceMap> =
+        source_map.unwrap_or_else(|| Arc::new(Default::default()));
     let handler = Handler::with_tty_emitter(
         ColorConfig::Auto,
         true,
@@ -51,8 +54,9 @@ pub(crate) fn get_parser<'a>(
 /// Parse a module from a file.
 pub fn load_file<P: AsRef<Path>>(
     file: P,
+    source_map: Option<Arc<SourceMap>>,
 ) -> Result<(FileName, Arc<SourceMap>, Module)> {
-    let (sm, handler) = get_handler();
+    let (sm, handler) = get_handler(source_map);
     let fm = sm.load_file(file.as_ref())?;
     let file_name = fm.name.clone();
 
@@ -75,8 +79,9 @@ pub fn load_file<P: AsRef<Path>>(
 pub fn load_code<S: AsRef<str>>(
     code: S,
     file_name: Option<FileName>,
+    source_map: Option<Arc<SourceMap>>,
 ) -> Result<(FileName, Arc<SourceMap>, Module)> {
-    let (sm, handler) = get_handler();
+    let (sm, handler) = get_handler(source_map);
     let fm = sm.new_source_file(
         file_name.unwrap_or(FileName::Anon),
         code.as_ref().into(),

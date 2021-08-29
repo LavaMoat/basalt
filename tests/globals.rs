@@ -11,7 +11,7 @@ fn analyze(dir: &str) -> Result<(String, String)> {
     let input = base.join("input.js");
     let expected = std::fs::read_to_string(&base.join("output.json"))?;
     let mut analyzer = GlobalAnalysis::new(Default::default());
-    let (_, _, module) = load_file(&input)?;
+    let (_, _, module) = load_file(&input, None)?;
     module.visit_children_with(&mut analyzer);
     let globals = analyzer.compute_globals();
     let globals = analyzer.flatten_join(globals);

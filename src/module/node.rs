@@ -86,7 +86,7 @@ fn parse_module<P: AsRef<Path>>(
         return Ok(module.clone());
     }
 
-    let (file_name, source_map, module) = load_file(file.as_ref())?;
+    let (file_name, source_map, module) = load_file(file.as_ref(), None)?;
 
     let comments: SingleThreadedComments = Default::default();
     let mut node = ModuleNode {
