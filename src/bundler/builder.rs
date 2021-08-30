@@ -10,20 +10,20 @@ use anyhow::{bail, Context, Result};
 use swc_common::{FileName, SourceMap, DUMMY_SP};
 use swc_ecma_ast::*;
 use swc_ecma_loader::{resolve::Resolve, resolvers::node::NodeModulesResolver};
+use swc_ecma_visit::{Fold, FoldWith};
 
 use serde::Serialize;
 
 use crate::{
     module::base::module_base_directory,
     policy::{Merge, Policy},
-    swc_utils::{load_file, load_code, get_parser},
+    swc_utils::{get_parser, load_file},
 };
 
 use super::serializer::{Serializer, Value};
 
 const POLICY_VAR_NAME: &str = "__policy__";
 const RUNTIME_PACKAGE: &str = "@lavamoat/lavapack";
-//const RUNTIME_FILE: &str = "src/runtime.js";
 
 pub(crate) struct BundleBuilder {
     policy: Policy,
@@ -35,17 +35,8 @@ pub(crate) struct BundleBuilder {
 impl BundleBuilder {
     /// Create a bundle builder.
     pub fn new() -> Self {
-        //let program = Program::Script(Script {
-            //span: DUMMY_SP,
-            //body: vec![],
-            //shebang: None,
-        //});
-
         let source_map: Arc<SourceMap> = Arc::new(Default::default());
-        let fm = source_map.new_source_file(
-            FileName::Anon,
-            "".into(),
-        );
+        let fm = source_map.new_source_file(FileName::Anon, "".into());
         let mut parser = get_parser(&fm);
         let program = parser.parse_program().unwrap();
 
@@ -77,83 +68,23 @@ impl BundleBuilder {
         Ok(self)
     }
 
-    /// Inject the IIFE into the program.
-    pub fn inject_iife(mut self) -> Self {
-        let body = self.body_mut();
+    /// Fold into a single program.
+    pub fn fold(mut self) -> Result<Self> {
+        let policy_expr = PolicyDecl::build_policy(std::mem::take(&mut self.policy))?;
+        let mut policy_decl = PolicyDecl { expr: policy_expr };
+        self.program = self.program.fold_with(&mut policy_decl);
 
-        let iife = Stmt::Expr(ExprStmt {
-            span: DUMMY_SP,
-            expr: Box::new(Expr::Unary(UnaryExpr {
-                span: DUMMY_SP,
-                op: UnaryOp::Void,
-                arg: Box::new(Expr::Call(CallExpr {
-                    span: DUMMY_SP,
-                    callee: ExprOrSuper::Expr(Box::new(Expr::Fn(FnExpr {
-                        ident: None,
-                        function: Function {
-                            params: vec![],
-                            body: Some(BlockStmt {
-                                span: DUMMY_SP,
-                                stmts: vec![],
-                            }),
-                            decorators: vec![],
-                            span: DUMMY_SP,
-                            is_generator: false,
-                            is_async: false,
-                            type_params: None,
-                            return_type: None,
-                        },
-                    }))),
-                    args: vec![],
-                    type_args: None,
-                })),
-            })),
-        });
+        let module = self.load_runtime_module()?;
+        let mut runtime_module = RuntimeModule { module };
+        self.program = self.program.fold_with(&mut runtime_module);
 
-        body.push(iife);
-
-        self
-    }
-
-    /// Inject the policy into the IIFE body.
-    pub fn inject_policy(mut self) -> Result<Self> {
-        let decl = Stmt::Decl(Decl::Var(VarDecl {
-            span: DUMMY_SP,
-            kind: VarDeclKind::Var,
-            declare: false,
-            decls: vec![VarDeclarator {
-                span: DUMMY_SP,
-                definite: false,
-                name: Pat::Ident(BindingIdent {
-                    id: Ident {
-                        span: DUMMY_SP,
-                        optional: false,
-                        sym: POLICY_VAR_NAME.into(),
-                    },
-                    type_ann: None,
-                }),
-                init: Some(Box::new(self.build_policy_object()?)),
-            }],
-        }));
-
-        {
-            let iife = self.iife_mut();
-            iife.push(decl);
-        }
+        let mut iife = Iife {};
+        self.program = self.program.fold_with(&mut iife);
 
         Ok(self)
     }
 
-    fn build_policy_object(&self) -> Result<Expr> {
-        let mut serializer = Serializer {};
-        let value = self.policy.serialize(&mut serializer)?;
-        if let Value::Object(obj) = value {
-            return Ok(Expr::Object(obj));
-        }
-        unreachable!("serialized policy must be an object");
-    }
-
-    pub fn inject_runtime(mut self) -> Result<Self> {
+    fn load_runtime_module(&self) -> Result<Module> {
         let base_dir = FileName::Real(std::env::current_dir()?);
         let runtime_lib = self
             .resolver
@@ -177,60 +108,134 @@ impl BundleBuilder {
         let (_, _, module) =
             load_file(&runtime_file, Some(Arc::clone(&self.source_map)))?;
 
-        let iife = self.iife_mut();
-        for item in module.body {
-            match item {
-                ModuleItem::Stmt(stmt) => {
-                    iife.push(stmt);
-                }
-                _ => {}
-            }
-        }
-
-        Ok(self)
-    }
-
-    /// Body of the IIFE.
-    ///
-    /// Panics if `inject_iife()` has not been invoked yet.
-    fn iife_mut(&mut self) -> &mut Vec<Stmt> {
-        let body = self.body_mut();
-        let iife_node = body.get_mut(0).unwrap();
-
-        if let Stmt::Expr(ExprStmt { expr, .. }) = iife_node {
-            if let Expr::Unary(UnaryExpr { arg, .. }) = &mut **expr {
-                if let Expr::Call(CallExpr {
-                    callee: ExprOrSuper::Expr(expr),
-                    ..
-                }) = &mut **arg
-                {
-                    if let Expr::Fn(FnExpr {
-                        function:
-                            Function {
-                                body: Some(body), ..
-                            },
-                        ..
-                    }) = &mut **expr
-                    {
-                        return &mut body.stmts;
-                    }
-                }
-            }
-        }
-
-        unreachable!("Unable to match on IIFE block statement!")
-    }
-
-    /// Main body of the program.
-    fn body_mut(&mut self) -> &mut Vec<Stmt> {
-        if let Program::Script(script) = &mut self.program {
-            return &mut script.body;
-        }
-        unreachable!("Program is not a script!")
+        Ok(module)
     }
 
     /// Finalize the bundled program.
     pub fn finalize(self) -> Program {
         self.program
+    }
+}
+
+struct PolicyDecl {
+    expr: Expr,
+}
+
+impl PolicyDecl {
+    fn build_policy(policy: Policy) -> Result<Expr> {
+        let mut serializer = Serializer {};
+        let value = policy.serialize(&mut serializer)?;
+        if let Value::Object(obj) = value {
+            return Ok(Expr::Object(obj));
+        }
+        unreachable!("serialized policy must be an object");
+    }
+}
+
+impl Fold for PolicyDecl {
+    fn fold_program(&mut self, mut n: Program) -> Program {
+        let decl = Stmt::Decl(Decl::Var(VarDecl {
+            span: DUMMY_SP,
+            kind: VarDeclKind::Var,
+            declare: false,
+            decls: vec![VarDeclarator {
+                span: DUMMY_SP,
+                definite: false,
+                name: Pat::Ident(BindingIdent {
+                    id: Ident {
+                        span: DUMMY_SP,
+                        optional: false,
+                        sym: POLICY_VAR_NAME.into(),
+                    },
+                    type_ann: None,
+                }),
+                init: Some(Box::new(self.expr.clone())),
+            }],
+        }));
+
+        let stmts = if let Program::Script(script) = &mut n {
+            &mut script.body
+        } else {
+            panic!("Expecting script program, got a module")
+        };
+
+        stmts.push(decl);
+
+        n
+    }
+}
+
+
+struct RuntimeModule {
+    module: Module,
+}
+
+impl Fold for RuntimeModule {
+    fn fold_program(&mut self, mut n: Program) -> Program {
+        let stmts = if let Program::Script(script) = &mut n {
+            &mut script.body
+        } else {
+            panic!("Expecting script program, got a module")
+        };
+
+        let mut module_stmts: Vec<Stmt> = self.module.body
+            .iter()
+            .filter(|item| match item {
+                ModuleItem::Stmt(_) => true,
+                _ => false,
+            })
+            .map(|item| match item {
+                ModuleItem::Stmt(stmt) => stmt.clone(),
+                _ => unreachable!(),
+            })
+            .collect();
+
+        stmts.append(&mut module_stmts);
+
+        n
+    }
+}
+
+struct Iife;
+impl Fold for Iife {
+    fn fold_program(&mut self, n: Program) -> Program {
+        let stmts = if let Program::Script(script) = n {
+            script.body
+        } else {
+            panic!("Expecting script program, got a module")
+        };
+
+        Program::Script(Script {
+            span: DUMMY_SP,
+            body: vec![Stmt::Expr(ExprStmt {
+                span: DUMMY_SP,
+                expr: Box::new(Expr::Unary(UnaryExpr {
+                    span: DUMMY_SP,
+                    op: UnaryOp::Void,
+                    arg: Box::new(Expr::Call(CallExpr {
+                        span: DUMMY_SP,
+                        callee: ExprOrSuper::Expr(Box::new(Expr::Fn(FnExpr {
+                            ident: None,
+                            function: Function {
+                                params: vec![],
+                                body: Some(BlockStmt {
+                                    span: DUMMY_SP,
+                                    stmts,
+                                }),
+                                decorators: vec![],
+                                span: DUMMY_SP,
+                                is_generator: false,
+                                is_async: false,
+                                type_params: None,
+                                return_type: None,
+                            },
+                        }))),
+                        args: vec![],
+                        type_args: None,
+                    })),
+                })),
+            })],
+            shebang: None,
+        })
     }
 }

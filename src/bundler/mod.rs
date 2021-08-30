@@ -19,8 +19,9 @@ pub fn bundle(options: BundleOptions) -> Result<Program> {
     let builder = builder::BundleBuilder::new();
     Ok(builder
         .load_policy_files(&options.policy)?
-        .inject_iife()
-        .inject_policy()?
-        .inject_runtime()?
+        .fold()?
+        //.inject_iife()
+        //.inject_policy()?
+        //.inject_runtime()?
         .finalize())
 }
