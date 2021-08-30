@@ -116,6 +116,7 @@ dependencies = [
  "swc_ecma_dep_graph",
  "swc_ecma_loader",
  "swc_ecma_parser",
+ "swc_ecma_transforms_base",
  "swc_ecma_visit",
 ]
 
@@ -1558,7 +1559,7 @@ dependencies = [
 
 [[package]]
 name = "swc_ecma_minifier"
-version = "0.23.0"
+version = "0.23.1"
 dependencies = [
  "fxhash",
  "indexmap",

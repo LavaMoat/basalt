@@ -10,6 +10,7 @@ use anyhow::{bail, Context, Result};
 use swc_common::{FileName, SourceMap, DUMMY_SP};
 use swc_ecma_ast::*;
 use swc_ecma_loader::{resolve::Resolve, resolvers::node::NodeModulesResolver};
+use swc_ecma_transforms_base::ext::MapWithMut;
 use swc_ecma_visit::{Fold, FoldWith};
 
 use serde::Serialize;
@@ -17,7 +18,7 @@ use serde::Serialize;
 use crate::{
     module::base::module_base_directory,
     policy::{Merge, Policy},
-    swc_utils::{get_parser, load_file},
+    swc_utils::load_file,
 };
 
 use super::serializer::{Serializer, Value};
@@ -65,26 +66,32 @@ impl BundleBuilder {
             )?;
             self.policy.merge(&mut policy);
         }
-
         Ok(self)
     }
 
     /// Fold into a single program.
     pub fn fold(mut self) -> Result<Self> {
-        let policy_expr = PolicyDecl::build_policy(std::mem::take(&mut self.policy))?;
+        let policy_expr =
+            PolicyDecl::build_policy(std::mem::take(&mut self.policy))?;
         let mut policy_decl = PolicyDecl { expr: policy_expr };
-        self.program = self.program.fold_with(&mut policy_decl);
+        self.program = self.program.fold_children_with(&mut policy_decl);
 
         let module = self.load_runtime_module()?;
         let mut runtime_module = RuntimeModule { module };
-        self.program = self.program.fold_with(&mut runtime_module);
+        self.program = self.program.fold_children_with(&mut runtime_module);
 
         let mut iife = Iife {};
-        self.program = self.program.fold_with(&mut iife);
+        self.program = self.program.fold_children_with(&mut iife);
 
         Ok(self)
     }
 
+    /// Finalize the bundled program.
+    pub fn finalize(self) -> (Program, Arc<SourceMap>) {
+        (self.program, self.source_map)
+    }
+
+    /// Load the runtime module.
     fn load_runtime_module(&self) -> Result<Module> {
         let base_dir = FileName::Real(std::env::current_dir()?);
         let runtime_lib = self
@@ -112,10 +119,6 @@ impl BundleBuilder {
         Ok(module)
     }
 
-    /// Finalize the bundled program.
-    pub fn finalize(self) -> (Program, Arc<SourceMap>) {
-        (self.program, self.source_map)
-    }
 }
 
 struct PolicyDecl {
@@ -134,7 +137,7 @@ impl PolicyDecl {
 }
 
 impl Fold for PolicyDecl {
-    fn fold_program(&mut self, mut n: Program) -> Program {
+    fn fold_script(&mut self, mut n: Script) -> Script {
         let decl = Stmt::Decl(Decl::Var(VarDecl {
             span: DUMMY_SP,
             kind: VarDeclKind::Var,
@@ -150,93 +153,64 @@ impl Fold for PolicyDecl {
                     },
                     type_ann: None,
                 }),
-                init: Some(Box::new(self.expr.clone())),
+                init: Some(Box::new(self.expr.take())),
             }],
         }));
-
-        let stmts = if let Program::Script(script) = &mut n {
-            &mut script.body
-        } else {
-            panic!("Expecting script program, got a module")
-        };
-
-        stmts.push(decl);
-
+        n.body.push(decl);
         n
     }
 }
-
 
 struct RuntimeModule {
     module: Module,
 }
 
 impl Fold for RuntimeModule {
-    fn fold_program(&mut self, mut n: Program) -> Program {
-        let stmts = if let Program::Script(script) = &mut n {
-            &mut script.body
-        } else {
-            panic!("Expecting script program, got a module")
-        };
-
-        let mut module_stmts: Vec<Stmt> = self.module.body
-            .iter()
-            .filter(|item| match item {
-                ModuleItem::Stmt(_) => true,
-                _ => false,
-            })
-            .map(|item| match item {
-                ModuleItem::Stmt(stmt) => stmt.clone(),
-                _ => unreachable!(),
-            })
-            .collect();
-
-        stmts.append(&mut module_stmts);
-
+    fn fold_script(&mut self, mut n: Script) -> Script {
+        let module = self.module.take();
+        for item in module.body {
+            match item {
+                ModuleItem::Stmt(stmt) => n.body.push(stmt),
+                _ => {}
+            }
+        }
         n
     }
 }
 
 struct Iife;
 impl Fold for Iife {
-    fn fold_program(&mut self, n: Program) -> Program {
-        let stmts = if let Program::Script(script) = n {
-            script.body
-        } else {
-            panic!("Expecting script program, got a module")
-        };
-
-        Program::Script(Script {
+    fn fold_script(&mut self, mut n: Script) -> Script {
+        let iife = Stmt::Expr(ExprStmt {
             span: DUMMY_SP,
-            body: vec![Stmt::Expr(ExprStmt {
+            expr: Box::new(Expr::Unary(UnaryExpr {
                 span: DUMMY_SP,
-                expr: Box::new(Expr::Unary(UnaryExpr {
+                op: UnaryOp::Void,
+                arg: Box::new(Expr::Call(CallExpr {
                     span: DUMMY_SP,
-                    op: UnaryOp::Void,
-                    arg: Box::new(Expr::Call(CallExpr {
-                        span: DUMMY_SP,
-                        callee: ExprOrSuper::Expr(Box::new(Expr::Fn(FnExpr {
-                            ident: None,
-                            function: Function {
-                                params: vec![],
-                                body: Some(BlockStmt {
-                                    span: DUMMY_SP,
-                                    stmts,
-                                }),
-                                decorators: vec![],
+                    callee: ExprOrSuper::Expr(Box::new(Expr::Fn(FnExpr {
+                        ident: None,
+                        function: Function {
+                            params: vec![],
+                            body: Some(BlockStmt {
                                 span: DUMMY_SP,
-                                is_generator: false,
-                                is_async: false,
-                                type_params: None,
-                                return_type: None,
-                            },
-                        }))),
-                        args: vec![],
-                        type_args: None,
-                    })),
+                                stmts: n.body.take(),
+                            }),
+                            decorators: vec![],
+                            span: DUMMY_SP,
+                            is_generator: false,
+                            is_async: false,
+                            type_params: None,
+                            return_type: None,
+                        },
+                    }))),
+                    args: vec![],
+                    type_args: None,
                 })),
-            })],
-            shebang: None,
-        })
+            })),
+        });
+
+        n.body = vec![iife];
+        n
     }
 }

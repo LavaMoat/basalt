@@ -36,3 +36,4 @@ swc_ecma_loader = {features = ["node"], path = "../swc/ecmascript/loader"}
 swc_ecma_visit = {path = "../swc/ecmascript/visit"}
 swc_ecma_dep_graph = {path = "../swc/ecmascript/dep-graph"}
 swc_ecma_codegen = {path = "../swc/ecmascript/codegen"}
+swc_ecma_transforms_base = {path = "../swc/ecmascript/transforms/base"}
