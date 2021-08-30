@@ -2,6 +2,8 @@
 
 use anyhow::Result;
 use std::path::PathBuf;
+use std::sync::Arc;
+use swc_common::SourceMap;
 use swc_ecma_ast::Program;
 
 mod builder;
@@ -15,13 +17,10 @@ pub struct BundleOptions {
 }
 
 /// Generate a bundle from the given options.
-pub fn bundle(options: BundleOptions) -> Result<Program> {
+pub fn bundle(options: BundleOptions) -> Result<(Program, Arc<SourceMap>)> {
     let builder = builder::BundleBuilder::new();
     Ok(builder
         .load_policy_files(&options.policy)?
         .fold()?
-        //.inject_iife()
-        //.inject_policy()?
-        //.inject_runtime()?
         .finalize())
 }

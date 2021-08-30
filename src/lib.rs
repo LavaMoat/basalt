@@ -36,8 +36,8 @@ pub fn bundle(module: Vec<PathBuf>, policy: Vec<PathBuf>) -> Result<()> {
         bail!("The bundle command requires some policy file(s) (use --policy)");
     }
     let options = bundler::BundleOptions { module, policy };
-    let program = bundler::bundle(options)?;
-    let output = swc_utils::print(&program)?;
+    let (program, source_map) = bundler::bundle(options)?;
+    let output = swc_utils::print(&program, source_map)?;
 
     println!("{}", output.code);
 

@@ -36,10 +36,11 @@ impl BundleBuilder {
     /// Create a bundle builder.
     pub fn new() -> Self {
         let source_map: Arc<SourceMap> = Arc::new(Default::default());
-        let fm = source_map.new_source_file(FileName::Anon, "".into());
-        let mut parser = get_parser(&fm);
-        let program = parser.parse_program().unwrap();
-
+        let program = Program::Script(Script {
+            span: DUMMY_SP,
+            body: vec![],
+            shebang: None,
+        });
         let resolver: Box<dyn Resolve> =
             Box::new(NodeModulesResolver::default());
 
@@ -112,8 +113,8 @@ impl BundleBuilder {
     }
 
     /// Finalize the bundled program.
-    pub fn finalize(self) -> Program {
-        self.program
+    pub fn finalize(self) -> (Program, Arc<SourceMap>) {
+        (self.program, self.source_map)
     }
 }
 

@@ -105,7 +105,7 @@ pub fn load_code<S: AsRef<str>>(
 }
 
 /// Print a node.
-pub fn print<T>(node: &T) -> Result<TransformOutput>
+pub fn print<T>(node: &T, source_map: Arc<SourceMap>) -> Result<TransformOutput>
 where
     T: Node + VisitWith<IdentCollector>,
 {
@@ -119,8 +119,8 @@ where
     //minify: bool,
     //preserve_comments: Option<BoolOrObject<JsMinifyCommentOption>>,
 
-    let sm: Arc<SourceMap> = Arc::new(Default::default());
-    let compiler = Compiler::new(sm);
+    //let sm: Arc<SourceMap> = Arc::new(Default::default());
+    let compiler = Compiler::new(source_map);
     compiler.print(
         node,
         None,
