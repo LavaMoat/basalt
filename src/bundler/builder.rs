@@ -86,7 +86,7 @@ impl BundleBuilder {
         let list =
             load_modules(entry, Arc::clone(&self.source_map), &self.resolver)?;
 
-        println!("Got modules list {:#?}", list.modules.len());
+        println!("Got modules list {:#?}", list.len());
 
         // TODO: build modules data structure!
         let mut modules_decl = ModulesDecl {};
