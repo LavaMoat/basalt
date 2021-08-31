@@ -5,7 +5,7 @@
 //!
 
 use std::path::{Path, PathBuf};
-use std::sync::Arc;
+use std::sync::{Arc, atomic::{AtomicUsize, Ordering::SeqCst}};
 
 use anyhow::{anyhow, Context, Result};
 use dashmap::DashMap;
@@ -19,6 +19,10 @@ use swc_ecma_loader::{resolve::Resolve, resolvers::node::NodeModulesResolver};
 
 use crate::module::dependencies::is_builtin_module;
 use crate::swc_utils::load_file;
+
+/// Counter of module ids.
+static COUNTER: SyncLazy<AtomicUsize> =
+    SyncLazy::new(|| AtomicUsize::new(0));
 
 /// Cache of visited modules.
 static CACHE: SyncLazy<DashMap<PathBuf, Arc<VisitedModule>>> =
@@ -88,11 +92,13 @@ fn parse_module<P: AsRef<Path>>(
 
     let (file_name, source_map, module) = load_file(file.as_ref(), None)?;
 
+    let id = COUNTER.fetch_add(1, SeqCst);
     let comments: SingleThreadedComments = Default::default();
     let mut node = ModuleNode {
         module: Arc::new(module),
         dependencies: None,
         resolved: Default::default(),
+        id,
     };
     node.analyze(&comments);
     node.resolve(resolver, &file_name)?;
@@ -144,6 +150,8 @@ pub fn parse_file<P: AsRef<Path>>(
 /// Encapsulates a module and it's dependencies.
 #[derive(Debug)]
 pub struct ModuleNode {
+    /// The module identifier.
+    pub id: usize,
     /// The underlying module AST node.
     pub module: Arc<Module>,
     /// The parsed dependencies of this module.
