@@ -7,12 +7,13 @@ use swc_common::SourceMap;
 use swc_ecma_ast::Program;
 
 mod builder;
+mod loader;
 mod serializer;
 
 /// Options for bundling.
 #[derive(Debug)]
 pub struct BundleOptions {
-    pub(crate) module: Vec<PathBuf>,
+    pub(crate) module: PathBuf,
     pub(crate) policy: Vec<PathBuf>,
 }
 
@@ -21,6 +22,6 @@ pub fn bundle(options: BundleOptions) -> Result<(Program, Arc<SourceMap>)> {
     let builder = builder::BundleBuilder::new();
     Ok(builder
         .load_policy_files(&options.policy)?
-        .fold()?
+        .fold(options.module)?
         .finalize())
 }

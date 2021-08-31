@@ -26,7 +26,7 @@ enum BasaltCommands {
         policy: Vec<PathBuf>,
         /// Bundle entry point(s)
         #[structopt(parse(from_os_str))]
-        module: Vec<PathBuf>,
+        module: PathBuf,
     },
 
     /// Print the AST for code or a file

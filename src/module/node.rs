@@ -5,7 +5,10 @@
 //!
 
 use std::path::{Path, PathBuf};
-use std::sync::{Arc, atomic::{AtomicUsize, Ordering::SeqCst}};
+use std::sync::{
+    atomic::{AtomicUsize, Ordering::SeqCst},
+    Arc,
+};
 
 use anyhow::{anyhow, Context, Result};
 use dashmap::DashMap;
@@ -21,8 +24,7 @@ use crate::module::dependencies::is_builtin_module;
 use crate::swc_utils::load_file;
 
 /// Counter of module ids.
-static COUNTER: SyncLazy<AtomicUsize> =
-    SyncLazy::new(|| AtomicUsize::new(0));
+static COUNTER: SyncLazy<AtomicUsize> = SyncLazy::new(|| AtomicUsize::new(0));
 
 /// Cache of visited modules.
 static CACHE: SyncLazy<DashMap<PathBuf, Arc<VisitedModule>>> =
@@ -80,7 +82,8 @@ pub struct VisitState {
     pub parents: Vec<FileName>,
 }
 
-fn parse_module<P: AsRef<Path>>(
+/// Parse a module using a cached value when available.
+pub fn parse_module<P: AsRef<Path>>(
     file: P,
     resolver: &Box<dyn Resolve>,
 ) -> Result<Arc<VisitedModule>> {

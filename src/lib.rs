@@ -8,7 +8,7 @@ use std::io::{self, Read};
 use std::path::PathBuf;
 use std::time::SystemTime;
 
-use anyhow::{bail, Result};
+use anyhow::{bail, Context, Result};
 
 use swc_ecma_visit::VisitWith;
 
@@ -28,18 +28,21 @@ pub use static_module_record::{
 use policy::{analysis::globals_scope::GlobalAnalysis, builder::PolicyBuilder};
 
 /// Generate a bundle.
-pub fn bundle(module: Vec<PathBuf>, policy: Vec<PathBuf>) -> Result<()> {
-    if module.is_empty() {
-        bail!("The bundle command requires some entry point(s)");
-    }
+pub fn bundle(module: PathBuf, policy: Vec<PathBuf>) -> Result<()> {
     if policy.is_empty() {
         bail!("The bundle command requires some policy file(s) (use --policy)");
     }
+
+    let module = module.canonicalize().context(format!(
+        "unable to get canonical path for {}",
+        module.display()
+    ))?;
+
     let options = bundler::BundleOptions { module, policy };
     let (program, source_map) = bundler::bundle(options)?;
     let output = swc_utils::print(&program, source_map)?;
 
-    println!("{}", output.code);
+    //println!("{}", output.code);
 
     Ok(())
 }

@@ -21,7 +21,10 @@ use crate::{
     swc_utils::load_file,
 };
 
-use super::serializer::{Serializer, Value};
+use super::{
+    loader::load_modules,
+    serializer::{Serializer, Value},
+};
 
 const RUNTIME_PACKAGE: &str = "@lavamoat/lavapack";
 const MODULES: &str = "__modules__";
@@ -74,11 +77,16 @@ impl BundleBuilder {
     }
 
     /// Fold into a single program.
-    pub fn fold(mut self) -> Result<Self> {
+    pub fn fold(mut self, entry: PathBuf) -> Result<Self> {
         // Load and inject the runtime
         let module = self.load_runtime_module()?;
         let mut runtime_module = RuntimeModule { module };
         self.program = self.program.fold_children_with(&mut runtime_module);
+
+        let list =
+            load_modules(entry, Arc::clone(&self.source_map), &self.resolver)?;
+
+        println!("Got modules list {:#?}", list.modules.len());
 
         // TODO: build modules data structure!
         let mut modules_decl = ModulesDecl {};
@@ -95,6 +103,9 @@ impl BundleBuilder {
         self.program = self.program.fold_children_with(&mut policy_decl);
 
         // Initialize the bundle
+        //
+        // LavaPack.loadBundle(__modules__, __entryPoints__, __policy__)
+        //
         let mut bundle_call = LoadBundleCall {};
         self.program = self.program.fold_children_with(&mut bundle_call);
 
@@ -102,7 +113,6 @@ impl BundleBuilder {
         self.program = self.program.fold_children_with(&mut iife);
 
         // [123, {'./util.js': 456 }, function(){ module.exports = 42 }, { package: '<root>' }]
-        // LavaPack.loadBundle(__modules__, __entryPoints__, __policy__)
 
         Ok(self)
     }
@@ -179,7 +189,9 @@ impl Fold for ModulesDecl {
                     },
                     type_ann: None,
                 }),
-                init: Some(Box::new(Expr::Lit(Lit::Null(Null { span: DUMMY_SP })))),
+                init: Some(Box::new(Expr::Lit(Lit::Null(Null {
+                    span: DUMMY_SP,
+                })))),
             }],
         }));
         n.body.push(decl);
@@ -207,7 +219,9 @@ impl Fold for EntryPointsDecl {
                     },
                     type_ann: None,
                 }),
-                init: Some(Box::new(Expr::Lit(Lit::Null(Null { span: DUMMY_SP })))),
+                init: Some(Box::new(Expr::Lit(Lit::Null(Null {
+                    span: DUMMY_SP,
+                })))),
             }],
         }));
         n.body.push(decl);
@@ -277,7 +291,7 @@ impl Fold for LoadBundleCall {
                         span: DUMMY_SP,
                         sym: LOAD_BUNDLE.into(),
                         optional: false,
-                    }))
+                    })),
                 }))),
                 args: vec![
                     ExprOrSpread {
@@ -306,7 +320,7 @@ impl Fold for LoadBundleCall {
                     },
                 ],
                 type_args: None,
-            }))
+            })),
         });
         n.body.push(stmt);
         n
