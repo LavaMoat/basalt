@@ -261,30 +261,54 @@ struct LoadBundleCall;
 
 impl Fold for LoadBundleCall {
     fn fold_script(&mut self, mut n: Script) -> Script {
-
-        //let stmt = Stmt::Expr(ExprStmt {
-            //span: DUMMY_SP,
-        //});
-
-        //let decl = Stmt::Decl(Decl::Var(VarDecl {
-            //span: DUMMY_SP,
-            //kind: VarDeclKind::Const,
-            //declare: false,
-            //decls: vec![VarDeclarator {
-                //span: DUMMY_SP,
-                //definite: false,
-                //name: Pat::Ident(BindingIdent {
-                    //id: Ident {
-                        //span: DUMMY_SP,
-                        //optional: false,
-                        //sym: ENTRY_POINTS.into(),
-                    //},
-                    //type_ann: None,
-                //}),
-                //init: Some(Box::new(Expr::Lit(Lit::Null(Null { span: DUMMY_SP })))),
-            //}],
-        //}));
-        //n.body.push(decl);
+        let stmt = Stmt::Expr(ExprStmt {
+            span: DUMMY_SP,
+            expr: Box::new(Expr::Call(CallExpr {
+                span: DUMMY_SP,
+                callee: ExprOrSuper::Expr(Box::new(Expr::Member(MemberExpr {
+                    span: DUMMY_SP,
+                    computed: false,
+                    obj: ExprOrSuper::Expr(Box::new(Expr::Ident(Ident {
+                        span: DUMMY_SP,
+                        sym: LAVA_PACK.into(),
+                        optional: false,
+                    }))),
+                    prop: Box::new(Expr::Ident(Ident {
+                        span: DUMMY_SP,
+                        sym: LOAD_BUNDLE.into(),
+                        optional: false,
+                    }))
+                }))),
+                args: vec![
+                    ExprOrSpread {
+                        spread: None,
+                        expr: Box::new(Expr::Ident(Ident {
+                            span: DUMMY_SP,
+                            sym: MODULES.into(),
+                            optional: false,
+                        })),
+                    },
+                    ExprOrSpread {
+                        spread: None,
+                        expr: Box::new(Expr::Ident(Ident {
+                            span: DUMMY_SP,
+                            sym: ENTRY_POINTS.into(),
+                            optional: false,
+                        })),
+                    },
+                    ExprOrSpread {
+                        spread: None,
+                        expr: Box::new(Expr::Ident(Ident {
+                            span: DUMMY_SP,
+                            sym: POLICY.into(),
+                            optional: false,
+                        })),
+                    },
+                ],
+                type_args: None,
+            }))
+        });
+        n.body.push(stmt);
         n
     }
 }
