@@ -23,8 +23,12 @@ use crate::{
 
 use super::serializer::{Serializer, Value};
 
-const POLICY_VAR_NAME: &str = "__policy__";
 const RUNTIME_PACKAGE: &str = "@lavamoat/lavapack";
+const MODULES: &str = "__modules__";
+const ENTRY_POINTS: &str = "__entryPoints__";
+const POLICY: &str = "__policy__";
+const LAVA_PACK: &str = "LavaPack";
+const LOAD_BUNDLE: &str = "loadBundle";
 
 pub(crate) struct BundleBuilder {
     policy: Policy,
@@ -71,17 +75,34 @@ impl BundleBuilder {
 
     /// Fold into a single program.
     pub fn fold(mut self) -> Result<Self> {
+        // Load and inject the runtime
+        let module = self.load_runtime_module()?;
+        let mut runtime_module = RuntimeModule { module };
+        self.program = self.program.fold_children_with(&mut runtime_module);
+
+        // TODO: build modules data structure!
+        let mut modules_decl = ModulesDecl {};
+        self.program = self.program.fold_children_with(&mut modules_decl);
+
+        // TODO: collect entry points from CLI args
+        let mut entries_decl = EntryPointsDecl {};
+        self.program = self.program.fold_children_with(&mut entries_decl);
+
+        // Serialize and inject the computed policy
         let policy_expr =
             PolicyDecl::build_policy(std::mem::take(&mut self.policy))?;
         let mut policy_decl = PolicyDecl { expr: policy_expr };
         self.program = self.program.fold_children_with(&mut policy_decl);
 
-        let module = self.load_runtime_module()?;
-        let mut runtime_module = RuntimeModule { module };
-        self.program = self.program.fold_children_with(&mut runtime_module);
+        // Initialize the bundle
+        let mut bundle_call = LoadBundleCall {};
+        self.program = self.program.fold_children_with(&mut bundle_call);
 
         let mut iife = Iife {};
         self.program = self.program.fold_children_with(&mut iife);
+
+        // [123, {'./util.js': 456 }, function(){ module.exports = 42 }, { package: '<root>' }]
+        // LavaPack.loadBundle(__modules__, __entryPoints__, __policy__)
 
         Ok(self)
     }
@@ -118,9 +139,83 @@ impl BundleBuilder {
 
         Ok(module)
     }
-
 }
 
+/// Inject the LavaPack runtime.
+struct RuntimeModule {
+    module: Module,
+}
+
+impl Fold for RuntimeModule {
+    fn fold_script(&mut self, mut n: Script) -> Script {
+        let module = self.module.take();
+        for item in module.body {
+            match item {
+                ModuleItem::Stmt(stmt) => n.body.push(stmt),
+                _ => {}
+            }
+        }
+        n
+    }
+}
+
+/// Inject the module definition data structure.
+struct ModulesDecl;
+
+impl Fold for ModulesDecl {
+    fn fold_script(&mut self, mut n: Script) -> Script {
+        let decl = Stmt::Decl(Decl::Var(VarDecl {
+            span: DUMMY_SP,
+            kind: VarDeclKind::Const,
+            declare: false,
+            decls: vec![VarDeclarator {
+                span: DUMMY_SP,
+                definite: false,
+                name: Pat::Ident(BindingIdent {
+                    id: Ident {
+                        span: DUMMY_SP,
+                        optional: false,
+                        sym: MODULES.into(),
+                    },
+                    type_ann: None,
+                }),
+                init: Some(Box::new(Expr::Lit(Lit::Null(Null { span: DUMMY_SP })))),
+            }],
+        }));
+        n.body.push(decl);
+        n
+    }
+}
+
+/// Inject the entry points data structure.
+struct EntryPointsDecl;
+
+impl Fold for EntryPointsDecl {
+    fn fold_script(&mut self, mut n: Script) -> Script {
+        let decl = Stmt::Decl(Decl::Var(VarDecl {
+            span: DUMMY_SP,
+            kind: VarDeclKind::Const,
+            declare: false,
+            decls: vec![VarDeclarator {
+                span: DUMMY_SP,
+                definite: false,
+                name: Pat::Ident(BindingIdent {
+                    id: Ident {
+                        span: DUMMY_SP,
+                        optional: false,
+                        sym: ENTRY_POINTS.into(),
+                    },
+                    type_ann: None,
+                }),
+                init: Some(Box::new(Expr::Lit(Lit::Null(Null { span: DUMMY_SP })))),
+            }],
+        }));
+        n.body.push(decl);
+        n
+    }
+}
+
+/// Inject the policy definition.
 struct PolicyDecl {
     expr: Expr,
 }
@@ -140,7 +235,7 @@ impl Fold for PolicyDecl {
     fn fold_script(&mut self, mut n: Script) -> Script {
         let decl = Stmt::Decl(Decl::Var(VarDecl {
             span: DUMMY_SP,
-            kind: VarDeclKind::Var,
+            kind: VarDeclKind::Const,
             declare: false,
             decls: vec![VarDeclarator {
                 span: DUMMY_SP,
@@ -149,7 +244,7 @@ impl Fold for PolicyDecl {
                     id: Ident {
                         span: DUMMY_SP,
                         optional: false,
-                        sym: POLICY_VAR_NAME.into(),
+                        sym: POLICY.into(),
                     },
                     type_ann: None,
                 }),
@@ -161,23 +256,40 @@ impl Fold for PolicyDecl {
     }
 }
 
-struct RuntimeModule {
-    module: Module,
-}
+/// Call LavaPack.loadBundle().
+struct LoadBundleCall;
 
-impl Fold for RuntimeModule {
+impl Fold for LoadBundleCall {
     fn fold_script(&mut self, mut n: Script) -> Script {
-        let module = self.module.take();
-        for item in module.body {
-            match item {
-                ModuleItem::Stmt(stmt) => n.body.push(stmt),
-                _ => {}
-            }
-        }
+
+        //let stmt = Stmt::Expr(ExprStmt {
+            //span: DUMMY_SP,
+        //});
+
+        //let decl = Stmt::Decl(Decl::Var(VarDecl {
+            //span: DUMMY_SP,
+            //kind: VarDeclKind::Const,
+            //declare: false,
+            //decls: vec![VarDeclarator {
+                //span: DUMMY_SP,
+                //definite: false,
+                //name: Pat::Ident(BindingIdent {
+                    //id: Ident {
+                        //span: DUMMY_SP,
+                        //optional: false,
+                        //sym: ENTRY_POINTS.into(),
+                    //},
+                    //type_ann: None,
+                //}),
+                //init: Some(Box::new(Expr::Lit(Lit::Null(Null { span: DUMMY_SP })))),
+            //}],
+        //}));
+        //n.body.push(decl);
         n
     }
 }
 
+/// Wrap everything in an IIFE.
 struct Iife;
 impl Fold for Iife {
     fn fold_script(&mut self, mut n: Script) -> Script {
