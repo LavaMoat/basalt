@@ -21,7 +21,7 @@ use crate::{
 };
 
 use super::{
-    loader::load_modules,
+    loader::{load_modules, ModuleEntry},
     serializer::{Serializer, Value},
 };
 
@@ -88,7 +88,7 @@ impl BundleBuilder {
         println!("Got modules list {:#?}", list.len());
 
         // TODO: build modules data structure!
-        let mut modules_decl = ModulesDecl {};
+        let mut modules_decl = ModulesDecl { list };
         self.program = self.program.fold_children_with(&mut modules_decl);
 
         // TODO: collect entry points from CLI args
@@ -169,7 +169,9 @@ impl Fold for RuntimeModule {
 }
 
 /// Inject the module definition data structure.
-struct ModulesDecl;
+struct ModulesDecl {
+    list: Vec<ModuleEntry>,
+}
 
 impl Fold for ModulesDecl {
     fn fold_script(&mut self, mut n: Script) -> Script {
@@ -188,6 +190,7 @@ impl Fold for ModulesDecl {
                     },
                     type_ann: None,
                 }),
+                // TODO: generate Array of module data
                 init: Some(Box::new(Expr::Lit(Lit::Null(Null {
                     span: DUMMY_SP,
                 })))),

@@ -1381,7 +1381,7 @@ dependencies = [
 
 [[package]]
 name = "swc"
-version = "0.48.0"
+version = "0.51.0"
 dependencies = [
  "ahash 0.7.4",
  "anyhow",
@@ -1426,7 +1426,7 @@ dependencies = [
 
 [[package]]
 name = "swc_bundler"
-version = "0.56.0"
+version = "0.58.0"
 dependencies = [
  "ahash 0.7.4",
  "anyhow",
@@ -1453,7 +1453,7 @@ dependencies = [
 
 [[package]]
 name = "swc_common"
-version = "0.11.9"
+version = "0.12.0"
 dependencies = [
  "ahash 0.7.4",
  "ast_node",
@@ -1475,11 +1475,12 @@ dependencies = [
  "swc_visit",
  "termcolor",
  "unicode-width",
+ "url",
 ]
 
 [[package]]
 name = "swc_ecma_ast"
-version = "0.51.1"
+version = "0.52.0"
 dependencies = [
  "is-macro",
  "num-bigint",
@@ -1491,7 +1492,7 @@ dependencies = [
 
 [[package]]
 name = "swc_ecma_codegen"
-version = "0.69.1"
+version = "0.70.0"
 dependencies = [
  "bitflags",
  "num-bigint",
@@ -1516,7 +1517,7 @@ dependencies = [
 
 [[package]]
 name = "swc_ecma_dep_graph"
-version = "0.38.1"
+version = "0.39.0"
 dependencies = [
  "swc_atoms",
  "swc_common",
@@ -1526,7 +1527,7 @@ dependencies = [
 
 [[package]]
 name = "swc_ecma_ext_transforms"
-version = "0.27.1"
+version = "0.28.0"
 dependencies = [
  "phf",
  "swc_atoms",
@@ -1539,7 +1540,7 @@ dependencies = [
 
 [[package]]
 name = "swc_ecma_loader"
-version = "0.17.1"
+version = "0.18.0"
 dependencies = [
  "anyhow",
  "dashmap",
@@ -1559,7 +1560,7 @@ dependencies = [
 
 [[package]]
 name = "swc_ecma_minifier"
-version = "0.24.0"
+version = "0.27.0"
 dependencies = [
  "fxhash",
  "indexmap",
@@ -1585,7 +1586,7 @@ dependencies = [
 
 [[package]]
 name = "swc_ecma_parser"
-version = "0.69.1"
+version = "0.70.1"
 dependencies = [
  "either",
  "enum_kind",
@@ -1604,7 +1605,7 @@ dependencies = [
 
 [[package]]
 name = "swc_ecma_preset_env"
-version = "0.40.0"
+version = "0.42.0"
 dependencies = [
  "dashmap",
  "fxhash",
@@ -1626,7 +1627,7 @@ dependencies = [
 
 [[package]]
 name = "swc_ecma_transforms"
-version = "0.69.0"
+version = "0.71.0"
 dependencies = [
  "swc_atoms",
  "swc_common",
@@ -1646,7 +1647,7 @@ dependencies = [
 
 [[package]]
 name = "swc_ecma_transforms_base"
-version = "0.30.0"
+version = "0.31.0"
 dependencies = [
  "fxhash",
  "once_cell",
@@ -1663,7 +1664,7 @@ dependencies = [
 
 [[package]]
 name = "swc_ecma_transforms_classes"
-version = "0.16.0"
+version = "0.17.0"
 dependencies = [
  "swc_atoms",
  "swc_common",
@@ -1675,7 +1676,7 @@ dependencies = [
 
 [[package]]
 name = "swc_ecma_transforms_compat"
-version = "0.32.0"
+version = "0.34.0"
 dependencies = [
  "arrayvec",
  "fxhash",
@@ -1708,7 +1709,7 @@ dependencies = [
 
 [[package]]
 name = "swc_ecma_transforms_module"
-version = "0.36.0"
+version = "0.38.0"
 dependencies = [
  "Inflector",
  "anyhow",
@@ -1728,7 +1729,7 @@ dependencies = [
 
 [[package]]
 name = "swc_ecma_transforms_optimization"
-version = "0.39.0"
+version = "0.41.0"
 dependencies = [
  "dashmap",
  "fxhash",
@@ -1748,7 +1749,7 @@ dependencies = [
 
 [[package]]
 name = "swc_ecma_transforms_proposal"
-version = "0.36.0"
+version = "0.38.0"
 dependencies = [
  "either",
  "fxhash",
@@ -1766,7 +1767,7 @@ dependencies = [
 
 [[package]]
 name = "swc_ecma_transforms_react"
-version = "0.37.0"
+version = "0.39.0"
 dependencies = [
  "base64 0.13.0",
  "dashmap",
@@ -1787,7 +1788,7 @@ dependencies = [
 
 [[package]]
 name = "swc_ecma_transforms_typescript"
-version = "0.38.0"
+version = "0.40.0"
 dependencies = [
  "fxhash",
  "serde",
@@ -1802,7 +1803,7 @@ dependencies = [
 
 [[package]]
 name = "swc_ecma_utils"
-version = "0.43.1"
+version = "0.44.0"
 dependencies = [
  "once_cell",
  "scoped-tls",
@@ -1815,7 +1816,7 @@ dependencies = [
 
 [[package]]
 name = "swc_ecma_visit"
-version = "0.37.1"
+version = "0.38.0"
 dependencies = [
  "num-bigint",
  "swc_atoms",
@@ -1826,7 +1827,7 @@ dependencies = [
 
 [[package]]
 name = "swc_ecmascript"
-version = "0.60.0"
+version = "0.63.0"
 dependencies = [
  "swc_ecma_ast",
  "swc_ecma_parser",
@@ -1854,7 +1855,7 @@ dependencies = [
 
 [[package]]
 name = "swc_node_base"
-version = "0.2.3"
+version = "0.3.0"
 dependencies = [
  "dashmap",
  "mimalloc-rust",

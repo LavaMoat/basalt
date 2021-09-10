@@ -4,7 +4,7 @@ use std::sync::Arc;
 
 use anyhow::Result;
 
-use swc_common::{FileName, SourceMap};
+use swc_common::{FileName, SourceMap, DUMMY_SP};
 use swc_ecma_ast::Function;
 use swc_ecma_loader::resolve::Resolve;
 
@@ -12,7 +12,9 @@ use crate::module::node::{
     cached_modules, parse_module, ModuleNode, VisitedDependency, VisitedModule,
 };
 
-pub struct ModuleItem {
+const ROOT_PACKAGE: &str = "<root>";
+
+pub struct ModuleEntry {
     /// The module id.
     pub id: usize,
     /// The dependencies mapped from specifier to module id.
@@ -23,6 +25,28 @@ pub struct ModuleItem {
     pub options: ModuleOptions,
 }
 
+impl From<&ModuleNode> for ModuleEntry {
+    fn from(node: &ModuleNode) -> Self {
+        Self {
+            id: node.id,
+            dependencies: HashMap::new(),
+            init_fn: Function {
+                params: vec![],
+                decorators: vec![],
+                span: DUMMY_SP,
+                body: None,
+                is_generator: false,
+                is_async: false,
+                type_params: None,
+                return_type: None,
+            },
+            options: ModuleOptions {
+                package: ROOT_PACKAGE.into(),
+            }
+        }
+    }
+}
+
 pub struct ModuleOptions {
     pub package: String,
 }
@@ -31,7 +55,7 @@ pub(super) fn load_modules<P: AsRef<Path>>(
     file: P,
     source_map: Arc<SourceMap>,
     resolver: &Box<dyn Resolve>,
-) -> Result<Vec<Arc<VisitedModule>>> {
+) -> Result<Vec<ModuleEntry>> {
     let mut list = Vec::new();
     let module = parse_module(file.as_ref(), resolver)?;
 
@@ -54,7 +78,22 @@ pub(super) fn load_modules<P: AsRef<Path>>(
         node.visit(&mut visitor)?;
     }
 
-    // TODO: transform the list into ModuleItem
+    Ok(transform_modules(list))
+}
 
-    Ok(list)
+fn transform_modules(modules: Vec<Arc<VisitedModule>>) -> Vec<ModuleEntry> {
+    let mut out = Vec::new();
+    for item in modules {
+        match &*item {
+            VisitedModule::Module(_, _, module) => {
+                let entry = ModuleEntry::from(module);
+                // TODO: compute dependencies
+                // TODO: generate init function
+                // TODO: compute package options
+                out.push(entry);
+            }
+            _ => { /* Do not process JSON or builtins */ },
+        }
+    }
+    out
 }
