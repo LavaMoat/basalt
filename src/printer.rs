@@ -1,10 +1,12 @@
 //! Utility to print the module graph as a tree.
 use std::path::Path;
+use std::sync::Arc;
 
 use anyhow::Result;
 
 use crate::module::node::{parse_file, VisitedDependency, VisitedModule};
 
+use swc_common::{source_map::FilePathMapping, SourceMap};
 use swc_ecma_loader::{resolve::Resolve, resolvers::node::NodeModulesResolver};
 
 const TREE_BAR: &str = "│";
@@ -35,10 +37,12 @@ impl Printer {
     ) -> Result<()> {
         let resolver: Box<dyn Resolve> =
             Box::new(NodeModulesResolver::default());
-        let module = parse_file(file.as_ref(), &resolver)?;
+        let source_map = Arc::new(SourceMap::new(FilePathMapping::empty()));
+        let module =
+            parse_file(file.as_ref(), &resolver, Arc::clone(&source_map))?;
         let node = match &*module {
-            VisitedModule::Module(_, _, node) => Some(node),
-            VisitedModule::Json(_) => None,
+            VisitedModule::Module(_, node) => Some(node),
+            VisitedModule::Json(_, node) => Some(node),
             VisitedModule::Builtin(_) => None,
         };
         println!("{}", file.as_ref().display());
@@ -74,7 +78,7 @@ impl Printer {
         };
 
         if let Some(node) = node {
-            node.visit(&mut visitor)?;
+            node.visit(source_map, &mut visitor)?;
         }
 
         Ok(())

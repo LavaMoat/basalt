@@ -1,8 +1,10 @@
 //! Helper to parse all modules in a dependency graph for performance timing purposes.
 use std::path::Path;
+use std::sync::Arc;
 
 use anyhow::Result;
 
+use swc_common::{source_map::FilePathMapping, SourceMap};
 use swc_ecma_loader::{resolve::Resolve, resolvers::node::NodeModulesResolver};
 
 use crate::module::node::{
@@ -12,11 +14,12 @@ use crate::module::node::{
 /// Parse all the modules in a dependency graph.
 pub fn parse<P: AsRef<Path>>(file: P) -> Result<(usize, usize)> {
     let resolver: Box<dyn Resolve> = Box::new(NodeModulesResolver::default());
-    let module = parse_file(file.as_ref(), &resolver)?;
+    let source_map = Arc::new(SourceMap::new(FilePathMapping::empty()));
+    let module = parse_file(file.as_ref(), &resolver, Arc::clone(&source_map))?;
 
     let node = match &*module {
-        VisitedModule::Module(_, _, node) => Some(node),
-        VisitedModule::Json(_) => None,
+        VisitedModule::Module(_, node) => Some(node),
+        VisitedModule::Json(_, node) => Some(node),
         VisitedModule::Builtin(_) => None,
     };
 
@@ -29,7 +32,7 @@ pub fn parse<P: AsRef<Path>>(file: P) -> Result<(usize, usize)> {
     };
 
     if let Some(node) = node {
-        node.visit(&mut visitor)?;
+        node.visit(source_map, &mut visitor)?;
     }
 
     // WTF: Visited 29146348 modules!

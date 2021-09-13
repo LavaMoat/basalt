@@ -2,12 +2,13 @@
 
 use std::collections::{BTreeMap, HashMap, HashSet};
 use std::path::PathBuf;
+use std::sync::Arc;
 
 use anyhow::{bail, Result};
 use indexmap::IndexSet;
 
 use swc_atoms::JsWord;
-use swc_common::FileName;
+use swc_common::{source_map::FilePathMapping, FileName, SourceMap};
 use swc_ecma_ast::TargetEnv;
 use swc_ecma_loader::{resolve::Resolve, resolvers::node::NodeModulesResolver};
 use swc_ecma_visit::VisitWith;
@@ -33,6 +34,7 @@ use crate::{
 pub struct PolicyBuilder {
     entry: PathBuf,
     resolver: Box<dyn Resolve>,
+    source_map: Arc<SourceMap>,
     /// Package buckets used the module specifier and the base path
     /// for the package as the key and map to all the modules inside
     /// the base path.
@@ -55,6 +57,7 @@ impl PolicyBuilder {
                 TargetEnv::Node,
                 Default::default(),
             )),
+            source_map: Arc::new(SourceMap::new(FilePathMapping::empty())),
             package_buckets: Default::default(),
             package_groups: Default::default(),
             package_analysis: Default::default(),
@@ -64,11 +67,16 @@ impl PolicyBuilder {
     /// Load the entry point module and all dependencies grouping modules
     /// into dependent package buckets.
     pub fn load(mut self) -> Result<Self> {
-        let module = parse_file(&self.entry, &self.resolver)?;
+        let sm = Arc::clone(&self.source_map);
+        let module = parse_file(
+            &self.entry,
+            &self.resolver,
+            Arc::clone(&self.source_map),
+        )?;
 
         let node = match &*module {
-            VisitedModule::Module(_, _, node) => Some(node),
-            VisitedModule::Json(_) => None,
+            VisitedModule::Module(_, node) => Some(node),
+            VisitedModule::Json(_, node) => Some(node),
             VisitedModule::Builtin(_) => None,
         };
 
@@ -98,7 +106,7 @@ impl PolicyBuilder {
         };
 
         if let Some(node) = node {
-            node.visit(&mut visitor)?;
+            node.visit(sm, &mut visitor)?;
         }
 
         // Sort the module base keys as we need to find the deepest match
@@ -214,7 +222,7 @@ fn analyze_modules(
         .map(|module_key| {
             let cached_module = cache.get(&module_key).unwrap();
             let visited_module = cached_module.value();
-            if let VisitedModule::Module(_, _, node) = &**visited_module {
+            if let VisitedModule::Module(_, node) = &**visited_module {
                 // Compute globals
                 let mut globals_scope = GlobalAnalysis::new(Default::default());
                 node.module.visit_children_with(&mut globals_scope);

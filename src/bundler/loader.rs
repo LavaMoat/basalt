@@ -61,7 +61,8 @@ pub(super) fn load_modules<P: AsRef<Path>>(
     resolver: &Box<dyn Resolve>,
 ) -> Result<Vec<ModuleEntry>> {
     let mut list = Vec::new();
-    let module = parse_module(file.as_ref(), resolver)?;
+    let module =
+        parse_module(file.as_ref(), resolver, Arc::clone(&source_map))?;
 
     // Add the root entry point module
     list.push(Arc::clone(&module));
@@ -78,8 +79,8 @@ pub(super) fn load_modules<P: AsRef<Path>>(
         Ok(())
     };
 
-    if let VisitedModule::Module(_, _, node) = &*module {
-        node.visit(&mut visitor)?;
+    if let VisitedModule::Module(_, node) = &*module {
+        node.visit(source_map, &mut visitor)?;
     }
 
     Ok(transform_modules(list))
@@ -89,7 +90,7 @@ fn transform_modules(modules: Vec<Arc<VisitedModule>>) -> Vec<ModuleEntry> {
     let mut out = Vec::new();
     for item in modules {
         match &*item {
-            VisitedModule::Module(_, _, module) => {
+            VisitedModule::Module(_, module) => {
                 // TODO: handle JSON dependencies!!!
 
                 let dependencies: HashMap<String, usize> = module
@@ -99,16 +100,16 @@ fn transform_modules(modules: Vec<Arc<VisitedModule>>) -> Vec<ModuleEntry> {
                         // We use an Option so we can ignore JSON files from the dependencies
                         // list as they don't need to be instrumented right now???
                         let id: Option<usize> =
-                            if let FileName::Real(path) = file_name {
+                            if let FileName::Real(path) = &file_name {
                                 let cached = cached_modules();
                                 if let Some(item) = cached.get(path) {
                                     let module = item.value();
-                                    if let VisitedModule::Module(_, _, module) =
-                                        &**module
-                                    {
-                                        Some(module.id)
-                                    } else {
-                                        None
+                                    match &**module {
+                                        VisitedModule::Module(_, module)
+                                        | VisitedModule::Json(_, module) => {
+                                            Some(module.id)
+                                        }
+                                        _ => None,
                                     }
                                 } else {
                                     None
@@ -118,7 +119,7 @@ fn transform_modules(modules: Vec<Arc<VisitedModule>>) -> Vec<ModuleEntry> {
                             };
                         return (spec.to_string(), id);
                     })
-                    .filter(|(spec, id)| id.is_some())
+                    .filter(|(_, id)| id.is_some())
                     .map(|(spec, id)| (spec, id.unwrap()))
                     .collect();
 
