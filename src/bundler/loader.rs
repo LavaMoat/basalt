@@ -9,8 +9,11 @@ use swc_common::{FileName, SourceMap, DUMMY_SP};
 use swc_ecma_ast::Function;
 use swc_ecma_loader::resolve::Resolve;
 
-use crate::module::node::{
-    cached_modules, parse_module, ModuleNode, VisitedDependency, VisitedModule,
+use crate::module::{
+    dependencies::is_dependent_module,
+    node::{
+        cached_modules, parse_module, ModuleNode, VisitedDependency, VisitedModule,
+    }
 };
 
 const ROOT_PACKAGE: &str = "<root>";
@@ -65,7 +68,7 @@ pub(super) fn load_modules<P: AsRef<Path>>(
         parse_module(file.as_ref(), resolver, Arc::clone(&source_map))?;
 
     // Add the root entry point module
-    list.push(Arc::clone(&module));
+    list.push((ROOT_PACKAGE.to_string(), Arc::clone(&module)));
 
     // Visit the module graph and collect the module nodes
     let mut visitor = |dep: VisitedDependency| {
@@ -73,7 +76,12 @@ pub(super) fn load_modules<P: AsRef<Path>>(
             let cached = cached_modules();
             if let Some(item) = cached.get(path) {
                 let module = item.value();
-                list.push(Arc::clone(module));
+                let spec = if is_dependent_module(&dep.spec) {
+                    dep.spec.to_string()
+                } else {
+                    ROOT_PACKAGE.to_string()
+                };
+                list.push((spec, Arc::clone(module)));
             }
         }
         Ok(())
@@ -86,19 +94,15 @@ pub(super) fn load_modules<P: AsRef<Path>>(
     Ok(transform_modules(list))
 }
 
-fn transform_modules(modules: Vec<Arc<VisitedModule>>) -> Vec<ModuleEntry> {
+fn transform_modules(modules: Vec<(String, Arc<VisitedModule>)>) -> Vec<ModuleEntry> {
     let mut out = Vec::new();
-    for item in modules {
+    for (spec, item) in modules {
         match &*item {
-            VisitedModule::Module(_, module) => {
-                // TODO: handle JSON dependencies!!!
-
+            VisitedModule::Module(_, module) | VisitedModule::Json(_, module) => {
                 let dependencies: HashMap<String, usize> = module
                     .resolved
                     .iter()
                     .map(|(spec, file_name)| {
-                        // We use an Option so we can ignore JSON files from the dependencies
-                        // list as they don't need to be instrumented right now???
                         let id: Option<usize> =
                             if let FileName::Real(path) = &file_name {
                                 let cached = cached_modules();
@@ -123,14 +127,15 @@ fn transform_modules(modules: Vec<Arc<VisitedModule>>) -> Vec<ModuleEntry> {
                     .map(|(spec, id)| (spec, id.unwrap()))
                     .collect();
 
-                let entry = ModuleEntry::from((module, dependencies));
-                println!("{:#?}", entry);
+                let mut entry = ModuleEntry::from((module, dependencies));
+                entry.options.package = spec;
+                //println!("{:#?}", entry);
 
                 // TODO: generate init function
-                // TODO: compute package options
+
                 out.push(entry);
             }
-            _ => { /* Do not process JSON or builtins */ }
+            _ => { /* Do not process builtins */ }
         }
     }
     out
