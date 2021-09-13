@@ -3,6 +3,7 @@ use std::path::Path;
 use std::sync::Arc;
 
 use anyhow::Result;
+use serde::Serialize;
 
 use swc_common::{FileName, SourceMap, DUMMY_SP};
 use swc_ecma_ast::Function;
@@ -14,22 +15,24 @@ use crate::module::node::{
 
 const ROOT_PACKAGE: &str = "<root>";
 
+#[derive(Debug, Serialize)]
 pub struct ModuleEntry {
     /// The module id.
-    pub id: usize,
+    id: usize,
     /// The dependencies mapped from specifier to module id.
-    pub dependencies: HashMap<String, usize>,
+    dependencies: HashMap<String, usize>,
     /// The module initialization function.
-    pub init_fn: Function,
+    init_fn: Function,
     /// The module options
-    pub options: ModuleOptions,
+    options: ModuleOptions,
 }
 
-impl From<&ModuleNode> for ModuleEntry {
-    fn from(node: &ModuleNode) -> Self {
+impl From<(&ModuleNode, HashMap<String, usize>)> for ModuleEntry {
+    fn from(item: (&ModuleNode, HashMap<String, usize>)) -> Self {
+        let (node, dependencies) = item;
         Self {
             id: node.id,
-            dependencies: HashMap::new(),
+            dependencies,
             init_fn: Function {
                 params: vec![],
                 decorators: vec![],
@@ -42,11 +45,12 @@ impl From<&ModuleNode> for ModuleEntry {
             },
             options: ModuleOptions {
                 package: ROOT_PACKAGE.into(),
-            }
+            },
         }
     }
 }
 
+#[derive(Debug, Serialize)]
 pub struct ModuleOptions {
     pub package: String,
 }
@@ -86,13 +90,46 @@ fn transform_modules(modules: Vec<Arc<VisitedModule>>) -> Vec<ModuleEntry> {
     for item in modules {
         match &*item {
             VisitedModule::Module(_, _, module) => {
-                let entry = ModuleEntry::from(module);
-                // TODO: compute dependencies
+                // TODO: handle JSON dependencies!!!
+
+                let dependencies: HashMap<String, usize> = module
+                    .resolved
+                    .iter()
+                    .map(|(spec, file_name)| {
+                        // We use an Option so we can ignore JSON files from the dependencies
+                        // list as they don't need to be instrumented right now???
+                        let id: Option<usize> =
+                            if let FileName::Real(path) = file_name {
+                                let cached = cached_modules();
+                                if let Some(item) = cached.get(path) {
+                                    let module = item.value();
+                                    if let VisitedModule::Module(_, _, module) =
+                                        &**module
+                                    {
+                                        Some(module.id)
+                                    } else {
+                                        None
+                                    }
+                                } else {
+                                    None
+                                }
+                            } else {
+                                None
+                            };
+                        return (spec.to_string(), id);
+                    })
+                    .filter(|(spec, id)| id.is_some())
+                    .map(|(spec, id)| (spec, id.unwrap()))
+                    .collect();
+
+                let entry = ModuleEntry::from((module, dependencies));
+                println!("{:#?}", entry);
+
                 // TODO: generate init function
                 // TODO: compute package options
                 out.push(entry);
             }
-            _ => { /* Do not process JSON or builtins */ },
+            _ => { /* Do not process JSON or builtins */ }
         }
     }
     out
