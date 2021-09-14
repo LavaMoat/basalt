@@ -11,7 +11,7 @@ use swc_ecma_loader::resolve::Resolve;
 use swc_ecma_visit::{Node, Visit, VisitWith};
 
 use crate::{
-    helpers::{normalize_specifier, is_module_exports},
+    helpers::{normalize_specifier, is_module_exports, MODULE, EXPORTS},
     module::{
         dependencies::is_dependent_module,
         node::{
@@ -177,7 +177,59 @@ fn transform_esm(module: &Module) -> Result<Box<Expr>> {
 }
 
 fn transform_cjs(module: &Module) -> Result<Box<Expr>> {
-    let expr = Expr::Lit(Lit::Null(Null { span: DUMMY_SP }));
+    let expr = Expr::Fn(FnExpr {
+        ident: None,
+        function: Function {
+            decorators: vec![],
+            params: vec![
+                Param {
+                    span: DUMMY_SP,
+                    decorators: vec![],
+                    pat: Pat::Ident(BindingIdent {
+                        id: Ident {
+                            span: DUMMY_SP,
+                            sym: MODULE.into(),
+                            optional: false,
+                        },
+                        type_ann: None,
+                    })
+                },
+                Param {
+                    span: DUMMY_SP,
+                    decorators: vec![],
+                    pat: Pat::Ident(BindingIdent {
+                        id: Ident {
+                            span: DUMMY_SP,
+                            sym: EXPORTS.into(),
+                            optional: false,
+                        },
+                        type_ann: None,
+                    })
+                },
+            ],
+            span: DUMMY_SP,
+            body: Some(BlockStmt {
+                span: DUMMY_SP,
+                stmts: module.body.iter().filter(|item| {
+                    match item {
+                        ModuleItem::Stmt(_) => true,
+                        _ => false,
+                    }
+                })
+                .map(|item| {
+                    match item {
+                        ModuleItem::Stmt(stmt) => stmt.clone(),
+                        _ => unreachable!()
+                    }
+                })
+                .collect()
+            }),
+            is_generator: false,
+            is_async: false,
+            type_params: None,
+            return_type: None,
+        }
+    });
     Ok(Box::new(expr))
 }
 

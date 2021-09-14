@@ -2,8 +2,10 @@
 use swc_atoms::JsWord;
 use swc_ecma_ast::*;
 
-const MODULE: &str = "module";
-const EXPORTS: &str = "exports";
+/// Common Javascript module.
+pub const MODULE: &str = "module";
+/// Common Javascript exports.
+pub const EXPORTS: &str = "exports";
 
 /// Walk a variable declaration and find all symbols.
 pub fn var_symbol_words(var: &VarDecl) -> Vec<(&VarDeclarator, Vec<&JsWord>)> {
