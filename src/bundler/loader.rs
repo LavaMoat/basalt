@@ -2,15 +2,16 @@ use std::collections::HashMap;
 use std::path::Path;
 use std::sync::Arc;
 
-use anyhow::Result;
+use anyhow::{bail, Result};
 use serde::Serialize;
 
 use swc_common::{FileName, SourceMap, DUMMY_SP};
 use swc_ecma_ast::*;
 use swc_ecma_loader::resolve::Resolve;
+use swc_ecma_visit::{Node, Visit, VisitWith};
 
 use crate::{
-    helpers::normalize_specifier,
+    helpers::{normalize_specifier, is_module_exports},
     module::{
         dependencies::is_dependent_module,
         node::{
@@ -107,9 +108,6 @@ fn transform_modules(
                     .map(|(spec, id)| (spec, id.unwrap()))
                     .collect();
 
-                //let mut entry = ModuleEntry::from((module, dependencies));
-                //entry.options.package = spec;
-
                 let mut item = ArrayLit {
                     span: DUMMY_SP,
                     elems: vec![],
@@ -129,7 +127,12 @@ fn transform_modules(
                     expr: deps.into_boxed_expr(),
                 }));
 
-                // TODO: generate init function
+                // Transform to init function
+                let init_fn = into_module_function(&*module.module)?;
+                item.elems.push(Some(ExprOrSpread {
+                    spread: None,
+                    expr: init_fn,
+                }));
 
                 // Package options
                 let opts = ModuleOptions { package: spec };
@@ -150,4 +153,80 @@ fn transform_modules(
     }
 
     Ok(Expr::Array(arr))
+}
+
+fn into_module_function(module: &Module) -> Result<Box<Expr>> {
+    let mut detector = Es6Detector {
+        esm: false,
+        cjs: false,
+    };
+    module.visit_children_with(&mut detector);
+
+    match detector.kind() {
+        ModuleKind::Esm => transform_esm(module),
+        ModuleKind::Cjs => transform_cjs(module),
+        ModuleKind::Mixed => {
+            bail!("ESM and CJS modules may not be combined")
+        }
+    }
+}
+
+fn transform_esm(module: &Module) -> Result<Box<Expr>> {
+    let expr = Expr::Lit(Lit::Null(Null { span: DUMMY_SP }));
+    Ok(Box::new(expr))
+}
+
+fn transform_cjs(module: &Module) -> Result<Box<Expr>> {
+    let expr = Expr::Lit(Lit::Null(Null { span: DUMMY_SP }));
+    Ok(Box::new(expr))
+}
+
+enum ModuleKind {
+    Mixed,
+    Esm,
+    Cjs,
+}
+
+struct Es6Detector {
+    esm: bool,
+    cjs: bool,
+}
+
+impl Es6Detector {
+    fn kind(&self) -> ModuleKind {
+        if self.esm && self.cjs {
+            ModuleKind::Mixed
+        } else if self.esm {
+            ModuleKind::Esm
+        } else {
+            ModuleKind::Cjs
+        }
+    }
+}
+
+impl Visit for Es6Detector {
+    fn visit_module_item(&mut self, n: &ModuleItem, _: &dyn Node) {
+        match n {
+            ModuleItem::ModuleDecl(n) => match n {
+                ModuleDecl::Import(_)
+                | ModuleDecl::ExportDecl(_)
+                | ModuleDecl::ExportNamed(_)
+                | ModuleDecl::ExportDefaultDecl(_)
+                | ModuleDecl::ExportDefaultExpr(_)
+                | ModuleDecl::ExportAll(_) => {
+                    self.esm = true;
+                }
+                _ => {}
+            },
+            ModuleItem::Stmt(n) => {
+                if let Stmt::Expr(n) = n {
+                    if let Expr::Assign(n) = &*n.expr {
+                        if is_module_exports(&n.left) {
+                            self.cjs = true;
+                        }
+                    }
+                }
+            }
+        }
+    }
 }

@@ -2,6 +2,9 @@
 use swc_atoms::JsWord;
 use swc_ecma_ast::*;
 
+const MODULE: &str = "module";
+const EXPORTS: &str = "exports";
+
 /// Walk a variable declaration and find all symbols.
 pub fn var_symbol_words(var: &VarDecl) -> Vec<(&VarDeclarator, Vec<&JsWord>)> {
     var.decls
@@ -113,4 +116,33 @@ pub fn normalize_specifier<S: AsRef<str>>(spec: S) -> String {
         }
     }
     key
+}
+
+/// Determine if an expression refers to CJS module exports.
+///
+/// Comparison is for plain `exports` and `module.exports`.
+pub fn is_module_exports(n: &PatOrExpr) -> bool {
+    match n {
+        PatOrExpr::Pat(pat) => match &**pat {
+            Pat::Ident(ident) => {
+                return ident.id.sym.as_ref() == EXPORTS;
+            }
+            Pat::Expr(expr) => match &**expr {
+                Expr::Member(n) => {
+                    if let (ExprOrSuper::Expr(expr), Expr::Ident(prop)) =
+                        (&n.obj, &*n.prop)
+                    {
+                        if let Expr::Ident(obj) = &**expr {
+                            return obj.as_ref() == MODULE
+                                && prop.as_ref() == EXPORTS;
+                        }
+                    }
+                }
+                _ => {}
+            },
+            _ => {}
+        },
+        _ => {}
+    }
+    false
 }

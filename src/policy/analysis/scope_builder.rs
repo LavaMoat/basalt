@@ -12,12 +12,11 @@ use swc_ecma_ast::*;
 use indexmap::IndexSet;
 
 use crate::{
-    helpers::{pattern_words, var_symbol_words},
+    helpers::{pattern_words, var_symbol_words, is_module_exports},
     module::dependencies::is_builtin_module,
     policy::analysis::{
         dynamic_import::{is_require_expr, DynamicCall},
         member_expr::walk,
-        module_exports::is_module_exports,
     },
 };
 

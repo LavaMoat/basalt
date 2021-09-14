@@ -82,6 +82,8 @@ impl BundleBuilder {
         let mut runtime_module = RuntimeModule { module };
         self.program = self.program.fold_children_with(&mut runtime_module);
 
+        // [123, {'./util.js': 456 }, function(){ module.exports = 42 }, { package: '<root>' }]
+
         // Build modules data structure
         let expr =
             load_modules(entry, Arc::clone(&self.source_map), &self.resolver)?;
@@ -107,8 +109,6 @@ impl BundleBuilder {
 
         let mut iife = Iife {};
         self.program = self.program.fold_children_with(&mut iife);
-
-        // [123, {'./util.js': 456 }, function(){ module.exports = 42 }, { package: '<root>' }]
 
         Ok(self)
     }
