@@ -42,7 +42,7 @@ pub fn bundle(module: PathBuf, policy: Vec<PathBuf>) -> Result<()> {
     let (program, source_map) = bundler::bundle(options)?;
     let output = swc_utils::print(&program, source_map)?;
 
-    //println!("{}", output.code);
+    println!("{}", output.code);
 
     Ok(())
 }

@@ -85,10 +85,12 @@ impl BundleBuilder {
         let list =
             load_modules(entry, Arc::clone(&self.source_map), &self.resolver)?;
 
-        println!("Got modules list {:#?}", list.len());
+        let modules_expr = self.build_modules(list)?;
+
+        //println!("Got modules expr {:#?}", modules_expr);
 
         // TODO: build modules data structure!
-        let mut modules_decl = ModulesDecl { list };
+        let mut modules_decl = ModulesDecl { expr: modules_expr };
         self.program = self.program.fold_children_with(&mut modules_decl);
 
         // TODO: collect entry points from CLI args
@@ -119,6 +121,15 @@ impl BundleBuilder {
     /// Finalize the bundled program.
     pub fn finalize(self) -> (Program, Arc<SourceMap>) {
         (self.program, self.source_map)
+    }
+
+    fn build_modules(&self, list: Vec<ModuleEntry>) -> Result<Expr> {
+        let mut serializer = Serializer {};
+        let value = list.serialize(&mut serializer)?;
+        if let Value::Array(arr) = value {
+            return Ok(Expr::Array(arr));
+        }
+        unreachable!("serialized modules must be an array");
     }
 
     /// Load the runtime module.
@@ -170,7 +181,7 @@ impl Fold for RuntimeModule {
 
 /// Inject the module definition data structure.
 struct ModulesDecl {
-    list: Vec<ModuleEntry>,
+    expr: Expr,
 }
 
 impl Fold for ModulesDecl {
@@ -190,10 +201,7 @@ impl Fold for ModulesDecl {
                     },
                     type_ann: None,
                 }),
-                // TODO: generate Array of module data
-                init: Some(Box::new(Expr::Lit(Lit::Null(Null {
-                    span: DUMMY_SP,
-                })))),
+                init: Some(Box::new(self.expr.take())),
             }],
         }));
         n.body.push(decl);

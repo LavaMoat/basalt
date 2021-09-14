@@ -96,7 +96,7 @@ pub fn parse_module<P: AsRef<Path>>(
         return Ok(module.clone());
     }
 
-    let (file_name, source_map, module) =
+    let (file_name, _source_map, module) =
         load_file(file.as_ref(), Some(source_map))?;
 
     let id = COUNTER.fetch_add(1, SeqCst);
