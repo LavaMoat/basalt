@@ -11,7 +11,7 @@ use swc_ecma_loader::resolve::Resolve;
 use swc_ecma_visit::{Node, Visit, VisitWith};
 
 use crate::{
-    helpers::{normalize_specifier, is_module_exports, MODULE, EXPORTS},
+    helpers::{is_module_exports, normalize_specifier, EXPORTS, MODULE},
     module::{
         dependencies::is_dependent_module,
         node::{
@@ -33,10 +33,23 @@ pub(super) fn load_modules<P: AsRef<Path>>(
     file: P,
     source_map: Arc<SourceMap>,
     resolver: &Box<dyn Resolve>,
-) -> Result<Expr> {
+) -> Result<(Expr, Vec<u32>)> {
     let mut list = Vec::new();
     let module =
         parse_module(file.as_ref(), resolver, Arc::clone(&source_map))?;
+
+    let root_entry_id = {
+        let cached = cached_modules();
+        let entry = cached.get(file.as_ref()).unwrap();
+        let value = entry.value();
+        match &**value {
+            VisitedModule::Module(_, node)
+            | VisitedModule::Json(_, node) => {
+                node.id
+            }
+            _ => unreachable!("Main entry point cannot be a builtin")
+        }
+    };
 
     // Add the root entry point module
     list.push((ROOT_PACKAGE.to_string(), Arc::clone(&module)));
@@ -62,7 +75,7 @@ pub(super) fn load_modules<P: AsRef<Path>>(
         node.visit(source_map, &mut visitor)?;
     }
 
-    transform_modules(list)
+    Ok((transform_modules(list)?, vec![root_entry_id]))
 }
 
 fn transform_modules(
@@ -192,7 +205,7 @@ fn transform_cjs(module: &Module) -> Result<Box<Expr>> {
                             optional: false,
                         },
                         type_ann: None,
-                    })
+                    }),
                 },
                 Param {
                     span: DUMMY_SP,
@@ -204,31 +217,30 @@ fn transform_cjs(module: &Module) -> Result<Box<Expr>> {
                             optional: false,
                         },
                         type_ann: None,
-                    })
+                    }),
                 },
             ],
             span: DUMMY_SP,
             body: Some(BlockStmt {
                 span: DUMMY_SP,
-                stmts: module.body.iter().filter(|item| {
-                    match item {
+                stmts: module
+                    .body
+                    .iter()
+                    .filter(|item| match item {
                         ModuleItem::Stmt(_) => true,
                         _ => false,
-                    }
-                })
-                .map(|item| {
-                    match item {
+                    })
+                    .map(|item| match item {
                         ModuleItem::Stmt(stmt) => stmt.clone(),
-                        _ => unreachable!()
-                    }
-                })
-                .collect()
+                        _ => unreachable!(),
+                    })
+                    .collect(),
             }),
             is_generator: false,
             is_async: false,
             type_params: None,
             return_type: None,
-        }
+        },
     });
     Ok(Box::new(expr))
 }

@@ -85,13 +85,14 @@ impl BundleBuilder {
         // [123, {'./util.js': 456 }, function(){ module.exports = 42 }, { package: '<root>' }]
 
         // Build modules data structure
-        let expr =
+        let (expr, entry_point_ids) =
             load_modules(entry, Arc::clone(&self.source_map), &self.resolver)?;
         let mut modules_decl = ModulesDecl { expr };
         self.program = self.program.fold_children_with(&mut modules_decl);
 
-        // TODO: collect entry points from CLI args
-        let mut entries_decl = EntryPointsDecl {};
+        // List of entry point ids
+        let entry_expr = self.build_entry_points(entry_point_ids)?;
+        let mut entries_decl = EntryPointsDecl { expr: entry_expr };
         self.program = self.program.fold_children_with(&mut entries_decl);
 
         // Serialize and inject the computed policy
@@ -145,6 +146,15 @@ impl BundleBuilder {
 
         Ok(module)
     }
+
+    fn build_entry_points(&self, ids: Vec<u32>) -> Result<Expr> {
+        let mut serializer = Serializer {};
+        let value = ids.serialize(&mut serializer)?;
+        if let Value::Array(arr) = value {
+            return Ok(Expr::Array(arr));
+        }
+        unreachable!("serialized entry points must be an array");
+    }
 }
 
 /// Inject the LavaPack runtime.
@@ -196,7 +206,9 @@ impl Fold for ModulesDecl {
 }
 
 /// Inject the entry points data structure.
-struct EntryPointsDecl;
+struct EntryPointsDecl {
+    expr: Expr,
+}
 
 impl Fold for EntryPointsDecl {
     fn fold_script(&mut self, mut n: Script) -> Script {
@@ -215,9 +227,7 @@ impl Fold for EntryPointsDecl {
                     },
                     type_ann: None,
                 }),
-                init: Some(Box::new(Expr::Lit(Lit::Null(Null {
-                    span: DUMMY_SP,
-                })))),
+                init: Some(Box::new(self.expr.take())),
             }],
         }));
         n.body.push(decl);
