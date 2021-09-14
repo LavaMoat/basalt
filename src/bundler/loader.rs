@@ -21,17 +21,17 @@ const ROOT_PACKAGE: &str = "<root>";
 #[derive(Debug, Serialize)]
 pub struct ModuleEntry {
     /// The module id.
-    id: usize,
+    id: u32,
     /// The dependencies mapped from specifier to module id.
-    dependencies: HashMap<String, usize>,
+    dependencies: HashMap<String, u32>,
     /// The module initialization function.
     init_fn: Function,
     /// The module options
     options: ModuleOptions,
 }
 
-impl From<(&ModuleNode, HashMap<String, usize>)> for ModuleEntry {
-    fn from(item: (&ModuleNode, HashMap<String, usize>)) -> Self {
+impl From<(&ModuleNode, HashMap<String, u32>)> for ModuleEntry {
+    fn from(item: (&ModuleNode, HashMap<String, u32>)) -> Self {
         let (node, dependencies) = item;
         Self {
             id: node.id,
@@ -99,11 +99,11 @@ fn transform_modules(modules: Vec<(String, Arc<VisitedModule>)>) -> Vec<ModuleEn
     for (spec, item) in modules {
         match &*item {
             VisitedModule::Module(_, module) | VisitedModule::Json(_, module) => {
-                let dependencies: HashMap<String, usize> = module
+                let dependencies: HashMap<String, u32> = module
                     .resolved
                     .iter()
                     .map(|(spec, file_name)| {
-                        let id: Option<usize> =
+                        let id: Option<u32> =
                             if let FileName::Real(path) = &file_name {
                                 let cached = cached_modules();
                                 if let Some(item) = cached.get(path) {

@@ -6,7 +6,7 @@
 
 use std::path::{Path, PathBuf};
 use std::sync::{
-    atomic::{AtomicUsize, Ordering::SeqCst},
+    atomic::{AtomicU32, Ordering::SeqCst},
     Arc,
 };
 
@@ -26,7 +26,7 @@ use crate::module::dependencies::is_builtin_module;
 use crate::swc_utils::load_file;
 
 /// Counter of module ids.
-static COUNTER: SyncLazy<AtomicUsize> = SyncLazy::new(|| AtomicUsize::new(0));
+static COUNTER: SyncLazy<AtomicU32> = SyncLazy::new(|| AtomicU32::new(0));
 
 /// Cache of visited modules.
 static CACHE: SyncLazy<DashMap<PathBuf, Arc<VisitedModule>>> =
@@ -186,7 +186,7 @@ pub fn parse_file<P: AsRef<Path>>(
 #[derive(Debug)]
 pub struct ModuleNode {
     /// The module identifier.
-    pub id: usize,
+    pub id: u32,
     /// The underlying module AST node.
     pub module: Arc<Module>,
     /// The parsed dependencies of this module.
