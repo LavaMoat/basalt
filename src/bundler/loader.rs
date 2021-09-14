@@ -9,16 +9,17 @@ use swc_common::{FileName, SourceMap, DUMMY_SP};
 use swc_ecma_ast::*;
 use swc_ecma_loader::resolve::Resolve;
 
-use crate::module::{
-    dependencies::is_dependent_module,
-    node::{
-        cached_modules, parse_module, VisitedDependency, VisitedModule,
-    }
+use crate::{
+    helpers::normalize_specifier,
+    module::{
+        dependencies::is_dependent_module,
+        node::{
+            cached_modules, parse_module, VisitedDependency, VisitedModule,
+        },
+    },
 };
 
-use super::{
-    serializer::Serializer,
-};
+use super::serializer::Serializer;
 
 const ROOT_PACKAGE: &str = "<root>";
 
@@ -46,7 +47,7 @@ pub(super) fn load_modules<P: AsRef<Path>>(
             if let Some(item) = cached.get(path) {
                 let module = item.value();
                 let spec = if is_dependent_module(&dep.spec) {
-                    dep.spec.to_string()
+                    normalize_specifier(dep.spec)
                 } else {
                     ROOT_PACKAGE.to_string()
                 };
@@ -63,7 +64,9 @@ pub(super) fn load_modules<P: AsRef<Path>>(
     transform_modules(list)
 }
 
-fn transform_modules(modules: Vec<(String, Arc<VisitedModule>)>) -> Result<Expr> {
+fn transform_modules(
+    modules: Vec<(String, Arc<VisitedModule>)>,
+) -> Result<Expr> {
     let mut serializer = Serializer {};
 
     let mut arr = ArrayLit {
@@ -74,7 +77,8 @@ fn transform_modules(modules: Vec<(String, Arc<VisitedModule>)>) -> Result<Expr>
     //let mut out = Vec::new();
     for (spec, item) in modules {
         match &*item {
-            VisitedModule::Module(_, module) | VisitedModule::Json(_, module) => {
+            VisitedModule::Module(_, module)
+            | VisitedModule::Json(_, module) => {
                 let dependencies: HashMap<String, u32> = module
                     .resolved
                     .iter()
@@ -113,33 +117,27 @@ fn transform_modules(modules: Vec<(String, Arc<VisitedModule>)>) -> Result<Expr>
 
                 // Module id
                 let id = module.id.serialize(&mut serializer)?;
-                item.elems.push(
-                    Some(ExprOrSpread {
-                        spread: None,
-                        expr: id.into_boxed_expr(),
-                    })
-                );
+                item.elems.push(Some(ExprOrSpread {
+                    spread: None,
+                    expr: id.into_boxed_expr(),
+                }));
 
                 // Dependencies map
                 let deps = dependencies.serialize(&mut serializer)?;
-                item.elems.push(
-                    Some(ExprOrSpread {
-                        spread: None,
-                        expr: deps.into_boxed_expr(),
-                    })
-                );
+                item.elems.push(Some(ExprOrSpread {
+                    spread: None,
+                    expr: deps.into_boxed_expr(),
+                }));
 
                 // TODO: generate init function
 
                 // Package options
-                let opts = ModuleOptions {package: spec};
+                let opts = ModuleOptions { package: spec };
                 let opts = opts.serialize(&mut serializer)?;
-                item.elems.push(
-                    Some(ExprOrSpread {
-                        spread: None,
-                        expr: opts.into_boxed_expr(),
-                    })
-                );
+                item.elems.push(Some(ExprOrSpread {
+                    spread: None,
+                    expr: opts.into_boxed_expr(),
+                }));
 
                 // Add to the list of all modules
                 arr.elems.push(Some(ExprOrSpread {

@@ -136,8 +136,8 @@ pub fn parse_module<P: AsRef<Path>>(
 pub fn parse_json<P: AsRef<Path>>(
     file: P,
     _resolver: &Box<dyn Resolve>,
-    source_map: Arc<SourceMap>) -> Result<Arc<VisitedModule>> {
-
+    source_map: Arc<SourceMap>,
+) -> Result<Arc<VisitedModule>> {
     let buf = file.as_ref().to_path_buf();
     if let Some(entry) = CACHE.get(&buf) {
         let module = entry.value();
