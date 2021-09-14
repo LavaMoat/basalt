@@ -65,7 +65,7 @@ pub enum Value {
 }
 
 impl Value {
-    fn into_boxed_expr(self) -> Box<Expr> {
+    pub fn into_boxed_expr(self) -> Box<Expr> {
         match self {
             Value::Object(obj) => Box::new(Expr::Object(obj)),
             Value::Array(arr) => Box::new(Expr::Array(arr)),

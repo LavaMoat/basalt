@@ -21,7 +21,7 @@ use crate::{
 };
 
 use super::{
-    loader::{load_modules, ModuleEntry},
+    loader::load_modules,
     serializer::{Serializer, Value},
 };
 
@@ -82,15 +82,10 @@ impl BundleBuilder {
         let mut runtime_module = RuntimeModule { module };
         self.program = self.program.fold_children_with(&mut runtime_module);
 
-        let list =
+        // Build modules data structure
+        let expr =
             load_modules(entry, Arc::clone(&self.source_map), &self.resolver)?;
-
-        let modules_expr = self.build_modules(list)?;
-
-        //println!("Got modules expr {:#?}", modules_expr);
-
-        // TODO: build modules data structure!
-        let mut modules_decl = ModulesDecl { expr: modules_expr };
+        let mut modules_decl = ModulesDecl { expr };
         self.program = self.program.fold_children_with(&mut modules_decl);
 
         // TODO: collect entry points from CLI args
@@ -121,15 +116,6 @@ impl BundleBuilder {
     /// Finalize the bundled program.
     pub fn finalize(self) -> (Program, Arc<SourceMap>) {
         (self.program, self.source_map)
-    }
-
-    fn build_modules(&self, list: Vec<ModuleEntry>) -> Result<Expr> {
-        let mut serializer = Serializer {};
-        let value = list.serialize(&mut serializer)?;
-        if let Value::Array(arr) = value {
-            return Ok(Expr::Array(arr));
-        }
-        unreachable!("serialized modules must be an array");
     }
 
     /// Load the runtime module.
