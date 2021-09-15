@@ -27,6 +27,17 @@ const ROOT_PACKAGE: &str = "<root>";
 #[derive(Debug, Serialize)]
 pub struct ModuleOptions {
     pub package: String,
+    pub r#type: ModuleKind,
+}
+
+#[derive(Debug, Serialize)]
+pub enum ModuleKind {
+    #[serde(skip)]
+    Mixed,
+    #[serde(rename = "esm")]
+    Esm,
+    #[serde(rename = "cjs")]
+    Cjs,
 }
 
 pub(super) fn load_modules<P: AsRef<Path>>(
@@ -141,14 +152,14 @@ fn transform_modules(
                 }));
 
                 // Transform to init function
-                let init_fn = into_module_function(&*module.module)?;
+                let (init_fn, kind) = into_module_function(&*module.module)?;
                 item.elems.push(Some(ExprOrSpread {
                     spread: None,
                     expr: init_fn,
                 }));
 
                 // Package options
-                let opts = ModuleOptions { package: spec };
+                let opts = ModuleOptions { package: spec, r#type: kind };
                 let opts = opts.serialize(&mut serializer)?;
                 item.elems.push(Some(ExprOrSpread {
                     spread: None,
@@ -168,16 +179,17 @@ fn transform_modules(
     Ok(Expr::Array(arr))
 }
 
-fn into_module_function(module: &Module) -> Result<Box<Expr>> {
+fn into_module_function(module: &Module) -> Result<(Box<Expr>, ModuleKind)> {
     let mut detector = Es6Detector {
         esm: false,
         cjs: false,
     };
     module.visit_children_with(&mut detector);
 
-    match detector.kind() {
-        ModuleKind::Esm => transform_esm(module),
-        ModuleKind::Cjs => transform_cjs(module),
+    let kind = detector.kind();
+    match &kind {
+        ModuleKind::Esm => Ok((transform_esm(module)?, kind)),
+        ModuleKind::Cjs => Ok((transform_cjs(module)?, kind)),
         ModuleKind::Mixed => {
             bail!("ESM and CJS modules may not be combined")
         }
@@ -243,12 +255,6 @@ fn transform_cjs(module: &Module) -> Result<Box<Expr>> {
         },
     });
     Ok(Box::new(expr))
-}
-
-enum ModuleKind {
-    Mixed,
-    Esm,
-    Cjs,
 }
 
 struct Es6Detector {
