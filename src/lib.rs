@@ -7,9 +7,11 @@
 use std::io::{self, Read};
 use std::path::PathBuf;
 use std::time::SystemTime;
+use std::sync::Arc;
 
 use anyhow::{bail, Context, Result};
 
+use swc_common::SourceMap;
 use swc_ecma_visit::VisitWith;
 
 pub mod access;
@@ -157,7 +159,8 @@ pub fn transform(file: PathBuf, json: bool) -> Result<()> {
         TransformSource::File(file)
     };
 
-    let (meta, result) = static_module_record::transform(source)?;
+    let source_map: Arc<SourceMap> = Arc::new(Default::default());
+    let (meta, result) = static_module_record::transform(source, source_map)?;
     if json {
         let output = StaticModuleRecordProgram {
             meta,

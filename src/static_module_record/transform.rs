@@ -5,7 +5,7 @@ use std::sync::Arc;
 use indexmap::IndexMap;
 
 use swc::{
-    config::{JscTarget, Options, SourceMapsConfig},
+    config::{JscTarget, SourceMapsConfig},
     Compiler, TransformOutput,
 };
 use swc_common::{
@@ -63,6 +63,18 @@ pub enum TransformSource {
     },
 }
 
+impl From<PathBuf> for TransformSource {
+    fn from(path: PathBuf) -> Self {
+        TransformSource::File(path)
+    }
+}
+
+impl From<&str> for TransformSource {
+    fn from(file: &str) -> Self {
+        TransformSource::File(PathBuf::from(file))
+    }
+}
+
 /// Result of parsing a source module.
 pub struct ParseOutput<'a> {
     /// The source map.
@@ -79,21 +91,18 @@ pub struct ParseOutput<'a> {
 /// Transform the module file to a program script.
 pub fn transform(
     source: TransformSource,
+    source_map: Arc<SourceMap>,
 ) -> Result<(StaticModuleRecordMeta, TransformOutput)> {
-    let sm: Arc<SourceMap> = Arc::new(Default::default());
     let handler = Handler::with_tty_emitter(
         ColorConfig::Auto,
         true,
         false,
-        Some(sm.clone()),
+        Some(source_map.clone()),
     );
 
-    let mut options: Options = Default::default();
-    options.source_maps = Some(SourceMapsConfig::Bool(true));
-
     let fm = match source {
-        TransformSource::File(path) => sm.load_file(&path)?,
-        TransformSource::Str { content, file_name } => sm.new_source_file(
+        TransformSource::File(path) => source_map.load_file(&path)?,
+        TransformSource::Str { content, file_name } => source_map.new_source_file(
             FileName::Custom(file_name.into()),
             content.into(),
         ),
@@ -120,7 +129,7 @@ pub fn transform(
     let meta = parser.parse(&module)?;
 
     let generator = Generator::new(&meta);
-    let compiler = Compiler::new(sm);
+    let compiler = Compiler::new(source_map);
     let script = generator
         .create()
         .context("failed to generate transformed script")?;

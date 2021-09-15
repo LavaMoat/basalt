@@ -8,7 +8,7 @@ use anyhow::{bail, Result};
 use indexmap::IndexSet;
 
 use swc_atoms::JsWord;
-use swc_common::{source_map::FilePathMapping, FileName, SourceMap};
+use swc_common::{FileName, SourceMap};
 use swc_ecma_ast::TargetEnv;
 use swc_ecma_loader::{resolve::Resolve, resolvers::node::NodeModulesResolver};
 use swc_ecma_visit::VisitWith;
@@ -57,7 +57,7 @@ impl PolicyBuilder {
                 TargetEnv::Node,
                 Default::default(),
             )),
-            source_map: Arc::new(SourceMap::new(FilePathMapping::empty())),
+            source_map: Arc::new(Default::default()),
             package_buckets: Default::default(),
             package_groups: Default::default(),
             package_analysis: Default::default(),

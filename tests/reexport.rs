@@ -1,15 +1,21 @@
 use anyhow::Result;
-use std::path::PathBuf;
+use std::sync::Arc;
 
-use basalt::static_module_record::{transform, TransformSource};
+use swc::TransformOutput;
+use swc_common::SourceMap;
+
+use basalt::static_module_record::{self, StaticModuleRecordMeta};
+
+fn transform(src: &str) -> Result<(StaticModuleRecordMeta, TransformOutput)> {
+    let source_map: Arc<SourceMap> = Arc::new(Default::default());
+    static_module_record::transform(src.into(), source_map)
+}
 
 #[test]
 fn reexport() -> Result<()> {
     let expected =
         std::fs::read_to_string("tests/transform/reexport/output.js")?;
-    let (_, result) = transform(TransformSource::File(PathBuf::from(
-        "tests/transform/reexport/input.js",
-    )))?;
+    let (_, result) = transform("tests/transform/reexport/input.js")?;
     //println!("{}", &result.code);
     assert_eq!(expected, result.code);
     Ok(())
@@ -19,9 +25,7 @@ fn reexport() -> Result<()> {
 fn reexport_alias() -> Result<()> {
     let expected =
         std::fs::read_to_string("tests/transform/reexport-alias/output.js")?;
-    let (_, result) = transform(TransformSource::File(PathBuf::from(
-        "tests/transform/reexport-alias/input.js",
-    )))?;
+    let (_, result) = transform("tests/transform/reexport-alias/input.js")?;
     //println!("{}", &result.code);
     assert_eq!(expected, result.code);
     Ok(())
@@ -32,9 +36,7 @@ fn reexport_default_alias() -> Result<()> {
     let expected = std::fs::read_to_string(
         "tests/transform/reexport-default-alias/output.js",
     )?;
-    let (_, result) = transform(TransformSource::File(PathBuf::from(
-        "tests/transform/reexport-default-alias/input.js",
-    )))?;
+    let (_, result) = transform("tests/transform/reexport-default-alias/input.js")?;
     //println!("{}", &result.code);
     assert_eq!(expected, result.code);
     Ok(())

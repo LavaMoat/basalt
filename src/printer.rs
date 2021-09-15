@@ -6,7 +6,7 @@ use anyhow::Result;
 
 use crate::module::node::{parse_file, VisitedDependency, VisitedModule};
 
-use swc_common::{source_map::FilePathMapping, SourceMap};
+use swc_common::SourceMap;
 use swc_ecma_loader::{resolve::Resolve, resolvers::node::NodeModulesResolver};
 
 const TREE_BAR: &str = "│";
@@ -37,7 +37,7 @@ impl Printer {
     ) -> Result<()> {
         let resolver: Box<dyn Resolve> =
             Box::new(NodeModulesResolver::default());
-        let source_map = Arc::new(SourceMap::new(FilePathMapping::empty()));
+        let source_map: Arc<SourceMap> = Arc::new(Default::default());
         let module =
             parse_file(file.as_ref(), &resolver, Arc::clone(&source_map))?;
         let node = match &*module {
