@@ -36,7 +36,8 @@ fn reexport_default_alias() -> Result<()> {
     let expected = std::fs::read_to_string(
         "tests/transform/reexport-default-alias/output.js",
     )?;
-    let (_, result) = transform("tests/transform/reexport-default-alias/input.js")?;
+    let (_, result) =
+        transform("tests/transform/reexport-default-alias/input.js")?;
     //println!("{}", &result.code);
     assert_eq!(expected, result.code);
     Ok(())

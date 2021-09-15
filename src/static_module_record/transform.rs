@@ -88,11 +88,33 @@ pub struct ParseOutput<'a> {
     pub meta: StaticModuleRecord<'a>,
 }
 
-/// Transform the module file to a program script.
+/// Transform source to codegen output.
 pub fn transform(
     source: TransformSource,
     source_map: Arc<SourceMap>,
 ) -> Result<(StaticModuleRecordMeta, TransformOutput)> {
+    let (meta, program) = transform_program(source, Arc::clone(&source_map))?;
+
+    let compiler = Compiler::new(source_map);
+    let result = compiler.print(
+        &program,
+        None,
+        None,
+        JscTarget::Es2020,
+        SourceMapsConfig::Bool(true),
+        &[],
+        None,
+        false,
+        None,
+    )?;
+    Ok((meta, result))
+}
+
+/// Transform source to a script program.
+pub fn transform_program(
+    source: TransformSource,
+    source_map: Arc<SourceMap>,
+) -> Result<(StaticModuleRecordMeta, Program)> {
     let handler = Handler::with_tty_emitter(
         ColorConfig::Auto,
         true,
@@ -102,10 +124,11 @@ pub fn transform(
 
     let fm = match source {
         TransformSource::File(path) => source_map.load_file(&path)?,
-        TransformSource::Str { content, file_name } => source_map.new_source_file(
-            FileName::Custom(file_name.into()),
-            content.into(),
-        ),
+        TransformSource::Str { content, file_name } => source_map
+            .new_source_file(
+                FileName::Custom(file_name.into()),
+                content.into(),
+            ),
     };
 
     let lexer = Lexer::new(
@@ -125,29 +148,33 @@ pub fn transform(
         .map_err(|e| e.into_diagnostic(&handler).emit())
         .expect("failed to parse module");
 
+    Ok(transform_module_script(&module)?)
+}
+
+/// Transform a module to a script program.
+pub fn transform_module_script(
+    module: &Module,
+) -> Result<(StaticModuleRecordMeta, Program)> {
     let mut parser = StaticModuleRecordParser::new();
-    let meta = parser.parse(&module)?;
-
+    let meta = parser.parse(module)?;
     let generator = Generator::new(&meta);
-    let compiler = Compiler::new(source_map);
     let script = generator
-        .create()
+        .script()
         .context("failed to generate transformed script")?;
-    let program = Program::Script(script);
+    Ok((meta.into(), Program::Script(script)))
+}
 
-    let result = compiler.print(
-        &program,
-        None,
-        None,
-        JscTarget::Es2020,
-        SourceMapsConfig::Bool(true),
-        &[],
-        None,
-        false,
-        None,
-    )?;
-
-    Ok((meta.into(), result))
+/// Transform a module to a function.
+pub fn transform_module_function(
+    module: &Module,
+) -> Result<(StaticModuleRecordMeta, Function)> {
+    let mut parser = StaticModuleRecordParser::new();
+    let meta = parser.parse(module)?;
+    let generator = Generator::new(&meta);
+    let func = generator
+        .function()
+        .context("failed to generate transformed function")?;
+    Ok((meta.into(), func))
 }
 
 struct Visitor<'a> {
@@ -528,8 +555,31 @@ impl<'a> Generator<'a> {
         Generator { meta }
     }
 
-    /// Create the program script AST node.
-    pub fn create(&self) -> Result<Script> {
+    /// Create the program as a function.
+    pub fn function(&self) -> Result<Function> {
+        Ok(Function {
+            span: DUMMY_SP,
+            params: self
+                .params()
+                .into_iter()
+                .map(|pat| Param {
+                    span: DUMMY_SP,
+                    decorators: vec![],
+                    pat,
+                })
+                .collect(),
+            //params: self.params(),
+            body: Some(self.body()),
+            decorators: vec![],
+            is_generator: false,
+            is_async: false,
+            type_params: None,
+            return_type: None,
+        })
+    }
+
+    /// Create the program script.
+    pub fn script(&self) -> Result<Script> {
         let mut script = Script {
             span: DUMMY_SP,
             body: Vec::with_capacity(1),

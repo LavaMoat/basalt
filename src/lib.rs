@@ -6,8 +6,8 @@
 
 use std::io::{self, Read};
 use std::path::PathBuf;
-use std::time::SystemTime;
 use std::sync::Arc;
+use std::time::SystemTime;
 
 use anyhow::{bail, Context, Result};
 

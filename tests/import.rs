@@ -16,7 +16,8 @@ fn import_wildcard_name() -> Result<()> {
     let expected = std::fs::read_to_string(
         "tests/transform/import-wildcard-name/output.js",
     )?;
-    let (_, result) = transform("tests/transform/import-wildcard-name/input.js")?;
+    let (_, result) =
+        transform("tests/transform/import-wildcard-name/input.js")?;
     //println!("{}", &result.code);
     assert_eq!(expected, result.code);
     Ok(())
@@ -27,7 +28,8 @@ fn import_multiple_names() -> Result<()> {
     let expected = std::fs::read_to_string(
         "tests/transform/import-multiple-names/output.js",
     )?;
-    let (_, result) = transform("tests/transform/import-multiple-names/input.js")?;
+    let (_, result) =
+        transform("tests/transform/import-multiple-names/input.js")?;
     //println!("{}", &result.code);
     assert_eq!(expected, result.code);
     Ok(())
@@ -48,7 +50,8 @@ fn import_default_alias() -> Result<()> {
     let expected = std::fs::read_to_string(
         "tests/transform/import-default-alias/output.js",
     )?;
-    let (_, result) = transform("tests/transform/import-default-alias/input.js")?;
+    let (_, result) =
+        transform("tests/transform/import-default-alias/input.js")?;
     //println!("{}", &result.code);
     assert_eq!(expected, result.code);
     Ok(())

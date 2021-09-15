@@ -54,11 +54,10 @@ pub(super) fn load_modules<P: AsRef<Path>>(
         let entry = cached.get(file.as_ref()).unwrap();
         let value = entry.value();
         match &**value {
-            VisitedModule::Module(_, node)
-            | VisitedModule::Json(_, node) => {
+            VisitedModule::Module(_, node) | VisitedModule::Json(_, node) => {
                 node.id
             }
-            _ => unreachable!("Main entry point cannot be a builtin")
+            _ => unreachable!("Main entry point cannot be a builtin"),
         }
     };
 
@@ -159,7 +158,10 @@ fn transform_modules(
                 }));
 
                 // Package options
-                let opts = ModuleOptions { package: spec, r#type: kind };
+                let opts = ModuleOptions {
+                    package: spec,
+                    r#type: kind,
+                };
                 let opts = opts.serialize(&mut serializer)?;
                 item.elems.push(Some(ExprOrSpread {
                     spread: None,
