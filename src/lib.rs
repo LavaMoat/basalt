@@ -30,7 +30,11 @@ pub use static_module_record::{
 use policy::{analysis::globals_scope::GlobalAnalysis, builder::PolicyBuilder};
 
 /// Generate a bundle.
-pub fn bundle(module: PathBuf, policy: Vec<PathBuf>) -> Result<()> {
+pub fn bundle(
+    module: PathBuf,
+    policy: Vec<PathBuf>,
+    output: Option<PathBuf>,
+) -> Result<()> {
     if policy.is_empty() {
         bail!("The bundle command requires some policy file(s) (use --policy)");
     }
@@ -42,9 +46,21 @@ pub fn bundle(module: PathBuf, policy: Vec<PathBuf>) -> Result<()> {
 
     let options = bundler::BundleOptions { module, policy };
     let (program, source_map) = bundler::bundle(options)?;
-    let output = swc_utils::print(&program, source_map)?;
+    let result = swc_utils::print(&program, source_map)?;
 
-    println!("{}", output.code);
+    if let Some(path) = output {
+        if let Some(parent) = path.parent() {
+            if !parent.exists() {
+                std::fs::create_dir_all(parent)?;
+            }
+            if !parent.is_dir() {
+                bail!("target {} is not a directory", parent.display());
+            }
+        }
+        std::fs::write(path, result.code)?;
+    } else {
+        println!("{}", result.code);
+    }
 
     Ok(())
 }

@@ -24,6 +24,9 @@ enum BasaltCommands {
         /// Path to policy file(s)
         #[structopt(short, long)]
         policy: Vec<PathBuf>,
+        /// Write bundle to output
+        #[structopt(short, long)]
+        output: Option<PathBuf>,
         /// Bundle entry point
         #[structopt(parse(from_os_str))]
         module: PathBuf,
@@ -97,7 +100,7 @@ fn main() -> Result<()> {
         } => {
             list(module, include_file)?;
         }
-        BasaltCommands::Bundle { module, policy } => bundle(module, policy)?,
+        BasaltCommands::Bundle { module, policy, output } => bundle(module, policy, output)?,
         BasaltCommands::Inspect { code, module } => inspect(code, module)?,
         BasaltCommands::Parse { module } => parse(module)?,
         BasaltCommands::Policy { module } => policy(module)?,
