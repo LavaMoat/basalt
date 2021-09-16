@@ -4,13 +4,15 @@
 #![feature(once_cell)]
 #![deny(missing_docs)]
 
-use std::io::{self, Read};
+use std::fs::OpenOptions;
+use std::io::{self, prelude::*, Read};
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::time::SystemTime;
 
 use anyhow::{bail, Context, Result};
 
+use swc::config::SourceMapsConfig;
 use swc_common::SourceMap;
 use swc_ecma_visit::VisitWith;
 
@@ -30,7 +32,10 @@ pub use static_module_record::{
 use policy::{analysis::globals_scope::GlobalAnalysis, builder::PolicyBuilder};
 
 /// Write a file and create the parent directory when necessary.
-fn write_file<P: AsRef<Path>, C: AsRef<[u8]>>(path: P, contents: C) -> Result<()> {
+fn write_file<P: AsRef<Path>, C: AsRef<[u8]>>(
+    path: P,
+    contents: C,
+) -> Result<()> {
     if let Some(parent) = path.as_ref().parent() {
         if !parent.exists() {
             std::fs::create_dir_all(parent)?;
@@ -43,12 +48,33 @@ fn write_file<P: AsRef<Path>, C: AsRef<[u8]>>(path: P, contents: C) -> Result<()
     Ok(())
 }
 
+/// Append sourceMappingURL to a target file.
+fn append_source_mapping_url<P: AsRef<Path>>(path: P, url: &str) -> Result<()> {
+    let url = format!("//# sourceMappingURL={}", url);
+    let mut file = OpenOptions::new()
+        .write(true)
+        .append(true)
+        .open(path.as_ref())
+        .unwrap();
+
+    if let Err(e) = writeln!(file, "{}", &url) {
+        bail!(
+            "failed to append sourceMappingURL to file {}, reason: {}",
+            path.as_ref().display(),
+            e
+        );
+    }
+
+    Ok(())
+}
+
 /// Generate a bundle.
 pub fn bundle(
     module: PathBuf,
     policy: Vec<PathBuf>,
     output: Option<PathBuf>,
     source_map_path: Option<PathBuf>,
+    source_map_url: Option<String>,
 ) -> Result<()> {
     if policy.is_empty() {
         bail!("bundle command requires some policy file(s) (use --policy)");
@@ -61,17 +87,38 @@ pub fn bundle(
 
     let options = bundler::BundleOptions { module, policy };
     let (program, source_map) = bundler::bundle(options)?;
-    let result = swc_utils::print(&program, source_map)?;
+    let source_maps_config = SourceMapsConfig::Bool(true);
+    let result =
+        swc_utils::print(&program, source_map, None, None, source_maps_config)?;
 
-    if let Some(path) = output {
+    if let Some(path) = &output {
         write_file(path, result.code)?;
     } else {
         println!("{}", result.code);
     }
 
-    // Write out the source maps file
+    // Write out the source map file
     if let (Some(path), Some(contents)) = (source_map_path, result.map) {
-        write_file(path, contents)?;
+        write_file(&path, contents)?;
+
+        // Handle appending sourceMappingURL to bundle file
+        if let Some(output_path) = &output {
+            let url = if let Some(url) = source_map_url {
+                Some(url)
+            } else {
+                // FIXME: do not assume same directory by default,
+                // FIXME: try to create relative path
+                if let Some(file_name) = path.file_name() {
+                    Some(file_name.to_string_lossy().into_owned())
+                } else {
+                    None
+                }
+            };
+
+            if let Some(url) = &url {
+                append_source_mapping_url(output_path, url)?;
+            }
+        }
     }
 
     Ok(())

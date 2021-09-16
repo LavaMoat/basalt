@@ -27,6 +27,9 @@ enum BasaltCommands {
         /// Source map destination
         #[structopt(short, long)]
         source_map: Option<PathBuf>,
+        /// Source map URL
+        #[structopt(short = "u", long)]
+        source_map_url: Option<String>,
         /// Write bundle to output
         #[structopt(short, long)]
         output: Option<PathBuf>,
@@ -108,7 +111,8 @@ fn main() -> Result<()> {
             policy,
             output,
             source_map,
-        } => bundle(module, policy, output, source_map)?,
+            source_map_url,
+        } => bundle(module, policy, output, source_map, source_map_url)?,
         BasaltCommands::Inspect { code, module } => inspect(code, module)?,
         BasaltCommands::Parse { module } => parse(module)?,
         BasaltCommands::Policy { module } => policy(module)?,

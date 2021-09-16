@@ -1,5 +1,5 @@
 //! Helpers to get a handler, parser, compiler or bundler.
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
 use anyhow::Result;
@@ -104,14 +104,24 @@ pub fn load_code<S: AsRef<str>>(
     ))
 }
 
+// NOTE: The signature for Compiler.print() changes a lot
+// NOTE: so we prefer to wrap it to simplify updates.
+
 /// Print a node.
-pub fn print<T>(node: &T, source_map: Arc<SourceMap>) -> Result<TransformOutput>
+pub fn print<T>(
+    node: &T,
+    source_map: Arc<SourceMap>,
+    source_file_name: Option<&str>,
+    output_path: Option<PathBuf>,
+    source_maps_config: SourceMapsConfig,
+) -> Result<TransformOutput>
 where
     T: Node + VisitWith<IdentCollector>,
 {
     //node: &T,
     //source_file_name: Option<&str>,
     //output_path: Option<PathBuf>,
+    //inline_sources_content: bool,
     //target: JscTarget,
     //source_map: SourceMapsConfig,
     //source_map_names: &[JsWord],
@@ -123,10 +133,11 @@ where
     let compiler = Compiler::new(source_map);
     compiler.print(
         node,
-        None,
-        None,
+        source_file_name,
+        output_path,
+        false,
         JscTarget::Es2020,
-        SourceMapsConfig::Bool(true),
+        source_maps_config,
         &[],
         None,
         false,

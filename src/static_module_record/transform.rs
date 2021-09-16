@@ -6,7 +6,7 @@ use indexmap::IndexMap;
 
 use swc::{
     config::{JscTarget, SourceMapsConfig},
-    Compiler, TransformOutput,
+    TransformOutput,
 };
 use swc_common::{
     errors::{emitter::ColorConfig, Handler},
@@ -25,7 +25,7 @@ use super::{
     StaticModuleRecordMeta,
 };
 
-use crate::helpers::var_symbol_names;
+use crate::{helpers::var_symbol_names, swc_utils};
 
 const HIDDEN_PREFIX: &str = "$h\u{200d}_";
 const HIDDEN_CONST_VAR_PREFIX: &str = "$c\u{200d}_";
@@ -95,18 +95,14 @@ pub fn transform(
 ) -> Result<(StaticModuleRecordMeta, TransformOutput)> {
     let (meta, program) = transform_program(source, Arc::clone(&source_map))?;
 
-    let compiler = Compiler::new(source_map);
-    let result = compiler.print(
+    let result = swc_utils::print(
         &program,
+        source_map,
         None,
         None,
-        JscTarget::Es2020,
-        SourceMapsConfig::Bool(true),
-        &[],
-        None,
-        false,
-        None,
+        SourceMapsConfig::Bool(false),
     )?;
+
     Ok((meta, result))
 }
 
