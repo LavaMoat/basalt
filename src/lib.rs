@@ -5,7 +5,7 @@
 #![deny(missing_docs)]
 
 use std::io::{self, Read};
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::time::SystemTime;
 
@@ -29,14 +29,29 @@ pub use static_module_record::{
 
 use policy::{analysis::globals_scope::GlobalAnalysis, builder::PolicyBuilder};
 
+/// Write a file and create the parent directory when necessary.
+fn write_file<P: AsRef<Path>, C: AsRef<[u8]>>(path: P, contents: C) -> Result<()> {
+    if let Some(parent) = path.as_ref().parent() {
+        if !parent.exists() {
+            std::fs::create_dir_all(parent)?;
+        }
+        if !parent.is_dir() {
+            bail!("target {} is not a directory", parent.display());
+        }
+    }
+    std::fs::write(path, contents)?;
+    Ok(())
+}
+
 /// Generate a bundle.
 pub fn bundle(
     module: PathBuf,
     policy: Vec<PathBuf>,
     output: Option<PathBuf>,
+    source_map_path: Option<PathBuf>,
 ) -> Result<()> {
     if policy.is_empty() {
-        bail!("The bundle command requires some policy file(s) (use --policy)");
+        bail!("bundle command requires some policy file(s) (use --policy)");
     }
 
     let module = module.canonicalize().context(format!(
@@ -49,17 +64,14 @@ pub fn bundle(
     let result = swc_utils::print(&program, source_map)?;
 
     if let Some(path) = output {
-        if let Some(parent) = path.parent() {
-            if !parent.exists() {
-                std::fs::create_dir_all(parent)?;
-            }
-            if !parent.is_dir() {
-                bail!("target {} is not a directory", parent.display());
-            }
-        }
-        std::fs::write(path, result.code)?;
+        write_file(path, result.code)?;
     } else {
         println!("{}", result.code);
+    }
+
+    // Write out the source maps file
+    if let (Some(path), Some(contents)) = (source_map_path, result.map) {
+        write_file(path, contents)?;
     }
 
     Ok(())
@@ -69,7 +81,7 @@ pub fn bundle(
 pub fn inspect(code: Option<String>, file: Option<PathBuf>) -> Result<()> {
     if code.is_some() && file.is_some() {
         bail!(
-            "The --code and file options are mutually exclusive, choose one."
+            "the --code and file options are mutually exclusive, choose one."
         );
     } else {
         if let Some(code) = code {
@@ -97,7 +109,7 @@ pub fn parse(file: PathBuf) -> Result<()> {
 /// Generate a policy file.
 pub fn policy(file: PathBuf) -> Result<()> {
     if !file.is_file() {
-        bail!("Module {} does not exist or is not a file", file.display());
+        bail!("module {} does not exist or is not a file", file.display());
     }
 
     let builder = PolicyBuilder::new(file);
@@ -111,7 +123,7 @@ pub fn policy(file: PathBuf) -> Result<()> {
 /// List all modules.
 pub fn list(file: PathBuf, include_file: bool) -> Result<()> {
     if !file.is_file() {
-        bail!("Module {} does not exist or is not a file", file.display());
+        bail!("module {} does not exist or is not a file", file.display());
     }
     let options = printer::PrintOptions { include_file };
     let printer = printer::Printer::new();
@@ -122,7 +134,7 @@ pub fn list(file: PathBuf, include_file: bool) -> Result<()> {
 /// Print the static module record meta data as JSON.
 pub fn meta(file: PathBuf) -> Result<()> {
     if !file.is_file() {
-        bail!("Module {} does not exist or is not a file", file.display());
+        bail!("module {} does not exist or is not a file", file.display());
     }
     let mut parser = Parser::new();
     let (_, _, module) = crate::swc_utils::load_file(file, None)?;
@@ -138,7 +150,7 @@ pub fn meta(file: PathBuf) -> Result<()> {
 /// debug option is given the scope tree is printed.
 pub fn globals(file: PathBuf, debug: bool) -> Result<()> {
     if !file.is_file() {
-        bail!("Module {} does not exist or is not a file", file.display());
+        bail!("module {} does not exist or is not a file", file.display());
     }
 
     let mut analyzer = GlobalAnalysis::new(Default::default());
@@ -160,7 +172,7 @@ pub fn globals(file: PathBuf, debug: bool) -> Result<()> {
 pub fn transform(file: PathBuf, json: bool) -> Result<()> {
     let is_stdin = PathBuf::from("-") == file;
     if !file.is_file() && !is_stdin {
-        bail!("Module {} does not exist or is not a file", file.display());
+        bail!("module {} does not exist or is not a file", file.display());
     }
 
     let source = if is_stdin {
