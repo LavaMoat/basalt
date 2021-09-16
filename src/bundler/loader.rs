@@ -18,6 +18,7 @@ use crate::{
             cached_modules, parse_module, VisitedDependency, VisitedModule,
         },
     },
+    static_module_record::transform::transform_module_function,
 };
 
 use super::serializer::Serializer;
@@ -199,8 +200,11 @@ fn into_module_function(module: &Module) -> Result<(Box<Expr>, ModuleKind)> {
 }
 
 fn transform_esm(module: &Module) -> Result<Box<Expr>> {
-    let expr = Expr::Lit(Lit::Null(Null { span: DUMMY_SP }));
-    Ok(Box::new(expr))
+    let (_meta, function) = transform_module_function(module)?;
+    Ok(Box::new(Expr::Fn(FnExpr {
+        ident: None,
+        function,
+    })))
 }
 
 fn transform_cjs(module: &Module) -> Result<Box<Expr>> {

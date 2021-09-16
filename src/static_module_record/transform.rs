@@ -568,7 +568,6 @@ impl<'a> Generator<'a> {
                     pat,
                 })
                 .collect(),
-            //params: self.params(),
             body: Some(self.body()),
             decorators: vec![],
             is_generator: false,
