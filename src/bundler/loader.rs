@@ -11,7 +11,7 @@ use swc_ecma_loader::resolve::Resolve;
 use swc_ecma_visit::{Node, Visit, VisitWith};
 
 use crate::{
-    helpers::{is_module_exports, normalize_specifier, EXPORTS, MODULE},
+    helpers::{is_module_exports, normalize_specifier, REQUIRE, EXPORTS, MODULE},
     module::{
         dependencies::is_dependent_module,
         node::{
@@ -213,6 +213,18 @@ fn transform_cjs(module: &Module) -> Result<Box<Expr>> {
         function: Function {
             decorators: vec![],
             params: vec![
+                Param {
+                    span: DUMMY_SP,
+                    decorators: vec![],
+                    pat: Pat::Ident(BindingIdent {
+                        id: Ident {
+                            span: DUMMY_SP,
+                            sym: REQUIRE.into(),
+                            optional: false,
+                        },
+                        type_ann: None,
+                    }),
+                },
                 Param {
                     span: DUMMY_SP,
                     decorators: vec![],

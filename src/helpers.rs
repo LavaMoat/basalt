@@ -2,6 +2,8 @@
 use swc_atoms::JsWord;
 use swc_ecma_ast::*;
 
+/// Common Javascript require function name.
+pub const REQUIRE: &str = "require";
 /// Common Javascript module.
 pub const MODULE: &str = "module";
 /// Common Javascript exports.
