@@ -1,7 +1,7 @@
 #[macro_use]
 extern crate napi_derive;
 
-use napi::{CallContext, JsUndefined, JsString, JsObject, Result};
+use napi::{CallContext, JsUndefined, JsUnknown, JsObject, Result};
 
 #[module_exports]
 fn init(mut exports: JsObject) -> Result<()> {
@@ -11,12 +11,8 @@ fn init(mut exports: JsObject) -> Result<()> {
 
 #[js_function(1)]
 fn cli(ctx: CallContext) -> Result<JsUndefined> {
-    println!("Running native function");
-
-    //let args: Vec<Result<JsString>> = ctx.get_all()
-        //.into_iter()
-        //.map(|unknown| unknown.coerce_to_string())
-        //.collect();
-
+    let arg = ctx.get::<JsUnknown>(0)?;
+    let argv: Vec<String> = ctx.env.from_js_value(arg)?;
+    println!("{:#?}", argv);
     ctx.env.get_undefined()
 }
