@@ -37,7 +37,7 @@ pub enum ModuleKind {
     Mixed,
     #[serde(rename = "esm")]
     Esm,
-    #[serde(rename = "cjs")]
+    #[serde(rename = "js")]
     Cjs,
 }
 
