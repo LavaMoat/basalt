@@ -10,5 +10,7 @@ crate-type = ["cdylib"]
 napi = {version = "1", features = ["serde-json"]}
 napi-derive = "1"
 
+basalt = {path = "../"}
+
 [build-dependencies]
 napi-build = "1"

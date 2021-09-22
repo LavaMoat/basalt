@@ -18,6 +18,7 @@ use swc_ecma_visit::VisitWith;
 
 pub mod access;
 pub mod bundler;
+pub mod cli;
 pub mod helpers;
 pub mod module;
 pub mod policy;

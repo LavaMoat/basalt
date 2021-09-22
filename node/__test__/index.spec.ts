@@ -1,7 +1,7 @@
 import test from 'ava'
 
-import { cli } from '../index'
+import { run } from '../index'
 
-test('call cli from native code', (t) => {
-  t.is(cli(['--help']), undefined)
+test('call run from native code', (t) => {
+  t.is(run(['basalt', '--version']), undefined)
 })
