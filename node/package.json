@@ -1,6 +1,6 @@
 {
   "name": "@lavamoat/basalt",
-  "version": "1.0.0",
+  "version": "0.3.2",
   "description": "Node bindings for basalt",
   "main": "index.js",
   "repository": "https://github.com/LavaMoat/basalt/",
