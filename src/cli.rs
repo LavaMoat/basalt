@@ -1,6 +1,6 @@
 //! Command line parsing exposed via the library for the node bindings.
-use std::path::PathBuf;
 use std::ffi::OsString;
+use std::path::PathBuf;
 
 use anyhow::Result;
 use structopt::StructOpt;
@@ -95,7 +95,10 @@ enum BasaltCommands {
 }
 
 /// Parse the given arguments list or `std::env::os_args` and run the program.
-pub fn run<T>(argv: Option<Vec<T>>) -> Result<()> where T: Into<OsString> + Clone {
+pub fn run<T>(argv: Option<Vec<T>>) -> Result<()>
+where
+    T: Into<OsString> + Clone,
+{
     if std::env::var("RUST_LOG").ok().is_none() {
         std::env::set_var("RUST_LOG", "info");
     }

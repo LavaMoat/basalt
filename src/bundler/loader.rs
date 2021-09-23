@@ -11,7 +11,9 @@ use swc_ecma_loader::resolve::Resolve;
 use swc_ecma_visit::{Node, Visit, VisitWith};
 
 use crate::{
-    helpers::{is_module_exports, normalize_specifier, REQUIRE, EXPORTS, MODULE},
+    helpers::{
+        is_module_exports, normalize_specifier, EXPORTS, MODULE, REQUIRE,
+    },
     module::{
         dependencies::is_dependent_module,
         node::{
