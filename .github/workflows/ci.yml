@@ -149,7 +149,7 @@ jobs:
         uses: actions/upload-artifact@v2
         with:
           name: bindings-${{ matrix.settings.target }}
-          path: ${{ env.APP_NAME }}.*.node
+          path: node/${{ env.APP_NAME }}.*.node
 
   build-freebsd:
     runs-on: macos-latest
