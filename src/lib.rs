@@ -168,8 +168,8 @@ pub fn policy(file: PathBuf) -> Result<()> {
     Ok(())
 }
 
-/// List all modules.
-pub fn list(file: PathBuf, include_file: bool) -> Result<()> {
+/// Print the dependency graph as a tree.
+pub fn tree(file: PathBuf, include_file: bool) -> Result<()> {
     if !file.is_file() {
         bail!("module {} does not exist or is not a file", file.display());
     }

@@ -5,13 +5,13 @@ use std::path::PathBuf;
 use anyhow::Result;
 use structopt::StructOpt;
 
-use super::{bundle, globals, inspect, list, meta, parse, policy, transform};
+use super::{bundle, globals, inspect, tree, meta, parse, policy, transform};
 
 #[derive(StructOpt)]
 #[structopt(about = "Lavamoat analyzer and bundler")]
 enum BasaltCommands {
     /// Print the module graph for an entry point
-    Ls {
+    Tree {
         /// Print the file name for each module
         #[structopt(short = "f", long)]
         include_file: bool,
@@ -112,11 +112,11 @@ where
     };
     let args = BasaltCommands::from_clap(&matches);
     match args {
-        BasaltCommands::Ls {
+        BasaltCommands::Tree {
             module,
             include_file,
         } => {
-            list(module, include_file)?;
+            tree(module, include_file)?;
         }
         BasaltCommands::Bundle {
             module,
