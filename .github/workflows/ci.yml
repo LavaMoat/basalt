@@ -23,7 +23,7 @@ jobs:
         settings:
           - host: macos-latest
             target: 'x86_64-apple-darwin'
-            build: cd node && yarn build
+            build: yarn build
           - host: windows-latest
             build: yarn build
             target: 'x86_64-pc-windows-msvc'
@@ -138,6 +138,7 @@ jobs:
         shell: bash
 
       - name: 'Install dependencies'
+        working-directory: node
         run: yarn install --ignore-scripts --frozen-lockfile --registry https://registry.npmjs.org --network-timeout 300000
 
       - name: 'Build'
@@ -469,6 +470,7 @@ jobs:
           restore-keys: |
             npm-cache-
       - name: 'Install dependencies'
+        working-directory: node
         run: yarn install --ignore-scripts --frozen-lockfile --registry https://registry.npmjs.org --network-timeout 300000
 
       - name: Download all artifacts
