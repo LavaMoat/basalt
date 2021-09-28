@@ -8,45 +8,7 @@ use structopt::StructOpt;
 use super::{bundle, globals, inspect, tree, meta, parse, policy, transform};
 
 #[derive(StructOpt)]
-#[structopt(about = "Lavamoat analyzer and bundler")]
-enum BasaltCommands {
-    /// Print the module graph for an entry point
-    Tree {
-        /// Print the file name for each module
-        #[structopt(short = "f", long)]
-        include_file: bool,
-
-        /// Module entry point
-        #[structopt(parse(from_os_str))]
-        module: PathBuf,
-    },
-
-    /// Generate a bundle
-    Bundle {
-        /// Path to policy file(s)
-        #[structopt(short, long)]
-        policy: Vec<PathBuf>,
-        /// Source map destination
-        #[structopt(short, long)]
-        source_map: Option<PathBuf>,
-        /// Source map URL
-        #[structopt(short = "u", long)]
-        source_map_url: Option<String>,
-        /// Write bundle to output
-        #[structopt(short, long)]
-        output: Option<PathBuf>,
-        /// Bundle entry point
-        #[structopt(parse(from_os_str))]
-        module: PathBuf,
-    },
-
-    /// Generate a policy file
-    Policy {
-        /// Module entry point
-        #[structopt(parse(from_os_str))]
-        module: PathBuf,
-    },
-
+enum Debug {
     /// Print the AST for code or a file
     Inspect {
         /// Code to parse and print
@@ -94,6 +56,54 @@ enum BasaltCommands {
     },
 }
 
+#[derive(StructOpt)]
+#[structopt(about = "Lavamoat analyzer and bundler")]
+enum Commands {
+    /// Print the module tree
+    Tree {
+        /// Print the file name for each module
+        #[structopt(short = "f", long)]
+        include_file: bool,
+
+        /// Module entry point
+        #[structopt(parse(from_os_str))]
+        module: PathBuf,
+    },
+
+    /// Generate a lavapack bundle
+    Bundle {
+        /// Path to policy file(s)
+        #[structopt(short, long)]
+        policy: Vec<PathBuf>,
+        /// Source map destination
+        #[structopt(short, long)]
+        source_map: Option<PathBuf>,
+        /// Source map URL
+        #[structopt(short = "u", long)]
+        source_map_url: Option<String>,
+        /// Write bundle to output
+        #[structopt(short, long)]
+        output: Option<PathBuf>,
+        /// Bundle entry point
+        #[structopt(parse(from_os_str))]
+        module: PathBuf,
+    },
+
+    /// Generate a lavamoat policy file
+    Policy {
+        /// Module entry point
+        #[structopt(parse(from_os_str))]
+        module: PathBuf,
+    },
+
+    /// Utility debugging commands
+    Debug {
+        #[structopt(subcommand)]
+        cmd: Debug,
+    },
+
+}
+
 /// Parse the given arguments list or `std::env::os_args` and run the program.
 pub fn run<T>(argv: Option<Vec<T>>) -> Result<()>
 where
@@ -104,33 +114,38 @@ where
     }
     pretty_env_logger::init();
 
-    let app = BasaltCommands::clap();
+    let app = Commands::clap();
     let matches = if let Some(argv) = argv {
         app.get_matches_from(argv)
     } else {
         app.get_matches()
     };
-    let args = BasaltCommands::from_clap(&matches);
+    let args = Commands::from_clap(&matches);
     match args {
-        BasaltCommands::Tree {
+        Commands::Tree {
             module,
             include_file,
         } => {
             tree(module, include_file)?;
         }
-        BasaltCommands::Bundle {
+        Commands::Bundle {
             module,
             policy,
             output,
             source_map,
             source_map_url,
         } => bundle(module, policy, output, source_map, source_map_url)?,
-        BasaltCommands::Inspect { code, module } => inspect(code, module)?,
-        BasaltCommands::Parse { module } => parse(module)?,
-        BasaltCommands::Policy { module } => policy(module)?,
-        BasaltCommands::Globals { module, debug } => globals(module, debug)?,
-        BasaltCommands::Meta { module } => meta(module)?,
-        BasaltCommands::Transform { module, json } => transform(module, json)?,
+
+        Commands::Policy { module } => policy(module)?,
+        Commands::Debug { cmd } => {
+            match cmd {
+                Debug::Inspect { code, module } => inspect(code, module)?,
+                Debug::Parse { module } => parse(module)?,
+                Debug::Globals { module, debug } => globals(module, debug)?,
+                Debug::Meta { module } => meta(module)?,
+                Debug::Transform { module, json } => transform(module, json)?,
+            }
+        },
     }
     Ok(())
 }
