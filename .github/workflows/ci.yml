@@ -98,7 +98,7 @@ jobs:
         with:
           profile: minimal
           override: true
-          toolchain: stable
+          toolchain: nightly
           target: ${{ matrix.settings.target }}
 
       - name: Generate Cargo.lock
