@@ -176,6 +176,7 @@ jobs:
           key: npm-cache-test-linux-x64-gnu-${{ matrix.node }}-${{ hashFiles('yarn.lock') }}
 
       - name: 'Install dependencies'
+        working-directory: node
         run: yarn install --ignore-scripts --frozen-lockfile --registry https://registry.npmjs.org --network-timeout 300000
 
       - name: Download artifacts
