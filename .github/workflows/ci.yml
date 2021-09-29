@@ -39,12 +39,13 @@ jobs:
               echo "C:\\Program Files (x86)\\nodejs" >> $GITHUB_PATH
           - host: ubuntu-latest
             target: 'x86_64-unknown-linux-gnu'
-            docker: |
-              docker login -u $DOCKER_USERNAME -p $DOCKER_PASSWORD $DOCKER_REGISTRY_URL
-              docker pull $DOCKER_REGISTRY_URL/napi-rs/napi-rs/nodejs-rust:lts-debian
-              docker tag $DOCKER_REGISTRY_URL/napi-rs/napi-rs/nodejs-rust:lts-debian builder
-            build: |
-              docker run --rm -v ~/.cargo/git:/root/.cargo/git -v ~/.cargo/registry:/root/.cargo/registry -v $(pwd):/build -w /build builder yarn build
+            build: yarn build
+            #docker: |
+              #docker login -u $DOCKER_USERNAME -p $DOCKER_PASSWORD $DOCKER_REGISTRY_URL
+              #docker pull $DOCKER_REGISTRY_URL/napi-rs/napi-rs/nodejs-rust:lts-debian
+              #docker tag $DOCKER_REGISTRY_URL/napi-rs/napi-rs/nodejs-rust:lts-debian builder
+            #build: |
+              #docker run --rm -v ~/.cargo/git:/root/.cargo/git -v ~/.cargo/registry:/root/.cargo/registry -v $(pwd):/build -w /build builder yarn build
           - host: ubuntu-latest
             target: 'x86_64-unknown-linux-musl'
             docker: |
@@ -171,7 +172,7 @@ jobs:
           prepare: |
             pkg install -y curl node yarn npm python2
             curl https://sh.rustup.rs -sSf --output rustup.sh
-            sh rustup.sh -y --profile minimal --default-toolchain stable
+            sh rustup.sh -y --profile minimal --default-toolchain nightly
             export PATH="/usr/local/cargo/bin:$PATH"
             echo "~~~~ rustc --version ~~~~"
             rustc --version
