@@ -1,7 +1,7 @@
 {
   "name": "basalt",
   "private": true,
-  "version": "1.0.0",
+  "version": "0.3.2",
   "description": "LavaMoat analyzer and bundler.",
   "main": "index.js",
   "directories": {
