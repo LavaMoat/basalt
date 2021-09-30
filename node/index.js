@@ -1,13 +1,5 @@
 const { loadBinding } = require('@node-rs/helper')
 
-const fs = require('fs')
-const path = require('path')
-
-
-const files = fs.readdirSync(path.join(__dirname));
-console.log(files);
-
-
 /**
  * __dirname means load native addon from current dir
  * 'package-template' means native addon name is `package-template`

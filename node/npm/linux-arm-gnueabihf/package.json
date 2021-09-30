@@ -1,0 +1,17 @@
+{
+  "name": "@lavamoat/basalt-linux-arm-gnueabihf",
+  "version": "1.0.0",
+  "os": ["linux"],
+  "cpu": ["arm"],
+  "main": "basalt.linux-arm-gnueabihf.node",
+  "files": ["basalt.linux-arm-gnueabihf.node"],
+  "license": "MIT",
+  "engines": {
+    "node": ">= 10"
+  },
+  "publishConfig": {
+    "registry": "https://registry.npmjs.org/",
+    "access": "public"
+  },
+  "repository": "git@github.com:lavamoat/basalt.git"
+}
