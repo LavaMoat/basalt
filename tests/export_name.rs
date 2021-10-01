@@ -16,8 +16,7 @@ fn transform(src: &str) -> Result<(StaticModuleRecordMeta, TransformOutput)> {
 
 #[test]
 fn export_name_1() -> Result<()> {
-    let expected =
-        read_to_string("tests/transform/export-name-1/output.js")?;
+    let expected = read_to_string("tests/transform/export-name-1/output.js")?;
     let (_, result) = transform("tests/transform/export-name-1/input.js")?;
     //print!("{}", &result.code);
     assert_eq!(expected, result.code);
@@ -26,8 +25,7 @@ fn export_name_1() -> Result<()> {
 
 #[test]
 fn export_name_2() -> Result<()> {
-    let expected =
-        read_to_string("tests/transform/export-name-2/output.js")?;
+    let expected = read_to_string("tests/transform/export-name-2/output.js")?;
     let (_, result) = transform("tests/transform/export-name-2/input.js")?;
     //print!("{}", &result.code);
     assert_eq!(expected, result.code);
@@ -36,8 +34,7 @@ fn export_name_2() -> Result<()> {
 
 #[test]
 fn export_name_3() -> Result<()> {
-    let expected =
-        read_to_string("tests/transform/export-name-3/output.js")?;
+    let expected = read_to_string("tests/transform/export-name-3/output.js")?;
     let (_, result) = transform("tests/transform/export-name-3/input.js")?;
     //print!("{}", &result.code);
     assert_eq!(expected, result.code);
@@ -46,8 +43,7 @@ fn export_name_3() -> Result<()> {
 
 #[test]
 fn export_name_4() -> Result<()> {
-    let expected =
-        read_to_string("tests/transform/export-name-4/output.js")?;
+    let expected = read_to_string("tests/transform/export-name-4/output.js")?;
     let (_, result) = transform("tests/transform/export-name-4/input.js")?;
     print!("{}", &result.code);
     assert_eq!(expected, result.code);
@@ -56,8 +52,7 @@ fn export_name_4() -> Result<()> {
 
 #[test]
 fn export_name_5() -> Result<()> {
-    let expected =
-        read_to_string("tests/transform/export-name-5/output.js")?;
+    let expected = read_to_string("tests/transform/export-name-5/output.js")?;
     let (_, result) = transform("tests/transform/export-name-5/input.js")?;
     //print!("{}", &result.code);
     assert_eq!(expected, result.code);
@@ -66,8 +61,7 @@ fn export_name_5() -> Result<()> {
 
 #[test]
 fn export_name_6() -> Result<()> {
-    let expected =
-        read_to_string("tests/transform/export-name-6/output.js")?;
+    let expected = read_to_string("tests/transform/export-name-6/output.js")?;
     let (_, result) = transform("tests/transform/export-name-6/input.js")?;
     //print!("{}", &result.code);
     assert_eq!(expected, result.code);
@@ -76,8 +70,7 @@ fn export_name_6() -> Result<()> {
 
 #[test]
 fn export_name_7() -> Result<()> {
-    let expected =
-        read_to_string("tests/transform/export-name-7/output.js")?;
+    let expected = read_to_string("tests/transform/export-name-7/output.js")?;
     let (_, result) = transform("tests/transform/export-name-7/input.js")?;
     //print!("{}", &result.code);
     assert_eq!(expected, result.code);
@@ -86,8 +79,7 @@ fn export_name_7() -> Result<()> {
 
 #[test]
 fn export_name_8() -> Result<()> {
-    let expected =
-        read_to_string("tests/transform/export-name-8/output.js")?;
+    let expected = read_to_string("tests/transform/export-name-8/output.js")?;
     let (_, result) = transform("tests/transform/export-name-8/input.js")?;
     //print!("{}", &result.code);
     assert_eq!(expected, result.code);
@@ -96,8 +88,7 @@ fn export_name_8() -> Result<()> {
 
 #[test]
 fn export_name_9() -> Result<()> {
-    let expected =
-        read_to_string("tests/transform/export-name-9/output.js")?;
+    let expected = read_to_string("tests/transform/export-name-9/output.js")?;
     let (_, result) = transform("tests/transform/export-name-9/input.js")?;
     //print!("{}", &result.code);
     assert_eq!(expected, result.code);
@@ -108,8 +99,7 @@ fn export_name_9() -> Result<()> {
 // NOTE: original does not. In practice this shouldn't be a problem.
 #[test]
 fn export_name_10() -> Result<()> {
-    let expected =
-        read_to_string("tests/transform/export-name-10/output.js")?;
+    let expected = read_to_string("tests/transform/export-name-10/output.js")?;
     let (_, result) = transform("tests/transform/export-name-10/input.js")?;
     //print!("{}", &result.code);
     assert_eq!(expected, result.code);
@@ -120,8 +110,7 @@ fn export_name_10() -> Result<()> {
 
 #[test]
 fn export_name_12() -> Result<()> {
-    let expected =
-        read_to_string("tests/transform/export-name-12/output.js")?;
+    let expected = read_to_string("tests/transform/export-name-12/output.js")?;
     let (_, result) = transform("tests/transform/export-name-12/input.js")?;
     //print!("{}", &result.code);
     assert_eq!(expected, result.code);
@@ -130,8 +119,7 @@ fn export_name_12() -> Result<()> {
 
 #[test]
 fn export_name_13() -> Result<()> {
-    let expected =
-        read_to_string("tests/transform/export-name-13/output.js")?;
+    let expected = read_to_string("tests/transform/export-name-13/output.js")?;
     let (_, result) = transform("tests/transform/export-name-13/input.js")?;
     //print!("{}", &result.code);
     assert_eq!(expected, result.code);

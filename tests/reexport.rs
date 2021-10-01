@@ -16,8 +16,7 @@ fn transform(src: &str) -> Result<(StaticModuleRecordMeta, TransformOutput)> {
 
 #[test]
 fn reexport() -> Result<()> {
-    let expected =
-        read_to_string("tests/transform/reexport/output.js")?;
+    let expected = read_to_string("tests/transform/reexport/output.js")?;
     let (_, result) = transform("tests/transform/reexport/input.js")?;
     //println!("{}", &result.code);
     assert_eq!(expected, result.code);
@@ -26,8 +25,7 @@ fn reexport() -> Result<()> {
 
 #[test]
 fn reexport_alias() -> Result<()> {
-    let expected =
-        read_to_string("tests/transform/reexport-alias/output.js")?;
+    let expected = read_to_string("tests/transform/reexport-alias/output.js")?;
     let (_, result) = transform("tests/transform/reexport-alias/input.js")?;
     //println!("{}", &result.code);
     assert_eq!(expected, result.code);
@@ -36,9 +34,8 @@ fn reexport_alias() -> Result<()> {
 
 #[test]
 fn reexport_default_alias() -> Result<()> {
-    let expected = read_to_string(
-        "tests/transform/reexport-default-alias/output.js",
-    )?;
+    let expected =
+        read_to_string("tests/transform/reexport-default-alias/output.js")?;
     let (_, result) =
         transform("tests/transform/reexport-default-alias/input.js")?;
     //println!("{}", &result.code);

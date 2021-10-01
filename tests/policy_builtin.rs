@@ -8,8 +8,7 @@ mod common;
 use common::read_to_string;
 
 fn load_policy_test(dir: &str) -> Result<(String, String)> {
-    let expected =
-        read_to_string(PathBuf::from(dir).join("output.json"))?;
+    let expected = read_to_string(PathBuf::from(dir).join("output.json"))?;
     let file = PathBuf::from(dir).join("input.js");
     let builder = PolicyBuilder::new(file);
     let policy = builder.load()?.analyze()?.finalize();

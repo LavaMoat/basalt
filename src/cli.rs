@@ -5,7 +5,7 @@ use std::path::PathBuf;
 use anyhow::Result;
 use structopt::StructOpt;
 
-use super::{bundle, globals, inspect, tree, meta, parse, policy, transform};
+use super::{bundle, globals, inspect, meta, parse, policy, transform, tree};
 
 #[derive(StructOpt)]
 enum Debug {
@@ -101,7 +101,6 @@ enum Commands {
         #[structopt(subcommand)]
         cmd: Debug,
     },
-
 }
 
 /// Parse the given arguments list or `std::env::os_args` and run the program.
@@ -137,14 +136,12 @@ where
         } => bundle(module, policy, output, source_map, source_map_url)?,
 
         Commands::Policy { module } => policy(module)?,
-        Commands::Debug { cmd } => {
-            match cmd {
-                Debug::Inspect { code, module } => inspect(code, module)?,
-                Debug::Parse { module } => parse(module)?,
-                Debug::Globals { module, debug } => globals(module, debug)?,
-                Debug::Meta { module } => meta(module)?,
-                Debug::Transform { module, json } => transform(module, json)?,
-            }
+        Commands::Debug { cmd } => match cmd {
+            Debug::Inspect { code, module } => inspect(code, module)?,
+            Debug::Parse { module } => parse(module)?,
+            Debug::Globals { module, debug } => globals(module, debug)?,
+            Debug::Meta { module } => meta(module)?,
+            Debug::Transform { module, json } => transform(module, json)?,
         },
     }
     Ok(())

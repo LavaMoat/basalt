@@ -3,6 +3,7 @@ name = "basalt"
 version = "0.3.3"
 authors = ["muji <muji@tmpfs.org>"]
 edition = "2018"
+license = "Apache-2.0/MIT"
 default-run = "basalt"
 
 [dependencies]
