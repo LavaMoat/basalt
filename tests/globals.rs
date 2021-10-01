@@ -6,8 +6,7 @@ use basalt::swc_utils::load_file;
 
 use swc_ecma_visit::VisitWith;
 
-mod common;
-use common::read_to_string;
+use testing::read_to_string;
 
 fn analyze(dir: &str) -> Result<(String, String)> {
     let base = PathBuf::from(dir);

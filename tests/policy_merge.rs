@@ -3,8 +3,7 @@ use std::path::PathBuf;
 
 use basalt::policy::{Merge, Policy};
 
-mod common;
-use common::read_to_string;
+use testing::read_to_string;
 
 #[test]
 fn policy_merge() -> Result<()> {

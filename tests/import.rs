@@ -6,8 +6,7 @@ use swc_common::SourceMap;
 
 use basalt::static_module_record::{self, StaticModuleRecordMeta};
 
-mod common;
-use common::read_to_string;
+use testing::read_to_string;
 
 fn transform(src: &str) -> Result<(StaticModuleRecordMeta, TransformOutput)> {
     let source_map: Arc<SourceMap> = Arc::new(Default::default());
