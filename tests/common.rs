@@ -8,4 +8,3 @@ pub fn read_to_string<P: AsRef<Path>>(path: P) -> Result<String> {
     }
     Ok(content)
 }
-

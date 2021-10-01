@@ -80,10 +80,12 @@ jobs:
         run: yarn install --ignore-scripts --frozen-lockfile --registry https://registry.npmjs.org --network-timeout 300000
       - name: Link mock test packages
         run: ./install-test-packages.sh
+        shell: bash
       - name: Cargo test
         uses: actions-rs/cargo@v1
         with:
           command: test
+          args: -- --nocapture
 
       - name: Cache NPM dependencies
         uses: actions/cache@v1
