@@ -5,15 +5,18 @@ use anyhow::Result;
 
 use basalt::policy::{Merge, Policy};
 
+mod common;
+use common::read_to_string;
+
 #[test]
 fn policy_merge() -> Result<()> {
-    let expected: Policy = serde_json::from_str(&fs::read_to_string(
+    let expected: Policy = serde_json::from_str(&read_to_string(
         PathBuf::from("tests/policy/merge/output.json"),
     )?)?;
-    let mut policy1: Policy = serde_json::from_str(&fs::read_to_string(
+    let mut policy1: Policy = serde_json::from_str(&read_to_string(
         PathBuf::from("tests/policy/merge/policy1.json"),
     )?)?;
-    let policy2: Policy = serde_json::from_str(&fs::read_to_string(
+    let policy2: Policy = serde_json::from_str(&read_to_string(
         PathBuf::from("tests/policy/merge/policy2.json"),
     )?)?;
 

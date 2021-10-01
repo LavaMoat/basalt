@@ -6,6 +6,9 @@ use swc_common::SourceMap;
 
 use basalt::static_module_record::{self, StaticModuleRecordMeta};
 
+mod common;
+use common::read_to_string;
+
 fn transform(src: &str) -> Result<(StaticModuleRecordMeta, TransformOutput)> {
     let source_map: Arc<SourceMap> = Arc::new(Default::default());
     static_module_record::transform(src.into(), source_map)
@@ -14,7 +17,7 @@ fn transform(src: &str) -> Result<(StaticModuleRecordMeta, TransformOutput)> {
 #[test]
 fn export_default() -> Result<()> {
     let expected =
-        std::fs::read_to_string("tests/transform/export-default/output.js")?;
+        read_to_string("tests/transform/export-default/output.js")?;
     let (_, result) = transform("tests/transform/export-default/input.js")?;
     //print!("{}", &result.code);
     assert_eq!(expected, result.code);
@@ -23,7 +26,7 @@ fn export_default() -> Result<()> {
 
 #[test]
 fn export_default_class() -> Result<()> {
-    let expected = std::fs::read_to_string(
+    let expected = read_to_string(
         "tests/transform/export-default-class/output.js",
     )?;
     let (_, result) =
@@ -35,7 +38,7 @@ fn export_default_class() -> Result<()> {
 
 #[test]
 fn export_default_function() -> Result<()> {
-    let expected = std::fs::read_to_string(
+    let expected = read_to_string(
         "tests/transform/export-default-function/output.js",
     )?;
     let (_, result) =
@@ -47,7 +50,7 @@ fn export_default_function() -> Result<()> {
 
 #[test]
 fn export_default_arrow_function() -> Result<()> {
-    let expected = std::fs::read_to_string(
+    let expected = read_to_string(
         "tests/transform/export-default-arrow-function/output.js",
     )?;
     let (_, result) =
@@ -59,7 +62,7 @@ fn export_default_arrow_function() -> Result<()> {
 
 #[test]
 fn export_default_number() -> Result<()> {
-    let expected = std::fs::read_to_string(
+    let expected = read_to_string(
         "tests/transform/export-default-number/output.js",
     )?;
     let (_, result) =
@@ -71,7 +74,7 @@ fn export_default_number() -> Result<()> {
 
 #[test]
 fn export_default_arguments() -> Result<()> {
-    let expected = std::fs::read_to_string(
+    let expected = read_to_string(
         "tests/transform/export-default-arguments/output.js",
     )?;
     let (_, result) =
@@ -83,7 +86,7 @@ fn export_default_arguments() -> Result<()> {
 
 #[test]
 fn export_default_this() -> Result<()> {
-    let expected = std::fs::read_to_string(
+    let expected = read_to_string(
         "tests/transform/export-default-this/output.js",
     )?;
     let (_, result) =

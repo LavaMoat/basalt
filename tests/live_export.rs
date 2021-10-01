@@ -6,10 +6,13 @@ use swc_common::SourceMap;
 
 use basalt::static_module_record::{transform, TransformSource};
 
+mod common;
+use common::read_to_string;
+
 #[test]
 fn live_export_assignment() -> Result<()> {
     let source_map: Arc<SourceMap> = Arc::new(Default::default());
-    let expected = std::fs::read_to_string(
+    let expected = read_to_string(
         "tests/transform/live-export-assignment/output.js",
     )?;
     let (_, result) = transform(

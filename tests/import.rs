@@ -6,6 +6,9 @@ use swc_common::SourceMap;
 
 use basalt::static_module_record::{self, StaticModuleRecordMeta};
 
+mod common;
+use common::read_to_string;
+
 fn transform(src: &str) -> Result<(StaticModuleRecordMeta, TransformOutput)> {
     let source_map: Arc<SourceMap> = Arc::new(Default::default());
     static_module_record::transform(src.into(), source_map)
@@ -13,7 +16,7 @@ fn transform(src: &str) -> Result<(StaticModuleRecordMeta, TransformOutput)> {
 
 #[test]
 fn import_wildcard_name() -> Result<()> {
-    let expected = std::fs::read_to_string(
+    let expected = read_to_string(
         "tests/transform/import-wildcard-name/output.js",
     )?;
     let (_, result) =
@@ -25,7 +28,7 @@ fn import_wildcard_name() -> Result<()> {
 
 #[test]
 fn import_multiple_names() -> Result<()> {
-    let expected = std::fs::read_to_string(
+    let expected = read_to_string(
         "tests/transform/import-multiple-names/output.js",
     )?;
     let (_, result) =
@@ -38,7 +41,7 @@ fn import_multiple_names() -> Result<()> {
 #[test]
 fn import_default() -> Result<()> {
     let expected =
-        std::fs::read_to_string("tests/transform/import-default/output.js")?;
+        read_to_string("tests/transform/import-default/output.js")?;
     let (_, result) = transform("tests/transform/import-default/input.js")?;
     //println!("{}", &result.code);
     assert_eq!(expected, result.code);
@@ -47,7 +50,7 @@ fn import_default() -> Result<()> {
 
 #[test]
 fn import_default_alias() -> Result<()> {
-    let expected = std::fs::read_to_string(
+    let expected = read_to_string(
         "tests/transform/import-default-alias/output.js",
     )?;
     let (_, result) =
@@ -59,7 +62,7 @@ fn import_default_alias() -> Result<()> {
 
 #[test]
 fn import_side_effect() -> Result<()> {
-    let expected = std::fs::read_to_string(
+    let expected = read_to_string(
         "tests/transform/import-side-effect/output.js",
     )?;
     let (_, result) = transform("tests/transform/import-side-effect/input.js")?;
@@ -71,7 +74,7 @@ fn import_side_effect() -> Result<()> {
 #[test]
 fn import_duplicate() -> Result<()> {
     let expected =
-        std::fs::read_to_string("tests/transform/import-duplicate/output.js")?;
+        read_to_string("tests/transform/import-duplicate/output.js")?;
     let (_, result) = transform("tests/transform/import-duplicate/input.js")?;
     //println!("{}", &result.code);
     assert_eq!(expected, result.code);

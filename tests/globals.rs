@@ -6,10 +6,13 @@ use basalt::swc_utils::load_file;
 
 use swc_ecma_visit::VisitWith;
 
+mod common;
+use common::read_to_string;
+
 fn analyze(dir: &str) -> Result<(String, String)> {
     let base = PathBuf::from(dir);
     let input = base.join("input.js");
-    let expected = std::fs::read_to_string(&base.join("output.json"))?;
+    let expected = read_to_string(&base.join("output.json"))?;
     let mut analyzer = GlobalAnalysis::new(Default::default());
     let (_, _, module) = load_file(&input, None)?;
     module.visit_children_with(&mut analyzer);

@@ -64,17 +64,6 @@ jobs:
         with:
           command: generate-lockfile
 
-      - name: Install test dependencies
-        run: yarn install --ignore-scripts --frozen-lockfile --registry https://registry.npmjs.org --network-timeout 300000
-
-      - name: Link mock test packages
-        run: ./install-test-packages.sh
-
-      - name: Cargo tests
-        uses: actions-rs/cargo@v1
-        with:
-          command: test
-
       - name: Cache cargo registry
         uses: actions/cache@v1
         with:
@@ -86,6 +75,15 @@ jobs:
         with:
           path: ~/.cargo/git
           key: ${{ matrix.settings.target }}-node@14-cargo-index-trimmed-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Install test dependencies
+        run: yarn install --ignore-scripts --frozen-lockfile --registry https://registry.npmjs.org --network-timeout 300000
+      - name: Link mock test packages
+        run: ./install-test-packages.sh
+      - name: Cargo test
+        uses: actions-rs/cargo@v1
+        with:
+          command: test
 
       - name: Cache NPM dependencies
         uses: actions/cache@v1
