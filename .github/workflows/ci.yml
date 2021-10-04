@@ -57,6 +57,9 @@ jobs:
           - host: macos-latest
             target: 'aarch64-apple-darwin'
             build: yarn build --target=aarch64-apple-darwin
+          - host: windows-latest
+            target: 'aarch64-pc-windows-msvc'
+            build: yarn build --target aarch64-pc-windows-msvc
 
     name: stable - ${{ matrix.settings.target }} - node@14
     runs-on: ${{ matrix.settings.host }}
