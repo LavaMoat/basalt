@@ -271,6 +271,7 @@ jobs:
     runs-on: ubuntu-latest
     needs:
       - test-linux-x64-gnu-binding
+      - test-linux-x64-musl-binding
       - test-macOS-windows-binding
 
     steps:
